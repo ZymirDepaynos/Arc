@@ -12,5 +12,11 @@
   "workspaces": [
     "frontend",
     "backend"
-  ]
+  ],
+  "dependencies": {
+    "@supabase/supabase-js": "^2.104.0",
+    "cors": "^2.8.6",
+    "express": "^5.2.1",
+    "dotenv": "^17.4.2"
+  }
 }

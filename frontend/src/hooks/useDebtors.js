@@ -60,7 +60,7 @@ export function useDebtors() {
     return res.data;
   };
 
-  const totals = debtors.reduce(
+  const totals = Array.isArray(debtors) ? debtors.reduce(
     (acc, d) => {
       acc.totalBalance += parseFloat(d.balance) || 0;
       acc.totalAdvance += parseFloat(d.advance_payment) || 0;
@@ -70,7 +70,7 @@ export function useDebtors() {
       return acc;
     },
     { totalBalance: 0, totalAdvance: 0, activeCount: 0, partialCount: 0, paidCount: 0 }
-  );
+  ) : { totalBalance: 0, totalAdvance: 0, activeCount: 0, partialCount: 0, paidCount: 0 };
 
   return {
     debtors,

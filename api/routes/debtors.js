@@ -48,6 +48,13 @@ router.get('/:id', async (req, res) => {
 // POST create debtor
 router.post('/', async (req, res) => {
   try {
+    console.log('Attempting to create debtor with data:', req.body);
+    
+    if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+      console.error('CRITICAL: Missing Supabase environment variables!');
+      return res.status(500).json({ error: 'Server configuration error: Missing DB credentials.' });
+    }
+
     const {
       name,
       balance,
@@ -72,12 +79,20 @@ router.post('/', async (req, res) => {
         notes: notes || '',
         status: advance_payment && parseFloat(advance_payment) > 0 ? 'partial' : 'active',
       }])
-      .select()
-      .single();
+      .select();
 
-    if (error) throw error;
-    res.status(201).json(data);
+    if (error) {
+      console.error('Supabase Insert Error:', error);
+      return res.status(500).json({ error: error.message });
+    }
+    
+    if (!data || data.length === 0) {
+      return res.status(500).json({ error: 'Failed to create record: No data returned from database.' });
+    }
+
+    res.status(201).json(data[0]);
   } catch (err) {
+    console.error('API Error [POST /]:', err);
     res.status(500).json({ error: err.message });
   }
 });

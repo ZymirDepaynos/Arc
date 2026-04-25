@@ -20,9 +20,11 @@ export default function DebtorModal({ open, onClose, onSubmit, initial = null })
   const [form, setForm] = useState(EMPTY_FORM);
   const [receiptInput, setReceiptInput] = useState('');
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     if (open) {
+      setError(null);
       if (initial) {
         setForm({
           name: initial.name || '',
@@ -42,7 +44,10 @@ export default function DebtorModal({ open, onClose, onSubmit, initial = null })
     }
   }, [open, initial]);
 
-  const set = (key, val) => setForm((f) => ({ ...f, [key]: val }));
+  const set = (key, val) => {
+    setError(null);
+    setForm((f) => ({ ...f, [key]: val }));
+  };
 
   const addReceipt = () => {
     const trimmed = receiptInput.trim();
@@ -58,9 +63,13 @@ export default function DebtorModal({ open, onClose, onSubmit, initial = null })
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
+    setError(null);
     try {
       await onSubmit(form);
       onClose();
+    } catch (err) {
+      console.error('Submission Error:', err);
+      setError(err.response?.data?.error || err.message || 'Something went wrong');
     } finally {
       setLoading(false);
     }
@@ -94,6 +103,19 @@ export default function DebtorModal({ open, onClose, onSubmit, initial = null })
             </div>
 
             <form onSubmit={handleSubmit}>
+              {error && (
+                <div style={{ 
+                  background: 'rgba(239, 68, 68, 0.1)', 
+                  color: '#ef4444', 
+                  padding: '12px', 
+                  borderRadius: '8px', 
+                  marginBottom: '16px',
+                  fontSize: '14px',
+                  border: '1px solid rgba(239, 68, 68, 0.2)'
+                }}>
+                  Error: {error}
+                </div>
+              )}
               <div className="form-grid">
                 {/* Name */}
                 <div className="form-group full floating-group">

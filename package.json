@@ -8,5 +8,9 @@
     "server": "npm run server --prefix frontend",
     "build": "npm run build --prefix frontend",
     "install-all": "npm install --prefix frontend && npm install --prefix backend"
-  }
+  },
+  "workspaces": [
+    "frontend",
+    "backend"
+  ]
 }

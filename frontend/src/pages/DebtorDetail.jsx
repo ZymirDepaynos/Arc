@@ -1,13 +1,22 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Edit2, Trash2, CreditCard } from 'lucide-react';
+import { 
+  ArrowLeft, 
+  Edit2, 
+  Trash2, 
+  CreditCard, 
+  History, 
+  Search as SearchIcon 
+} from 'lucide-react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import StatusBadge from '../components/StatusBadge';
 import DebtorModal from '../components/DebtorModal';
 import PayModal from '../components/PayModal';
 import ConfirmModal from '../components/ConfirmModal';
+import MobileNav from '../components/MobileNav';
+import SearchOverlay from '../components/SearchOverlay';
 
 const fmt = (n) =>
   '₱' + parseFloat(n || 0).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -35,14 +44,18 @@ export default function DebtorDetail() {
   const [payOpen, setPayOpen] = useState(false);
   const [confirmSettle, setConfirmSettle] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [allDebtors, setAllDebtors] = useState([]);
 
   const API_URL = import.meta.env.VITE_API_URL || '';
 
   const fetchDebtor = async () => {
     try {
       const res = await axios.get(`${API_URL}/api/debtors/${id}`);
-      console.log('Fetched debtor:', res.data);
       setDebtor(res.data);
+      // Also fetch all for global search
+      const allRes = await axios.get(`${API_URL}/api/debtors`);
+      setAllDebtors(allRes.data);
     } catch {
       toast.error('Could not load debtor');
       navigate('/');
@@ -50,6 +63,12 @@ export default function DebtorDetail() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    const handleSearchTrigger = () => setSearchOpen(true);
+    window.addEventListener('trigger-search-focus', handleSearchTrigger);
+    return () => window.removeEventListener('trigger-search-focus', handleSearchTrigger);
+  }, []);
 
   useEffect(() => { fetchDebtor(); }, [id]);
 
@@ -98,8 +117,12 @@ export default function DebtorDetail() {
   return (
     <div style={{ minHeight: '100vh', paddingBottom: 80 }}>
       {/* Sub-header */}
-      <div style={{ background: 'var(--bg-card)', borderBottom: '1px solid var(--border)', marginBottom: 40, borderTop: '1px solid var(--border)' }}>
-        <div style={{ maxWidth: 1300, margin: '0 auto', padding: '32px 24px' }}>
+      <div style={{ 
+        background: 'var(--bg-page)', 
+        marginBottom: 24,
+        padding: '12px 0'
+      }}>
+        <div className="content-container" style={{ padding: '32px 0' }}>
           <button
             className="btn btn-outline btn-sm"
             onClick={() => navigate('/')}
@@ -108,42 +131,56 @@ export default function DebtorDetail() {
             <ArrowLeft size={14} /> Back to Records
           </button>
 
-          <div className="detail-header">
-            <div className="detail-avatar">{initials(debtor.name)}</div>
-            <div style={{ flex: 1 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-                <h1 style={{ fontSize: 32, fontWeight: 700, letterSpacing: '-1px' }}>{debtor.name}</h1>
-                <StatusBadge status={debtor.status} />
+          <div className="stat-box" style={{ padding: '24px 32px' }}>
+            <div className="detail-header">
+              <div className="detail-avatar">{initials(debtor.name)}</div>
+              <div style={{ flex: 1 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+                  <h1 style={{ fontSize: 'clamp(20px, 5vw, 32px)', fontWeight: 700, letterSpacing: '-1px' }}>{debtor.name}</h1>
+                  <StatusBadge status={debtor.status} />
+                </div>
+                <div style={{ fontSize: 14, color: 'var(--text-muted)', marginTop: 6, fontWeight: 500 }}>
+                  Created on {fmtDate(debtor.created_at)}
+                </div>
               </div>
-              <div style={{ fontSize: 14, color: 'var(--text-muted)', marginTop: 6, fontWeight: 500 }}>
-                Created on {fmtDate(debtor.created_at)}
+              <div className="detail-actions">
+                <button className="btn btn-outline btn-sm" onClick={() => setEditOpen(true)} title="Edit Profile">
+                  <Edit2 size={13} /> <span>Edit Profile</span>
+                </button>
+                <button
+                  className="btn btn-outline btn-sm"
+                  onClick={() => setPayOpen(true)}
+                  title="Add Payment"
+                >
+                  <CreditCard size={13} /> <span>Add Payment</span>
+                </button>
+                <button
+                  className="btn btn-primary btn-sm"
+                  onClick={() => setConfirmSettle(true)}
+                >
+                  Settle Full
+                </button>
+                <button 
+                  className="btn btn-outline btn-sm" 
+                  onClick={() => setConfirmDelete(true)} 
+                  title="Delete"
+                  style={{ 
+                    borderColor: 'rgba(255, 77, 77, 0.3)', 
+                    color: '#FF4D4D',
+                    background: 'rgba(255, 77, 77, 0.05)',
+                    padding: '0 12px',
+                    height: 38
+                  }}
+                >
+                  <Trash2 size={14} />
+                </button>
               </div>
-            </div>
-            <div style={{ display: 'flex', gap: 10 }}>
-              <button className="btn btn-outline btn-sm" onClick={() => setEditOpen(true)}>
-                <Edit2 size={13} /> Edit Profile
-              </button>
-              <button
-                className="btn btn-outline btn-sm"
-                onClick={() => setPayOpen(true)}
-              >
-                <CreditCard size={13} /> Add Payment
-              </button>
-              <button
-                className="btn btn-primary btn-sm"
-                onClick={() => setConfirmSettle(true)}
-              >
-                Settle Full
-              </button>
-              <button className="btn btn-danger btn-sm" onClick={() => setConfirmDelete(true)}>
-                <Trash2 size={13} />
-              </button>
             </div>
           </div>
         </div>
       </div>
 
-      <div style={{ maxWidth: 1300, margin: '0 auto', padding: '0 24px' }}>
+      <div className="content-container" style={{ padding: '0' }}>
         {/* Balance highlight */}
         <motion.div
           className="stat-box"
@@ -153,7 +190,7 @@ export default function DebtorDetail() {
         >
           <div className="detail-field-label">Current Outstanding Balance</div>
           <div style={{ 
-            fontSize: 48, 
+            fontSize: 'clamp(32px, 8vw, 48px)', 
             fontWeight: 700, 
             letterSpacing: '-2px',
             color: 'var(--text-primary)',
@@ -234,54 +271,47 @@ export default function DebtorDetail() {
         )}
       </div>
 
-      {/* Payment History */}
-      <div style={{ marginTop: 40 }}>
-        <h3 style={{ fontSize: 18, fontWeight: 700, marginBottom: 20, color: 'var(--text-primary)' }}>Payment History</h3>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          {(!debtor.payment_history || debtor.payment_history.length === 0) ? (
-            <div className="detail-field" style={{ textAlign: 'center', color: 'var(--text-muted)' }}>
-              No payments recorded yet.
+      {/* Timeline Audit Log */}
+      <div className="timeline-section">
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 }}>
+          <div className="row-avatar" style={{ background: 'var(--accent-light)', color: 'var(--accent)' }}>
+            <History size={20} />
+          </div>
+          <h2 style={{ fontSize: 20, fontWeight: 800, margin: 0, color: 'var(--text-primary)' }}>Timeline Audit Log</h2>
+        </div>
+
+        <div className="timeline-container">
+          {/* Created Event */}
+          <div className="timeline-item">
+            <div className="timeline-dot created"></div>
+            <div className="timeline-content">
+              <div className="timeline-time">{new Date(debtor.created_at).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</div>
+              <div className="timeline-title">Record Created</div>
+              <div className="timeline-desc">Initial debt of {fmt(debtor.balance + (debtor.payment_history?.reduce((acc, p) => acc + p.amount, 0) || 0))} was recorded.</div>
             </div>
-          ) : (
-            debtor.payment_history.map((p, i) => (
-              <div key={i} className="detail-field" style={{ 
-                display: 'flex', 
-                justifyContent: 'space-between', 
-                alignItems: 'center',
-                padding: '16px 24px'
-              }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-                  <div style={{ 
-                    width: 28, 
-                    height: 28, 
-                    borderRadius: '50%', 
-                    background: 'var(--accent-light)', 
-                    color: 'var(--accent)', 
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    justifyContent: 'center',
-                    fontSize: 12,
-                    fontWeight: 700
-                  }}>
-                    {debtor.payment_history.length - i}
-                  </div>
-                  <div style={{ display: 'flex', flexDirection: 'column' }}>
-                    <span style={{ fontSize: 14, color: 'var(--text-primary)', fontWeight: 600 }}>
-                      {fmtDate(p.date)}
-                    </span>
-                    <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>Payment Recorded</span>
-                  </div>
-                </div>
-                <div style={{ textAlign: 'right' }}>
-                  <div style={{ color: 'var(--status-paid-text)', fontWeight: 700, fontSize: 16 }}>
-                    +{fmt(p.amount)}
-                  </div>
-                  <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
-                    Bal After: {fmt(p.balance_after)}
-                  </div>
-                </div>
+          </div>
+
+          {/* Payment Events */}
+          {debtor.payment_history?.map((payment, idx) => (
+            <div key={idx} className="timeline-item">
+              <div className="timeline-dot payment"></div>
+              <div className="timeline-content">
+                <div className="timeline-time">{new Date(payment.date).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</div>
+                <div className="timeline-title">Payment Received</div>
+                <div className="timeline-desc">A payment of {fmt(payment.amount)} was made. Remaining balance: {fmt(payment.balance_after)}.</div>
               </div>
-            )).reverse()
+            </div>
+          )).reverse()}
+          
+          {debtor.status === 'paid' && (
+            <div className="timeline-item">
+              <div className="timeline-dot status"></div>
+              <div className="timeline-content">
+                <div className="timeline-time">{new Date(debtor.updated_at).toLocaleString('en-US', { month: 'short', day: 'numeric' })}</div>
+                <div className="timeline-title">Account Settled</div>
+                <div className="timeline-desc">Debt has been fully paid and closed.</div>
+              </div>
+            </div>
           )}
         </div>
       </div>
@@ -304,6 +334,24 @@ export default function DebtorDetail() {
         onConfirm={handleDelete}
         title="Delete Record?"
         message={`Are you sure you want to permanently delete the record for ${debtor.name}? This cannot be undone.`}
+      />
+
+      <div className="hide-desktop" style={{ position: 'fixed', bottom: 100, left: 24, right: 24, zIndex: 900 }}>
+        <button 
+          className="btn btn-primary" 
+          style={{ width: '100%', height: 56, borderRadius: 16, fontSize: 16, fontWeight: 700 }}
+          onClick={() => setConfirmSettle(true)}
+        >
+          Settle Full Debt
+        </button>
+      </div>
+
+      <MobileNav />
+
+      <SearchOverlay 
+        open={searchOpen} 
+        onClose={() => setSearchOpen(false)} 
+        debtors={allDebtors} 
       />
     </div>
   );

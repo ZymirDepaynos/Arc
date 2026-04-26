@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { Trash2, CreditCard } from 'lucide-react';
+import { Trash2, CreditCard, Check } from 'lucide-react';
 
 const fmt = (n) =>
   '₱' + parseFloat(n || 0).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -24,7 +24,7 @@ const initials = (name) =>
     .join('')
     .toUpperCase();
 
-export default function DebtorCard({ debtor, onEdit, onDelete, onPay, index }) {
+export default function DebtorCard({ debtor, onEdit, onDelete, onPay, index, selected, onSelect }) {
   const navigate = useNavigate();
 
   // Status mapping to LoadLogic dot style
@@ -48,33 +48,45 @@ export default function DebtorCard({ debtor, onEdit, onDelete, onPay, index }) {
 
   return (
     <motion.tr
-      className="data-row"
+      className={`data-row ${selected ? 'selected-row' : ''}`}
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.2, delay: index * 0.03 }}
       onClick={() => navigate(`/debtor/${debtor.id}`)}
       style={{ cursor: 'pointer' }}
     >
+      {/* Selection Checkbox */}
+      <td>
+        <div 
+          className={`checkbox-custom ${selected ? 'checked' : ''}`}
+          onClick={(e) => {
+            e.stopPropagation();
+            onSelect();
+          }}
+        >
+          {selected && <Check size={14} />}
+        </div>
+      </td>
       {/* ID */}
-      <td style={{ color: 'var(--text-secondary)' }}>
+      <td className="hide-mobile" style={{ color: 'var(--text-secondary)' }}>
         #{debtor.id.substring(0, 8)}
       </td>
 
       {/* Assigned to */}
       <td>
         <div className="table-avatar-cell">
-          <div className="row-avatar">{initials(debtor.name)}</div>
-          <span style={{ fontWeight: 600 }}>{debtor.name}</span>
+          <div className="row-avatar" style={{ border: '1px solid rgba(0, 245, 160, 0.2)' }}>{initials(debtor.name)}</div>
+          <span style={{ fontWeight: 700, color: 'var(--text-primary)' }}>{debtor.name}</span>
         </div>
       </td>
 
       {/* Borrowed Date */}
-      <td>
+      <td className="hide-mobile">
         {fmtDate(debtor.date_borrowed)}
       </td>
 
       {/* Due Date */}
-      <td style={{ color: debtor.due_date ? 'var(--text-primary)' : 'var(--text-muted)' }}>
+      <td className="hide-tablet" style={{ color: debtor.due_date ? 'var(--text-primary)' : 'var(--text-muted)' }}>
         {fmtDate(debtor.due_date)}
       </td>
 
@@ -89,7 +101,7 @@ export default function DebtorCard({ debtor, onEdit, onDelete, onPay, index }) {
       </td>
 
       {/* Status */}
-      <td>
+      <td className="hide-tablet">
         <div className="status-dot">
           <span className={`dot ${getStatusClass()}`}></span>
           {getStatusText()}
@@ -107,14 +119,16 @@ export default function DebtorCard({ debtor, onEdit, onDelete, onPay, index }) {
             }}
             title="Record Payment"
             style={{
-              background: 'var(--accent-light)',
-              color: 'var(--accent)',
+              background: 'var(--status-active-bg)',
+              color: 'var(--status-active-text)',
               width: 38,
               height: 38,
-              borderRadius: 10,
+              borderRadius: 12,
               display: 'flex',
               alignItems: 'center',
-              justifyContent: 'center'
+              justifyContent: 'center',
+              border: '1px solid var(--status-active-bg)',
+              transition: 'all 0.2s ease'
             }}
           >
             <CreditCard size={18} />
@@ -127,14 +141,16 @@ export default function DebtorCard({ debtor, onEdit, onDelete, onPay, index }) {
             }}
             title="Delete Record"
             style={{
-              background: 'rgba(255, 59, 48, 0.08)',
-              color: '#FF3B30',
+              background: 'rgba(255, 77, 77, 0.08)',
+              color: '#FF4D4D',
               width: 38,
               height: 38,
-              borderRadius: 10,
+              borderRadius: 12,
               display: 'flex',
               alignItems: 'center',
-              justifyContent: 'center'
+              justifyContent: 'center',
+              border: '1px solid rgba(255, 77, 77, 0.1)',
+              transition: 'all 0.2s ease'
             }}
           >
             <Trash2 size={18} />

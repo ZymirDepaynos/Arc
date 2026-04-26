@@ -13,6 +13,7 @@ import {
   Calendar as CalendarIcon
 } from 'lucide-react';
 import axios from 'axios';
+import MobileNav from '../components/MobileNav';
 
 const API_URL = import.meta.env.VITE_API_URL || '';
 
@@ -324,6 +325,17 @@ export default function CalendarView() {
           border-radius: 32px;
           overflow: hidden;
           border: 1px solid var(--border);
+          position: relative;
+          padding-bottom: 0;
+        }
+
+        @media (max-width: 1024px) {
+          .calendar-container {
+            flex-direction: column;
+            height: auto;
+            border-radius: 20px;
+            padding-bottom: 100px;
+          }
         }
 
         /* Sidebar Styling */
@@ -332,10 +344,20 @@ export default function CalendarView() {
           background: var(--bg-card);
           display: flex;
           flex-direction: column;
-          padding: 32px;
+          padding: 24px;
           color: var(--text-primary);
           border-right: 1px solid var(--border);
         }
+
+        @media (max-width: 1024px) {
+          .calendar-sidebar {
+            width: 100%;
+            padding: 16px;
+            border-right: none;
+            border-bottom: 1px solid var(--border);
+          }
+        }
+
         .sidebar-dashboard-btn {
           background: var(--bg-page);
           color: var(--text-primary);
@@ -359,6 +381,13 @@ export default function CalendarView() {
           margin: 20px 0;
           text-align: center;
         }
+
+        @media (max-width: 1024px) {
+          .today-display {
+            display: none;
+          }
+        }
+
         .today-number {
           font-size: 80px;
           font-weight: 800;
@@ -392,6 +421,12 @@ export default function CalendarView() {
           filter: brightness(1.1);
         }
 
+        @media (max-width: 1024px) {
+          .sidebar-calendar-btn {
+            display: none;
+          }
+        }
+
         .history-section {
           margin-top: 32px;
           display: flex;
@@ -399,6 +434,14 @@ export default function CalendarView() {
           flex: 1;
           min-height: 0;
         }
+
+        @media (max-width: 1024px) {
+          .history-section {
+            margin-top: 20px;
+            max-height: 300px;
+          }
+        }
+
         .history-title {
           font-size: 14px;
           font-weight: 800;
@@ -462,22 +505,6 @@ export default function CalendarView() {
           color: #30D158;
         }
 
-        .sidebar-footer {
-          margin-top: auto;
-        }
-        .sidebar-link {
-          background: none;
-          border: none;
-          color: var(--text-secondary);
-          display: flex;
-          align-items: center;
-          gap: 12px;
-          font-size: 15px;
-          font-weight: 600;
-          cursor: pointer;
-          padding: 12px 0;
-        }
-
         /* Main Content Styling */
         .calendar-main {
           flex: 1;
@@ -488,41 +515,34 @@ export default function CalendarView() {
           min-width: 0;
         }
 
+        @media (max-width: 768px) {
+          .calendar-main {
+            padding: 16px;
+          }
+        }
+
         /* Header Styling */
         .calendar-header {
           display: flex;
           align-items: center;
           justify-content: space-between;
           margin-bottom: 32px;
+          flex-wrap: wrap;
+          gap: 16px;
         }
-        .view-tabs {
-          display: flex;
-          background: var(--bg-card);
-          padding: 4px;
-          border-radius: 12px;
-          border: 1px solid var(--border);
-        }
-        .view-tab {
-          padding: 8px 20px;
-          border-radius: 10px;
-          border: none;
-          font-size: 13px;
-          font-weight: 600;
-          color: var(--text-muted);
-          background: none;
-          cursor: pointer;
-          transition: all 0.2s ease;
-        }
-        .view-tab.active {
-          background: #FF5A36;
-          color: white;
-          box-shadow: 0 4px 12px rgba(255, 90, 54, 0.3);
+
+        @media (max-width: 768px) {
+          .calendar-header {
+            flex-direction: column;
+            align-items: flex-start;
+          }
         }
 
         .view-filters {
           display: flex;
           align-items: center;
           gap: 12px;
+          flex-wrap: wrap;
         }
         .filter-label { font-size: 13px; font-weight: 700; color: var(--text-muted); }
         
@@ -531,17 +551,24 @@ export default function CalendarView() {
         }
         .filter-select-ui {
           background: var(--bg-card);
-          padding: 8px 16px;
+          padding: 6px 12px;
           border-radius: 10px;
           display: flex;
           align-items: center;
-          gap: 8px;
+          gap: 6px;
           font-size: 13px;
           font-weight: 600;
           color: var(--text-primary);
           border: 1px solid var(--border);
           transition: all 0.2s ease;
           cursor: pointer;
+        }
+
+        @media (max-width: 768px) {
+          .filter-select-ui {
+            padding: 4px 10px;
+            font-size: 12px;
+          }
         }
         .filter-select-ui:hover {
           transform: translateY(-1px);
@@ -585,39 +612,6 @@ export default function CalendarView() {
           background: rgba(255, 90, 54, 0.05);
         }
 
-        .header-icons {
-          display: flex;
-          align-items: center;
-          gap: 24px;
-          color: var(--text-secondary);
-        }
-        .notification-btn { position: relative; }
-        .notification-btn .badge {
-          position: absolute;
-          top: -4px;
-          right: -4px;
-          background: #FF5A36;
-          color: white;
-          font-size: 9px;
-          width: 14px;
-          height: 14px;
-          border-radius: 50%;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          border: 2px solid #000;
-        }
-        .user-avatar {
-          width: 44px;
-          height: 44px;
-          background: #FF5A36;
-          border-radius: 50%;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          color: white;
-        }
-
         /* Calendar Body Styling */
         .calendar-body {
           flex: 1;
@@ -636,23 +630,47 @@ export default function CalendarView() {
           color: #FF9F0A;
           padding: 4px;
         }
+
+        @media (max-width: 768px) {
+          .weekday-label {
+            font-size: 10px;
+          }
+        }
+
         .days-grid {
           display: grid;
           grid-template-columns: repeat(7, 1fr);
           gap: 10px;
         }
+
+        @media (max-width: 768px) {
+          .days-grid {
+            gap: 4px;
+          }
+        }
+
         .day-cell {
           background: var(--bg-card);
-          min-height: 85px;
+          min-height: clamp(60px, 12vh, 85px);
           border-radius: 14px;
-          padding: 10px;
+          padding: 8px;
           display: flex;
           flex-direction: column;
-          gap: 8px;
+          gap: 4px;
           border: 1px solid var(--border);
           transition: all 0.2s ease;
           pointer-events: none;
         }
+
+        @media (max-width: 768px) {
+          .day-cell {
+            min-height: 48px;
+            padding: 4px;
+            border-radius: 8px;
+            gap: 2px;
+          }
+        }
+
         .day-cell.has-records {
           pointer-events: auto;
           cursor: pointer;
@@ -664,6 +682,10 @@ export default function CalendarView() {
         .day-cell.active { border: 2px solid var(--accent); box-shadow: 0 0 20px rgba(0, 122, 255, 0.1); }
         .cell-number { font-size: 16px; font-weight: 700; color: var(--text-primary); align-self: flex-end; }
         
+        @media (max-width: 768px) {
+          .cell-number { font-size: 12px; }
+        }
+
         .cell-events {
           display: flex;
           flex-direction: column;
@@ -681,6 +703,27 @@ export default function CalendarView() {
           overflow: hidden;
           text-overflow: ellipsis;
         }
+
+        @media (max-width: 768px) {
+          .mini-event-tag {
+            font-size: 8px;
+            padding: 1px 2px;
+          }
+          .mini-event-name {
+            display: none;
+          }
+          .mini-event-tag {
+            width: 100%;
+            height: 3px;
+            border-left: none;
+            border-radius: 1.5px;
+            margin-bottom: 1px;
+          }
+          .mini-event-tag.borrowed { background: #FF9F0A; }
+          .mini-event-tag.due { background: #FF3B30; }
+          .mini-event-tag.paid { background: #30D158; }
+        }
+
         .mini-event-tag.borrowed { border-left-color: #FF9F0A; }
         .mini-event-tag.due { border-left-color: #FF3B30; }
         .mini-event-tag.paid { border-left-color: #30D158; }
@@ -696,7 +739,7 @@ export default function CalendarView() {
         /* Modal Styling */
         .day-detail-modal {
           background: var(--bg-page);
-          width: 90%;
+          width: 95%;
           max-width: 440px;
           border-radius: 22px;
           border: 1px solid var(--border);
@@ -707,14 +750,14 @@ export default function CalendarView() {
           max-height: 85vh;
         }
         .modal-header {
-          padding: 56px 28px 20px;
+          padding: 40px 24px 20px;
           display: flex;
           justify-content: space-between;
           align-items: center;
           border-bottom: 1px solid rgba(255,255,255,0.05);
         }
         .modal-title {
-          font-size: 20px;
+          font-size: 18px;
           font-weight: 800;
           color: var(--text-primary);
           margin: 0;
@@ -792,6 +835,7 @@ export default function CalendarView() {
         .detail-event-item.paid .amount { color: #30D158; }
         .detail-event-item.borrowed .amount { color: #FF9F0A; }
       `}} />
+      <MobileNav />
     </div>
   );
 }

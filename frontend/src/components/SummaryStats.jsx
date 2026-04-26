@@ -20,13 +20,13 @@ export default function SummaryStats({ totals }) {
             {fmt(totals?.totalBalance || 0)}
           </div>
           <div style={{ marginTop: 8 }}>
-            <span className="stat-sub-value" style={{ marginLeft: 0, background: 'var(--status-active-bg)', color: 'var(--status-active-text)' }}>
+            <span className="stat-sub-value" style={{ marginLeft: 0, background: 'var(--status-paid-bg)', color: 'var(--status-paid-text)' }}>
               Active Debt
             </span>
           </div>
           
           {/* Animated trend bars */}
-          <div style={{ display: 'flex', alignItems: 'flex-end', gap: 4, height: 40, marginTop: 24, opacity: 0.6 }}>
+          <div style={{ display: 'flex', alignItems: 'flex-end', gap: 4, height: 40, marginTop: 24, opacity: 0.8 }}>
             {[30, 45, 35, 60, 45, 55, 80, 45, 70, 35, 50, 40, 60, 30].map((h, i) => (
               <div 
                 key={i} 
@@ -34,8 +34,9 @@ export default function SummaryStats({ totals }) {
                   flex: 1, 
                   background: i === 6 ? 'var(--accent)' : 'var(--border)', 
                   height: `${h}%`, 
-                  borderRadius: '2px 2px 0 0',
-                  boxShadow: i === 6 ? '0 0 10px var(--accent)' : 'none'
+                  borderRadius: '3px 3px 0 0',
+                  boxShadow: i === 6 ? '0 0 15px var(--accent)' : 'none',
+                  transition: 'all 0.3s ease'
                 }}
               ></div>
             ))}

@@ -64,7 +64,7 @@ export default function ConfirmModal({ open, onClose, onConfirm, title, message 
                 </button>
                 <button 
                   className="btn btn-primary" 
-                  style={{ flex: 1, background: 'var(--danger)' }}
+                  style={{ flex: 1, background: '#FF4D4D', boxShadow: '0 4px 0 #CC0000' }}
                   onClick={() => {
                     onConfirm();
                     onClose();

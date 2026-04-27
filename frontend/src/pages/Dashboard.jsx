@@ -112,25 +112,25 @@ export default function Dashboard() {
     const headers = ['ID', 'Name', 'Borrowed Date', 'Advance Payment', 'Balance', 'Status'];
     const rows = debtors.map(d => [
       d.id,
-      d.name,
+      `"${d.name.replace(/"/g, '""')}"`, // Escape quotes for CSV
       d.date_borrowed,
       d.advance_payment,
       d.balance,
       d.status
     ]);
 
-    const csvContent = "data:text/csv;charset=utf-8," 
-      + headers.join(",") + "\n"
-      + rows.map(e => e.join(",")).join("\n");
-
-    const encodedUri = encodeURI(csvContent);
+    const csvContent = headers.join(",") + "\n" + rows.map(e => e.join(",")).join("\n");
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    
     const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `Arc_Data_${new Date().toISOString().split('T')[0]}.csv`);
+    link.setAttribute("href", url);
+    link.setAttribute("download", `Arc_Full_Data_${new Date().toISOString().split('T')[0]}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    toast.success('CSV Exported for Excel');
+    URL.revokeObjectURL(url); // Clean up memory
+    toast.success('Full Database Exported for Excel');
   };
 
   const handleAdd = async (form) => {

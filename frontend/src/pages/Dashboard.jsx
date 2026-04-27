@@ -31,6 +31,8 @@ export default function Dashboard() {
   const [deleteData, setDeleteData] = useState(null);
   const [searchOpen, setSearchOpen] = useState(false);
   const [selectedIds, setSelectedIds] = useState([]);
+  const [isSelectionMode, setIsSelectionMode] = useState(false);
+  const [sortOrder, setSortOrder] = useState('newest'); // newest, a-z, z-a
 
   useEffect(() => {
     const handleSearchTrigger = () => setSearchOpen(true);
@@ -68,24 +70,51 @@ export default function Dashboard() {
         return recordPayment(id, d.balance);
       }));
       setSelectedIds([]);
-      toast.success('Selected debtors marked as paid');
+      setIsSelectionMode(false);
+      toast.success('Selected customers marked as paid');
     } catch (err) {
       toast.error('Bulk update failed');
     }
   };
 
+  const toggleSort = () => {
+    setSortOrder(prev => {
+      if (prev === 'newest') return 'a-z';
+      if (prev === 'a-z') return 'z-a';
+      return 'newest';
+    });
+    toast.success(`Sorted by ${sortOrder === 'newest' ? 'A-Z' : sortOrder === 'a-z' ? 'Z-A' : 'Newest'}`);
+  };
+
   const exportToPDF = () => {
     const doc = new jsPDF();
+    const pageWidth = doc.internal.pageSize.getWidth();
     
-    // Add Branded Header
-    doc.setFontSize(22);
-    doc.setTextColor(5, 7, 10);
-    doc.text('Arc Debt Recovery Report', 14, 22);
+    // 1. ELITE BRANDED HEADER
+    doc.setFillColor(5, 7, 10);
+    doc.rect(0, 0, pageWidth, 45, 'F');
+    
+    doc.setFontSize(26);
+    doc.setTextColor(255, 255, 255);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Arc Business Report', 14, 20);
     
     doc.setFontSize(10);
-    doc.setTextColor(100);
-    doc.text(`Generated on ${new Date().toLocaleDateString()} | Total Debtors: ${debtors.length}`, 14, 30);
-    
+    doc.setTextColor(180, 180, 180);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`DATE GENERATED: ${new Date().toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric' }).toUpperCase()}`, 14, 28);
+    doc.text(`TOTAL CUSTOMERS: ${debtors.length}`, 14, 34);
+
+    // 2. QUICK SUMMARY BOXES (at the top of PDF)
+    doc.setFillColor(255, 90, 54); // Arc Orange
+    doc.rect(pageWidth - 60, 15, 46, 20, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(8);
+    doc.text('TOTAL OUTSTANDING', pageWidth - 57, 22);
+    doc.setFontSize(12);
+    doc.text('P' + (totals?.totalBalance || 0).toLocaleString(), pageWidth - 57, 30);
+
+    // 3. TABLE DATA PREP
     const tableData = debtors.map(d => [
       d.name,
       d.date_borrowed ? new Date(d.date_borrowed).toLocaleDateString('en-PH') : '—',
@@ -94,22 +123,43 @@ export default function Dashboard() {
       d.status.toUpperCase()
     ]);
 
+    // 4. ELITE TABLE GENERATION
     autoTable(doc, {
-      startY: 40,
-      head: [['NAME', 'BORROWED', 'ADVANCE', 'BALANCE', 'STATUS']],
+      startY: 55,
+      head: [['CUSTOMER NAME', 'PURCHASE DATE', 'ADVANCE', 'BALANCE', 'STATUS']],
       body: tableData,
-      theme: 'grid',
-      headStyles: { fillColor: [5, 7, 10], textColor: [255, 255, 255], fontStyle: 'bold' },
-      alternateRowStyles: { fillColor: [245, 245, 245] },
-      styles: { fontSize: 9, cellPadding: 5 }
+      theme: 'striped',
+      headStyles: { 
+        fillColor: [5, 7, 10], 
+        textColor: [255, 255, 255], 
+        fontSize: 9, 
+        fontStyle: 'bold',
+        cellPadding: 4
+      },
+      columnStyles: {
+        0: { cellWidth: 50 },
+        1: { cellWidth: 35 },
+        2: { cellWidth: 35 },
+        3: { cellWidth: 35 },
+        4: { halign: 'center' }
+      },
+      styles: { 
+        fontSize: 8, 
+        cellPadding: 3, 
+        valign: 'middle',
+        font: 'helvetica'
+      },
+      alternateRowStyles: { 
+        fillColor: [250, 250, 250] 
+      }
     });
 
-    doc.save(`Arc_Report_${new Date().toISOString().split('T')[0]}.pdf`);
-    toast.success('Professional PDF Exported');
+    doc.save(`Arc_Business_Report_${new Date().toISOString().split('T')[0]}.pdf`);
+    toast.success('Elite PDF Report Generated');
   };
 
   const exportToCSV = () => {
-    const headers = ['ID', 'Name', 'Borrowed Date', 'Advance Payment', 'Balance', 'Status'];
+    const headers = ['ID', 'Name', 'Date of Purchase', 'Advance Payment', 'Balance', 'Status'];
     const rows = debtors.map(d => [
       d.id,
       `"${d.name.replace(/"/g, '""')}"`, // Escape quotes for CSV
@@ -165,15 +215,22 @@ export default function Dashboard() {
     });
   };
 
-  const filteredCustomers = debtors.filter(d => {
-    const s = filterStatus.toLowerCase();
-    const matchesSearch = d.name.toLowerCase().includes(search.toLowerCase());
-    if (!matchesSearch) return false;
-    
-    if (s === 'all') return d.status !== 'paid';
-    if (s === 'completed') return d.status === 'paid';
-    return d.status === s;
-  });
+  const filteredCustomers = debtors
+    .filter(d => {
+      const s = search.toLowerCase();
+      const matchesSearch = d.name.toLowerCase().includes(s) || 
+                            d.id.toString().includes(s) ||
+                            (d.receipt_numbers && d.receipt_numbers.some(r => r.toLowerCase().includes(s)));
+      
+      if (filterStatus === 'All') return matchesSearch;
+      if (filterStatus === 'Completed') return matchesSearch && d.status === 'paid';
+      return matchesSearch && d.status !== 'paid';
+    })
+    .sort((a, b) => {
+      if (sortOrder === 'a-z') return a.name.localeCompare(b.name);
+      if (sortOrder === 'z-a') return b.name.localeCompare(a.name);
+      return new Date(b.created_at) - new Date(a.created_at);
+    });
 
   return (
     <>
@@ -274,8 +331,36 @@ export default function Dashboard() {
       {/* Table Section */}
       <div className="table-section">
         <div className="table-header-row">
-          <div className="table-title">
-            Customers <span className="table-badge">{debtors.filter(d => d.status !== 'paid').length}</span>
+          <div className="table-header-left">
+            <h2 className="table-title">Customer Records</h2>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginTop: 8 }}>
+              <div className="table-stats hide-mobile">
+                Total Customers: {filteredCustomers.length}
+              </div>
+              <button 
+                className={`filter-chip ${isSelectionMode ? 'active' : ''}`}
+                onClick={() => {
+                  setIsSelectionMode(!isSelectionMode);
+                  if (!isSelectionMode) setSelectedIds([]);
+                }}
+                style={{ 
+                  background: isSelectionMode ? 'var(--accent)' : 'var(--bg-card)',
+                  color: isSelectionMode ? '#000' : 'var(--text-primary)',
+                  borderColor: isSelectionMode ? 'var(--accent)' : 'var(--border)',
+                  fontWeight: 700,
+                  padding: '0 12px',
+                  height: 32,
+                  fontSize: 12,
+                  borderRadius: 10,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6
+                }}
+              >
+                <CheckSquare size={14} />
+                <span>{isSelectionMode ? 'Done Selecting' : 'Select Mode'}</span>
+              </button>
+            </div>
           </div>
           <div className="table-filters">
             <div className="filter-chips hide-mobile">
@@ -301,8 +386,12 @@ export default function Dashboard() {
               <option value="Completed">Completed</option>
             </select>
 
-            <button className="filter-chip" style={{ padding: '6px 8px' }}>
-              <ArrowUpDown size={14} />
+            <button 
+              className="btn-icon-sm" 
+              onClick={toggleSort}
+              style={{ background: sortOrder !== 'newest' ? 'rgba(255, 90, 54, 0.1)' : 'var(--bg-card)' }}
+            >
+              <ArrowUpDown size={18} color={sortOrder !== 'newest' ? 'var(--accent)' : 'var(--text-secondary)'} />
             </button>
           </div>
         </div>
@@ -322,39 +411,37 @@ export default function Dashboard() {
             <table className="data-table">
               <thead>
                 <tr>
-                  <th style={{ width: 40 }}>
-                    <div 
-                      className={`checkbox-custom ${selectedIds.length > 0 && selectedIds.length === filteredCustomers.length ? 'checked' : ''}`}
-                      onClick={toggleAll}
-                    >
-                      {selectedIds.length > 0 && selectedIds.length === filteredCustomers.length && <Check size={14} />}
-                    </div>
-                  </th>
+                  {isSelectionMode && (
+                    <th style={{ width: 40 }}>
+                      <div 
+                        className={`checkbox-custom ${selectedIds.length === filteredCustomers.length && filteredCustomers.length > 0 ? 'checked' : ''}`}
+                        onClick={toggleAll}
+                      >
+                        {selectedIds.length === filteredCustomers.length && filteredCustomers.length > 0 && <Check size={14} />}
+                      </div>
+                    </th>
+                  )}
                   <th className="hide-mobile">Customer ID</th>
                   <th>Full Name</th>
-                  <th className="hide-mobile">Borrowed Date</th>
+                  <th className="hide-mobile">Date of Purchase</th>
                   <th>Advance / Bal</th>
                   <th className="hide-tablet">Status</th>
                   <th></th>
                 </tr>
               </thead>
               <motion.tbody initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-                {filteredCustomers.map((d, i) => (
+                {filteredCustomers.map((debtor, i) => (
                   <DebtorCard
-                    key={d.id}
-                    debtor={d}
+                    key={debtor.id}
+                    debtor={debtor}
                     index={i}
-                    selected={selectedIds.includes(d.id)}
-                    onSelect={() => toggleSelect(d.id)}
-                    onEdit={(deb) => setEditDebtor(deb)}
-                    onDelete={(deb) => setDeleteData(deb)}
-                    onPay={(deb, amt) => {
-                      if (amt !== undefined) {
-                        setConfirmData(deb);
-                      } else {
-                        setPayDebtor(deb);
-                      }
-                    }}
+                    selected={selectedIds.includes(debtor.id)}
+                    onToggleSelect={() => toggleSelect(debtor.id)}
+                    onEdit={() => setEditDebtor(debtor)}
+                    onDelete={() => setDeleteData(debtor)}
+                    onPay={() => setPayDebtor(debtor)}
+                    onSettle={() => setConfirmData(debtor)}
+                    isSelectionMode={isSelectionMode}
                   />
                 ))}
               </motion.tbody>

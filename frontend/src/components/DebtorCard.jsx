@@ -24,8 +24,16 @@ const initials = (name) =>
     .join('')
     .toUpperCase();
 
-export default function DebtorCard({ debtor, onEdit, onDelete, onPay, index, selected, onSelect }) {
+export default function DebtorCard({ debtor, onEdit, onDelete, onPay, index, selected, onToggleSelect, isSelectionMode }) {
   const navigate = useNavigate();
+
+  const handleRowClick = () => {
+    if (isSelectionMode) {
+      onToggleSelect();
+    } else {
+      navigate(`/debtor/${debtor.id}`);
+    }
+  };
 
   // Status mapping to LoadLogic dot style
   const getStatusClass = () => {
@@ -48,25 +56,27 @@ export default function DebtorCard({ debtor, onEdit, onDelete, onPay, index, sel
 
   return (
     <motion.tr
-      className={`data-row ${selected ? 'selected-row' : ''}`}
+      className={`data-row ${selected ? 'selected-row' : ''} ${isSelectionMode ? 'selection-mode' : ''}`}
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.2, delay: index * 0.03 }}
-      onClick={() => navigate(`/debtor/${debtor.id}`)}
+      onClick={handleRowClick}
       style={{ cursor: 'pointer' }}
     >
       {/* Selection Checkbox */}
-      <td>
-        <div 
-          className={`checkbox-custom ${selected ? 'checked' : ''}`}
-          onClick={(e) => {
-            e.stopPropagation();
-            onSelect();
-          }}
-        >
-          {selected && <Check size={14} />}
-        </div>
-      </td>
+      {isSelectionMode && (
+        <td>
+          <div 
+            className={`checkbox-custom ${selected ? 'checked' : ''}`}
+            onClick={(e) => {
+              e.stopPropagation();
+              onToggleSelect();
+            }}
+          >
+            {selected && <Check size={14} />}
+          </div>
+        </td>
+      )}
       {/* ID */}
       <td className="hide-mobile" style={{ color: 'var(--text-secondary)' }}>
         #{debtor.id.substring(0, 8)}

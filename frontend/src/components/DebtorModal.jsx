@@ -153,7 +153,7 @@ export default function DebtorModal({ open, onClose, onSubmit, initial = null })
                     onChange={(e) => set('date_borrowed', e.target.value)}
                     required
                   />
-                  <label className="floating-label">Date Borrowed *</label>
+                  <label className="floating-label">Date of Purchase</label>
                 </div>
 
                 {/* Advance Payment */}

@@ -218,7 +218,7 @@ export default function DebtorDetail() {
           transition={{ delay: 0.05 }}
         >
           <div className="detail-field">
-            <div className="detail-field-label">Date Borrowed</div>
+            <div className="detail-field-label">Date of Purchase</div>
             <div className="detail-field-value">{fmtDate(debtor.date_borrowed)}</div>
           </div>
           <div className="detail-field">

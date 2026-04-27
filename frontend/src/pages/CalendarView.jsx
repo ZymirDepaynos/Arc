@@ -80,13 +80,14 @@ export default function CalendarView() {
     const events = [];
 
     debtors.forEach(d => {
-      // Borrowing Event
+      // Purchase Event
       if (d.date_borrowed && d.date_borrowed.startsWith(dateStr)) {
         events.push({
           type: 'borrowed',
           debtor: d,
           name: d.name,
-          amount: d.balance + d.advance_payment
+          amount: d.balance + d.advance_payment,
+          label: 'PURCHASED'
         });
       }
       // Payment Events
@@ -285,7 +286,7 @@ export default function CalendarView() {
                   >
                     <div className="event-info">
                       <span className="event-name">{ev.name}</span>
-                      <span className="event-type-badge">{ev.type}</span>
+                      <span className="event-type-badge">{ev.label || ev.type}</span>
                     </div>
                     <div className="event-money">
                       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 2 }}>

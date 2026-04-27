@@ -48,7 +48,7 @@ export default function PayModal({ open, onClose, debtor, onPay }) {
 
             <div style={{ marginBottom: 20 }}>
               <div style={{ fontSize: 14, color: 'var(--text-secondary)', marginBottom: 4 }}>
-                Debtor
+                Customer
               </div>
               <div style={{ fontWeight: 700, fontSize: 16 }}>{debtor.name}</div>
               <div style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 2 }}>

@@ -89,14 +89,6 @@ export default function CalendarView() {
           amount: d.balance + d.advance_payment
         });
       }
-      // Due Date Event
-      if (d.due_date && d.due_date.startsWith(dateStr)) {
-        events.push({
-          type: 'due',
-          debtor: d,
-          name: d.name
-        });
-      }
       // Payment Events
       if (Array.isArray(d.payment_history)) {
         d.payment_history.forEach(p => {
@@ -119,8 +111,8 @@ export default function CalendarView() {
     <div className="calendar-container">
       {/* Sidebar - Left Section */}
       <div className="calendar-sidebar">
-        <button className="sidebar-dashboard-btn" onClick={() => navigate('/')}>
-          <GridIcon size={20} /> Dashboard
+        <button className="btn-icon-sm" onClick={() => navigate('/')} style={{ marginBottom: 20 }}>
+          <ArrowLeft size={20} />
         </button>
 
         <div className="today-display">

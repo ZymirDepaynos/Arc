@@ -43,10 +43,10 @@ export default function Dashboard() {
   };
 
   const toggleAll = () => {
-    if (selectedIds.length === filteredDebtors.length) {
+    if (selectedIds.length === filteredCustomers.length) {
       setSelectedIds([]);
     } else {
-      setSelectedIds(filteredDebtors.map(d => d.id));
+      setSelectedIds(filteredCustomers.map(d => d.id));
     }
   };
 
@@ -109,12 +109,11 @@ export default function Dashboard() {
   };
 
   const exportToCSV = () => {
-    const headers = ['ID', 'Name', 'Borrowed Date', 'Due Date', 'Advance Payment', 'Balance', 'Status'];
+    const headers = ['ID', 'Name', 'Borrowed Date', 'Advance Payment', 'Balance', 'Status'];
     const rows = debtors.map(d => [
       d.id,
       d.name,
       d.date_borrowed,
-      d.due_date || 'N/A',
       d.advance_payment,
       d.balance,
       d.status
@@ -166,9 +165,15 @@ export default function Dashboard() {
     });
   };
 
-  const filteredDebtors = debtors.filter(d => 
-    (filterStatus === 'All' && d.status !== 'paid') || d.status === filterStatus.toLowerCase()
-  );
+  const filteredCustomers = debtors.filter(d => {
+    const s = filterStatus.toLowerCase();
+    const matchesSearch = d.name.toLowerCase().includes(search.toLowerCase());
+    if (!matchesSearch) return false;
+    
+    if (s === 'all') return d.status !== 'paid';
+    if (s === 'completed') return d.status === 'paid';
+    return d.status === s;
+  });
 
   return (
     <>
@@ -177,7 +182,7 @@ export default function Dashboard() {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
           <div>
             <div style={{ fontSize: 13, color: 'var(--text-muted)', fontWeight: 600 }}>Hi, Admin</div>
-            <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.5px' }}>Welcome Back</div>
+            <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.5px' }}>Customer Records</div>
           </div>
           <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
             <button className="btn-icon-sm" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12 }}>
@@ -207,7 +212,7 @@ export default function Dashboard() {
             <input
               type="text"
               className="search-input"
-              placeholder="Search debtor..."
+              placeholder="Search customers..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
@@ -241,7 +246,7 @@ export default function Dashboard() {
             <ThemeToggle />
             <button className="btn btn-primary" onClick={() => setAddOpen(true)}>
               <Plus size={18} />
-              <span>Add New Record</span>
+              <span>Add New Customer</span>
             </button>
           </div>
         </div>
@@ -254,7 +259,7 @@ export default function Dashboard() {
           <input
             type="text"
             className="search-input"
-            placeholder="Search destination..."
+            placeholder="Search customer..."
             style={{ borderRadius: 16, padding: '14px 16px 14px 48px' }}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -270,11 +275,11 @@ export default function Dashboard() {
       <div className="table-section">
         <div className="table-header-row">
           <div className="table-title">
-            Debtors <span className="table-badge">{debtors.filter(d => d.status !== 'paid').length}</span>
+            Customers <span className="table-badge">{debtors.filter(d => d.status !== 'paid').length}</span>
           </div>
           <div className="table-filters">
             <div className="filter-chips hide-mobile">
-              {['All', 'Active', 'Partial'].map(status => (
+              {['All', 'Active', 'Partial', 'Completed'].map(status => (
                 <button 
                   key={status} 
                   className={`filter-chip ${filterStatus === status ? 'active' : ''}`}
@@ -293,6 +298,7 @@ export default function Dashboard() {
               <option value="All">All Status</option>
               <option value="Active">Active</option>
               <option value="Partial">Partial</option>
+              <option value="Completed">Completed</option>
             </select>
 
             <button className="filter-chip" style={{ padding: '6px 8px' }}>
@@ -305,11 +311,11 @@ export default function Dashboard() {
           <div style={{ textAlign: 'center', padding: '60px 0', color: 'var(--text-muted)' }}>Loading records...</div>
         ) : error ? (
           <div style={{ textAlign: 'center', padding: '60px 0', color: 'var(--danger)' }}>{error}</div>
-        ) : filteredDebtors.length === 0 ? (
+        ) : filteredCustomers.length === 0 ? (
           <div className="empty-state">
             <UserX size={32} className="empty-state-icon" style={{ margin: '0 auto 16px' }} />
-            <div className="empty-state-title">{search ? 'No results found' : 'No debtors yet'}</div>
-            <div className="empty-state-sub">Click "Add new record" to get started</div>
+            <div className="empty-state-title">{search ? 'No results found' : 'No customers yet'}</div>
+            <div className="empty-state-sub">Click "Add new customer" to get started</div>
           </div>
         ) : (
           <div style={{ overflowX: 'auto' }}>
@@ -318,23 +324,22 @@ export default function Dashboard() {
                 <tr>
                   <th style={{ width: 40 }}>
                     <div 
-                      className={`checkbox-custom ${selectedIds.length > 0 && selectedIds.length === filteredDebtors.length ? 'checked' : ''}`}
+                      className={`checkbox-custom ${selectedIds.length > 0 && selectedIds.length === filteredCustomers.length ? 'checked' : ''}`}
                       onClick={toggleAll}
                     >
-                      {selectedIds.length > 0 && selectedIds.length === filteredDebtors.length && <Check size={14} />}
+                      {selectedIds.length > 0 && selectedIds.length === filteredCustomers.length && <Check size={14} />}
                     </div>
                   </th>
-                  <th className="hide-mobile">Debtor ID</th>
-                  <th>Assigned to</th>
+                  <th className="hide-mobile">Customer ID</th>
+                  <th>Full Name</th>
                   <th className="hide-mobile">Borrowed Date</th>
-                  <th className="hide-tablet">Due Date</th>
                   <th>Advance / Bal</th>
                   <th className="hide-tablet">Status</th>
                   <th></th>
                 </tr>
               </thead>
               <motion.tbody initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-                {filteredDebtors.map((d, i) => (
+                {filteredCustomers.map((d, i) => (
                   <DebtorCard
                     key={d.id}
                     debtor={d}
@@ -406,7 +411,9 @@ export default function Dashboard() {
           >
             <div className="bulk-count">{selectedIds.length} Selected</div>
             <div className="bulk-btns">
-              <button className="btn btn-primary btn-sm" onClick={handleBulkPaid}>Mark as Paid</button>
+              {selectedIds.some(id => debtors.find(d => d.id === id)?.status !== 'paid') && (
+                <button className="btn btn-primary btn-sm" onClick={handleBulkPaid}>Mark as Paid</button>
+              )}
               <button className="btn btn-outline btn-sm" style={{ borderColor: '#FF4D4D', color: '#FF4D4D' }} onClick={handleBulkDelete}>Delete All</button>
               <button className="btn btn-icon-sm" onClick={() => setSelectedIds([])}><Plus size={18} style={{ transform: 'rotate(45deg)' }} /></button>
             </div>

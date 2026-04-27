@@ -21,7 +21,7 @@ export default function SummaryStats({ totals }) {
           </div>
           <div style={{ marginTop: 8 }}>
             <span className="stat-sub-value" style={{ marginLeft: 0, background: 'var(--status-paid-bg)', color: 'var(--status-paid-text)' }}>
-              Active Debt
+              Active Customers
             </span>
           </div>
           

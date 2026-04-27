@@ -11,7 +11,6 @@ const EMPTY_FORM = {
   advance_payment_date: '',
   receipt_numbers: [],
   date_borrowed: getToday(),
-  due_date: '',
   notes: '',
   status: 'active',
 };
@@ -33,7 +32,6 @@ export default function DebtorModal({ open, onClose, onSubmit, initial = null })
           advance_payment_date: initial.advance_payment_date || '',
           receipt_numbers: initial.receipt_numbers || [],
           date_borrowed: initial.date_borrowed || '',
-          due_date: initial.due_date || '',
           notes: initial.notes || '',
           status: initial.status || 'active',
         });
@@ -95,7 +93,7 @@ export default function DebtorModal({ open, onClose, onSubmit, initial = null })
           >
             <div className="modal-header">
               <h2 className="modal-title">
-                {initial ? 'Edit Debtor' : 'Add New Debtor'}
+                {initial ? 'Edit Customer' : 'Add New Customer'}
               </h2>
               <button className="btn-icon" onClick={onClose}>
                 <X size={18} />
@@ -184,18 +182,7 @@ export default function DebtorModal({ open, onClose, onSubmit, initial = null })
                   <label className="floating-label">Advance Date</label>
                 </div>
 
-                {/* Due Date */}
-                <div className="form-group floating-group">
-                  <input
-                    className="form-input"
-                    type="date"
-                    placeholder=" "
-                    value={form.due_date}
-                    min={form.date_borrowed || new Date().toISOString().split('T')[0]}
-                    onChange={(e) => set('due_date', e.target.value)}
-                  />
-                  <label className="floating-label">Due Date</label>
-                </div>
+
 
                 {/* Status (only on edit) */}
                 {initial && (
@@ -279,7 +266,7 @@ export default function DebtorModal({ open, onClose, onSubmit, initial = null })
                   style={{ flex: 2 }}
                   disabled={loading}
                 >
-                  {loading ? 'Saving...' : initial ? 'Save Changes' : 'Add Debtor'}
+                  {loading ? 'Saving...' : initial ? 'Save Changes' : 'Add Customer'}
                 </button>
               </div>
             </form>

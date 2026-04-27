@@ -135,31 +135,36 @@ export default function DebtorDetail() {
             <div className="detail-header">
               <div className="detail-avatar">{initials(debtor.name)}</div>
               <div style={{ flex: 1 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-                  <h1 style={{ fontSize: 'clamp(20px, 5vw, 32px)', fontWeight: 700, letterSpacing: '-1px' }}>{debtor.name}</h1>
-                  <StatusBadge status={debtor.status} />
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                <h1 style={{ fontSize: 'clamp(24px, 5vw, 32px)', fontWeight: 900, margin: 0, color: 'var(--text-primary)', letterSpacing: '-1px' }}>
+                  {debtor.name}
+                </h1>
+                <div style={{ fontSize: 13, color: 'var(--text-muted)', fontWeight: 600, marginTop: 4 }}>
+                  Customer since {fmtDate(debtor.created_at)}
                 </div>
-                <div style={{ fontSize: 14, color: 'var(--text-muted)', marginTop: 6, fontWeight: 500 }}>
-                  Created on {fmtDate(debtor.created_at)}
-                </div>
+              </div>
               </div>
               <div className="detail-actions">
                 <button className="btn btn-outline btn-sm" onClick={() => setEditOpen(true)} title="Edit Profile">
                   <Edit2 size={13} /> <span>Edit Profile</span>
                 </button>
-                <button
-                  className="btn btn-outline btn-sm"
-                  onClick={() => setPayOpen(true)}
-                  title="Add Payment"
-                >
-                  <CreditCard size={13} /> <span>Add Payment</span>
-                </button>
-                <button
-                  className="btn btn-primary btn-sm"
-                  onClick={() => setConfirmSettle(true)}
-                >
-                  Settle Full
-                </button>
+                {(debtor.status !== 'paid' && parseFloat(debtor.balance) > 0) && (
+                  <>
+                    <button
+                      className="btn btn-outline btn-sm"
+                      onClick={() => setPayOpen(true)}
+                      title="Add Payment"
+                    >
+                      <CreditCard size={13} /> <span>Add Payment</span>
+                    </button>
+                    <button
+                      className="btn btn-primary btn-sm"
+                      onClick={() => setConfirmSettle(true)}
+                    >
+                      Settle Full
+                    </button>
+                  </>
+                )}
                 <button 
                   className="btn btn-outline btn-sm" 
                   onClick={() => setConfirmDelete(true)} 
@@ -217,14 +222,8 @@ export default function DebtorDetail() {
             <div className="detail-field-value">{fmtDate(debtor.date_borrowed)}</div>
           </div>
           <div className="detail-field">
-            <div className="detail-field-label">Due Date</div>
-            <div className="detail-field-value" style={{ color: debtor.due_date ? 'var(--text-primary)' : 'var(--text-muted)' }}>
-              {fmtDate(debtor.due_date)}
-            </div>
-          </div>
-          <div className="detail-field">
-            <div className="detail-field-label">Advance Payment</div>
-            <div className="detail-field-value" style={{ color: 'var(--status-paid-text)' }}>{fmt(debtor.advance_payment)}</div>
+            <div className="detail-field-label">Customer ID</div>
+            <div className="detail-field-value" style={{ color: 'var(--text-muted)' }}>#ARC-{debtor.id.toString().padStart(4, '0')}</div>
           </div>
           <div className="detail-field">
             <div className="detail-field-label">Advance Payment Date</div>

@@ -62,7 +62,6 @@ router.post('/', async (req, res) => {
       advance_payment_date,
       receipt_numbers,
       date_borrowed,
-      due_date,
       notes,
     } = req.body;
 
@@ -75,7 +74,6 @@ router.post('/', async (req, res) => {
         advance_payment_date: advance_payment_date || null,
         receipt_numbers: receipt_numbers || [],
         date_borrowed,
-        due_date: due_date || null,
         notes: notes || '',
         status: advance_payment && parseFloat(advance_payment) > 0 ? 'partial' : 'active',
       }])
@@ -107,7 +105,6 @@ router.put('/:id', async (req, res) => {
       advance_payment_date,
       receipt_numbers,
       date_borrowed,
-      due_date,
       notes,
       status,
     } = req.body;
@@ -121,7 +118,6 @@ router.put('/:id', async (req, res) => {
         advance_payment_date: advance_payment_date || null,
         receipt_numbers: receipt_numbers || [],
         date_borrowed,
-        due_date: due_date || null,
         notes: notes || '',
         status,
         updated_at: new Date().toISOString(),

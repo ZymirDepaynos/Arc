@@ -85,11 +85,6 @@ export default function DebtorCard({ debtor, onEdit, onDelete, onPay, index, sel
         {fmtDate(debtor.date_borrowed)}
       </td>
 
-      {/* Due Date */}
-      <td className="hide-tablet" style={{ color: debtor.due_date ? 'var(--text-primary)' : 'var(--text-muted)' }}>
-        {fmtDate(debtor.due_date)}
-      </td>
-
       {/* Balance / Advance */}
       <td>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
@@ -111,28 +106,30 @@ export default function DebtorCard({ debtor, onEdit, onDelete, onPay, index, sel
       {/* Actions */}
       <td onClick={(e) => e.stopPropagation()}>
         <div className="action-cell" style={{ display: 'flex', gap: 10 }}>
-          <button
-            className="btn-icon-sm"
-            onClick={(e) => {
-              e.stopPropagation();
-              onPay(debtor);
-            }}
-            title="Record Payment"
-            style={{
-              background: 'var(--status-active-bg)',
-              color: 'var(--status-active-text)',
-              width: 38,
-              height: 38,
-              borderRadius: 12,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              border: '1px solid var(--status-active-bg)',
-              transition: 'all 0.2s ease'
-            }}
-          >
-            <CreditCard size={18} />
-          </button>
+          {debtor.status !== 'paid' && (
+            <button
+              className="btn-icon-sm"
+              onClick={(e) => {
+                e.stopPropagation();
+                onPay(debtor);
+              }}
+              title="Record Payment"
+              style={{
+                background: 'var(--status-active-bg)',
+                color: 'var(--status-active-text)',
+                width: 38,
+                height: 38,
+                borderRadius: 12,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                border: '1px solid var(--status-active-bg)',
+                transition: 'all 0.2s ease'
+              }}
+            >
+              <CreditCard size={18} />
+            </button>
+          )}
           <button
             className="btn-icon-sm"
             onClick={(e) => {

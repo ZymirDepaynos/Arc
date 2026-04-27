@@ -9,7 +9,7 @@ const supabase = createClient(
 );
 
 // POST bulk create (for CSV Import)
-router.post('/bulk', async (req, res) => {
+router.post('/import-all', async (req, res) => {
   try {
     const customers = req.body; // Array of customer objects
     if (!Array.isArray(customers)) {

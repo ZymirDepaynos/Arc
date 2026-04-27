@@ -42,7 +42,7 @@ export function useDebtors() {
   };
 
   const bulkCreateDebtors = async (customers) => {
-    const res = await axios.post(`${API_URL}/api/debtors/bulk`, customers);
+    const res = await axios.post(`${API_URL}/api/debtors/import-all`, customers);
     await fetchDebtors(search);
     return res.data;
   };

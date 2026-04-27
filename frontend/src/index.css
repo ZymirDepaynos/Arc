@@ -1580,3 +1580,67 @@ body.light-mode .filter-select-mobile {
   border-color: var(--accent);
   color: var(--bg-page);
 }
+
+/* Data Actions Dropdown */
+.dropdown-menu {
+  position: absolute;
+  top: calc(100% + 12px);
+  right: 0;
+  width: 240px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+  padding: 10px;
+  z-index: 9999; /* Boosted to float above everything */
+  backdrop-filter: blur(25px);
+  -webkit-backdrop-filter: blur(25px);
+}
+
+.dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 18px;
+  border-radius: 14px;
+  color: var(--text-primary);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.dropdown-item:hover {
+  background: rgba(0, 245, 160, 0.1);
+  color: var(--status-paid-text);
+  transform: translateX(4px);
+}
+
+.dropdown-divider {
+  height: 1px;
+  background: var(--border);
+  margin: 10px 8px;
+}
+
+/* Fix for container clipping */
+.action-buttons-group {
+  overflow: visible !important; /* Allow dropdown to float out */
+}
+
+.top-bar {
+  overflow: visible !important;
+  z-index: 100;
+}
+
+/* Mobile Dropdown Fix */
+@media (max-width: 768px) {
+  .dropdown-menu {
+    position: fixed;
+    top: auto;
+    bottom: 90px;
+    right: 24px;
+    left: 24px;
+    width: auto;
+    box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.4);
+  }
+}

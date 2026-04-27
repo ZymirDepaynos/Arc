@@ -20,8 +20,10 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const {
     debtors, loading, error, search, setSearch,
-    createDebtor, updateDebtor, deleteDebtor, recordPayment, totals
+    createDebtor, bulkCreateDebtors, updateDebtor, deleteDebtor, recordPayment, totals
   } = useDebtors();
+
+  const [dataMenuOpen, setDataMenuOpen] = useState(false);
 
   const [addOpen, setAddOpen] = useState(false);
   const [editDebtor, setEditDebtor] = useState(null);
@@ -181,6 +183,49 @@ export default function Dashboard() {
     document.body.removeChild(link);
     URL.revokeObjectURL(url); // Clean up memory
     toast.success('Full Database Exported for Excel');
+    setDataMenuOpen(false);
+  };
+
+  const handleImportCSV = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      try {
+        const text = event.target.result;
+        const lines = text.split('\n').filter(line => line.trim());
+        const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+        
+        const data = lines.slice(1).map(line => {
+          const values = line.split(',').map(v => v.trim().replace(/^"|"$/g, ''));
+          const obj = {};
+          headers.forEach((header, index) => {
+            // Map common headers to our schema
+            if (header.includes('name')) obj.name = values[index];
+            if (header.includes('balance')) obj.balance = values[index];
+            if (header.includes('advance')) obj.advance_payment = values[index];
+            if (header.includes('date')) obj.date_borrowed = values[index];
+            if (header.includes('id')) obj.id = values[index];
+          });
+          return obj;
+        }).filter(c => c.name);
+
+        if (data.length === 0) throw new Error('No valid customer data found in CSV');
+
+        await toast.promise(bulkCreateDebtors(data), {
+          loading: `Importing ${data.length} customers...`,
+          success: `Successfully imported ${data.length} customers!`,
+          error: 'Failed to import CSV'
+        });
+        
+        setDataMenuOpen(false);
+        e.target.value = ''; // Reset input
+      } catch (err) {
+        toast.error(err.message);
+      }
+    };
+    reader.readAsText(file);
   };
 
   const handleAdd = async (form) => {
@@ -276,6 +321,58 @@ export default function Dashboard() {
           </div>
           
           <div className="action-buttons-group">
+            {/* Data Actions Dropdown */}
+            <div style={{ position: 'relative' }}>
+              <button 
+                className="calendar-pill-btn" 
+                onClick={() => setDataMenuOpen(!dataMenuOpen)}
+                style={{ 
+                  background: dataMenuOpen ? 'var(--accent)' : 'var(--bg-card)',
+                  color: dataMenuOpen ? '#000' : 'var(--text-primary)',
+                  borderColor: dataMenuOpen ? 'var(--accent)' : 'var(--border)'
+                }}
+              >
+                <Download size={16} />
+                <span>Data Actions</span>
+              </button>
+
+              <AnimatePresence>
+                {dataMenuOpen && (
+                  <>
+                    <div 
+                      style={{ position: 'fixed', inset: 0, zIndex: 99 }} 
+                      onClick={() => setDataMenuOpen(false)} 
+                    />
+                    <motion.div 
+                      className="dropdown-menu"
+                      initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                    >
+                      <div className="dropdown-item" onClick={exportToPDF}>
+                        <FileText size={16} />
+                        <span>Export Elite PDF</span>
+                      </div>
+                      <div className="dropdown-item" onClick={exportToCSV}>
+                        <FileSpreadsheet size={16} />
+                        <span>Export Excel (CSV)</span>
+                      </div>
+                      <div className="dropdown-divider" />
+                      <label className="dropdown-item" style={{ cursor: 'pointer' }}>
+                        <Plus size={16} />
+                        <span>Import from CSV</span>
+                        <input 
+                          type="file" 
+                          accept=".csv" 
+                          onChange={handleImportCSV} 
+                          style={{ display: 'none' }} 
+                        />
+                      </label>
+                    </motion.div>
+                  </>
+                )}
+              </AnimatePresence>
+            </div>
             <button 
               className="calendar-pill-btn" 
               onClick={() => navigate('/history')}
@@ -291,22 +388,6 @@ export default function Dashboard() {
             >
               <CalendarIcon size={16} />
               <span>Calendar</span>
-            </button>
-            <button 
-              className="calendar-pill-btn" 
-              onClick={exportToPDF}
-              title="Export PDF"
-            >
-              <FileText size={16} />
-              <span>PDF</span>
-            </button>
-            <button 
-              className="calendar-pill-btn" 
-              onClick={exportToCSV}
-              title="Export CSV"
-            >
-              <FileSpreadsheet size={16} />
-              <span>CSV</span>
             </button>
             <ThemeToggle />
             <button className="btn btn-primary" onClick={() => setAddOpen(true)}>

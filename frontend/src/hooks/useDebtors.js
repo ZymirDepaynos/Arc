@@ -41,6 +41,12 @@ export function useDebtors() {
     return res.data;
   };
 
+  const bulkCreateDebtors = async (customers) => {
+    const res = await axios.post(`${API_URL}/api/debtors/bulk`, customers);
+    await fetchDebtors(search);
+    return res.data;
+  };
+
   const updateDebtor = async (id, data) => {
     const res = await axios.put(`${API_URL}/api/debtors/${id}`, data);
     await fetchDebtors(search);
@@ -79,6 +85,7 @@ export function useDebtors() {
     search,
     setSearch,
     createDebtor,
+    bulkCreateDebtors,
     updateDebtor,
     deleteDebtor,
     recordPayment,

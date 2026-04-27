@@ -8,6 +8,35 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
+// POST bulk create (for CSV Import)
+router.post('/bulk', async (req, res) => {
+  try {
+    const customers = req.body; // Array of customer objects
+    if (!Array.isArray(customers)) {
+      return res.status(400).json({ error: 'Data must be an array of customers' });
+    }
+
+    const { data, error } = await supabase
+      .from('debtors')
+      .insert(customers.map(c => ({
+        name: c.name,
+        balance: parseFloat(c.balance) || 0,
+        advance_payment: parseFloat(c.advance_payment) || 0,
+        date_borrowed: c.date_borrowed || new Date().toISOString().split('T')[0],
+        notes: c.notes || '',
+        receipt_numbers: c.receipt_numbers || [],
+        status: (parseFloat(c.balance) || 0) <= 0 ? 'paid' : (parseFloat(c.advance_payment) > 0 ? 'partial' : 'active')
+      })))
+      .select();
+
+    if (error) throw error;
+    res.status(201).json(data);
+  } catch (err) {
+    console.error('API Error [POST /bulk]:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // GET all debtors (with optional search)
 router.get('/', async (req, res) => {
   try {

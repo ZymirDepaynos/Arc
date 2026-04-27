@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, UserX, Search, Download, Bell, Calendar as CalendarIcon, ArrowUpDown, Check, CheckSquare, Square, FileText, FileSpreadsheet } from 'lucide-react';
+import { Plus, UserX, Search, Download, Bell, Calendar as CalendarIcon, ArrowUpDown, Check, CheckSquare, Square, FileText, FileSpreadsheet, History } from 'lucide-react';
 import MobileNav from '../components/MobileNav';
 import SearchOverlay from '../components/SearchOverlay';
 import toast from 'react-hot-toast';
@@ -276,6 +276,14 @@ export default function Dashboard() {
           </div>
           
           <div className="action-buttons-group">
+            <button 
+              className="calendar-pill-btn" 
+              onClick={() => navigate('/history')}
+              title="Transaction History"
+            >
+              <History size={16} />
+              <span>History</span>
+            </button>
             <button 
               className="calendar-pill-btn" 
               onClick={() => navigate('/calendar')}

@@ -58,9 +58,9 @@ export function useDebtors() {
     await fetchDebtors(search);
   };
 
-  const recordPayment = async (id, amount) => {
+  const recordPayment = async (id, amount, customDate = null) => {
     // Send local date to avoid timezone issues
-    const localDate = new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD
+    const localDate = customDate || new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD
     const res = await axios.post(`${API_URL}/api/debtors/${id}/pay`, { amount, date: localDate });
     await fetchDebtors(search);
     return res.data;

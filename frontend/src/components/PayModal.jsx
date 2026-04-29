@@ -5,8 +5,11 @@ import { X, CreditCard } from 'lucide-react';
 const fmt = (n) =>
   '₱' + parseFloat(n || 0).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
+const getToday = () => new Date().toLocaleDateString('en-CA');
+
 export default function PayModal({ open, onClose, debtor, onPay }) {
   const [amount, setAmount] = useState('');
+  const [date, setDate] = useState(getToday());
   const [loading, setLoading] = useState(false);
 
   const handlePay = async () => {
@@ -14,8 +17,9 @@ export default function PayModal({ open, onClose, debtor, onPay }) {
     if (!amount || payAmt <= 0) return;
     setLoading(true);
     try {
-      await onPay(debtor.id, parseFloat(amount));
+      await onPay(debtor.id, parseFloat(amount), date || getToday());
       setAmount('');
+      setDate(getToday());
       onClose();
     } finally {
       setLoading(false);
@@ -68,6 +72,17 @@ export default function PayModal({ open, onClose, debtor, onPay }) {
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
                 autoFocus
+              />
+            </div>
+            
+            <div className="form-group" style={{ marginBottom: 20 }}>
+              <label className="form-label">Payment Date</label>
+              <input
+                className="form-input"
+                type="date"
+                value={date}
+                onChange={(e) => setDate(e.target.value)}
+                max={getToday()}
               />
             </div>
 

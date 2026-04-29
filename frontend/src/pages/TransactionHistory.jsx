@@ -73,6 +73,16 @@ export default function TransactionHistory() {
         }
       });
 
+      const deletedLogs = JSON.parse(localStorage.getItem('arc_deleted_logs') || '[]');
+      deletedLogs.forEach(log => {
+        if (new Date(log.date) > new Date(clearedAt) && !hiddenIds.includes(log.id)) {
+           allHistory.push({
+             ...log,
+             customerId: log.id
+           });
+        }
+      });
+
       // Sort by date descending
       allHistory.sort((a, b) => new Date(b.date) - new Date(a.date));
       setTransactions(allHistory);
@@ -185,11 +195,11 @@ export default function TransactionHistory() {
                   <div className="row-avatar" style={{ 
                     width: 40, 
                     height: 40, 
-                    background: t.type === 'payment' ? 'var(--status-paid-bg)' : 'var(--accent-light)',
-                    color: t.type === 'payment' ? 'var(--status-paid-text)' : 'var(--accent)',
+                    background: t.type === 'payment' ? 'var(--status-paid-bg)' : t.type === 'deleted' ? 'rgba(255, 77, 77, 0.1)' : 'var(--accent-light)',
+                    color: t.type === 'payment' ? 'var(--status-paid-text)' : t.type === 'deleted' ? 'var(--danger)' : 'var(--accent)',
                     fontSize: 14
                   }}>
-                    {t.type === 'payment' ? '$' : '+'}
+                    {t.type === 'payment' ? '$' : t.type === 'deleted' ? <Trash2 size={16} /> : '+'}
                   </div>
                   <div>
                     <div style={{ fontWeight: 700, color: 'var(--text-primary)', fontSize: 15 }}>
@@ -204,13 +214,13 @@ export default function TransactionHistory() {
                   <div style={{ textAlign: 'right' }}>
                     <div style={{ 
                       fontWeight: 800, 
-                      color: t.type === 'payment' ? 'var(--status-paid-text)' : 'var(--text-primary)',
+                      color: t.type === 'payment' ? 'var(--status-paid-text)' : t.type === 'deleted' ? 'var(--danger)' : 'var(--text-primary)',
                       fontSize: 16
                     }}>
-                      {t.type === 'payment' ? '+' : ''}{fmt(t.amount)}
+                      {t.type === 'payment' ? '+' : t.type === 'deleted' ? '-' : ''}{fmt(t.amount)}
                     </div>
                     <div style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase' }}>
-                      {t.type === 'payment' ? 'Payment' : 'Acct Opened'}
+                      {t.type === 'payment' ? 'Payment' : t.type === 'deleted' ? 'Deleted' : 'Acct Opened'}
                     </div>
                   </div>
                   <button 

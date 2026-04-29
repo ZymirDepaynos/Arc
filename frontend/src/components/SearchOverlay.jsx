@@ -15,9 +15,11 @@ export default function SearchOverlay({ open, onClose, debtors }) {
     }
   }, [open]);
 
-  const filtered = debtors.filter(d => 
-    d.name.toLowerCase().includes(query.toLowerCase())
-  ).slice(0, 8);
+  const filtered = debtors.filter(d => {
+    const s = query.toLowerCase();
+    return d.name.toLowerCase().startsWith(s) || 
+           d.name.toLowerCase().split(' ').some(word => word.startsWith(s));
+  }).slice(0, 8);
 
   if (!open) return null;
 

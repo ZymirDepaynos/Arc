@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Plus } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 const getToday = () => new Date().toLocaleDateString('en-CA');
 
@@ -60,10 +61,18 @@ export default function DebtorModal({ open, onClose, onSubmit, initial = null })
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (parseFloat(form.advance_payment || 0) > 0 && !form.advance_payment_date) {
+      toast.error('Please provide a date for the advance payment');
+      return;
+    }
     setLoading(true);
     setError(null);
     try {
-      await onSubmit(form);
+      const finalForm = { ...form };
+      if (!initial && parseFloat(finalForm.advance_payment || 0) > 0) {
+        finalForm.balance = Math.max(0, parseFloat(finalForm.balance || 0) - parseFloat(finalForm.advance_payment || 0));
+      }
+      await onSubmit(finalForm);
       onClose();
     } catch (err) {
       console.error('Submission Error:', err);
@@ -140,7 +149,7 @@ export default function DebtorModal({ open, onClose, onSubmit, initial = null })
                     onChange={(e) => set('balance', e.target.value)}
                     required
                   />
-                  <label className="floating-label">Balance (₱) *</label>
+                  <label className="floating-label">{!initial ? 'Total Debt (₱) *' : 'Balance (₱) *'}</label>
                 </div>
 
                 {/* Date Borrowed */}
@@ -151,6 +160,7 @@ export default function DebtorModal({ open, onClose, onSubmit, initial = null })
                     placeholder=" "
                     value={form.date_borrowed}
                     onChange={(e) => set('date_borrowed', e.target.value)}
+                    max={getToday()}
                     required
                   />
                   <label className="floating-label">Date of Purchase</label>
@@ -168,6 +178,19 @@ export default function DebtorModal({ open, onClose, onSubmit, initial = null })
                     onChange={(e) => set('advance_payment', e.target.value)}
                   />
                   <label className="floating-label">Advance Payment (₱)</label>
+                  {!initial && parseFloat(form.advance_payment || 0) > 0 && (
+                    <div style={{ 
+                      fontSize: 12, 
+                      color: 'var(--accent)', 
+                      position: 'absolute',
+                      bottom: -18,
+                      left: 4,
+                      fontWeight: 600,
+                      whiteSpace: 'nowrap'
+                    }}>
+                      Balance: ₱{Math.max(0, parseFloat(form.balance || 0) - parseFloat(form.advance_payment || 0)).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </div>
+                  )}
                 </div>
 
                 {/* Advance Payment Date */}
@@ -178,6 +201,7 @@ export default function DebtorModal({ open, onClose, onSubmit, initial = null })
                     placeholder=" "
                     value={form.advance_payment_date}
                     onChange={(e) => set('advance_payment_date', e.target.value)}
+                    max={getToday()}
                   />
                   <label className="floating-label">Advance Date</label>
                 </div>

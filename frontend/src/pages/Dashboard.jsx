@@ -24,6 +24,7 @@ export default function Dashboard() {
   } = useDebtors();
 
   const [dataMenuOpen, setDataMenuOpen] = useState(false);
+  const [sortMenuOpen, setSortMenuOpen] = useState(false);
 
   const [addOpen, setAddOpen] = useState(false);
   const [editDebtor, setEditDebtor] = useState(null);
@@ -35,6 +36,7 @@ export default function Dashboard() {
   const [selectedIds, setSelectedIds] = useState([]);
   const [isSelectionMode, setIsSelectionMode] = useState(false);
   const [sortOrder, setSortOrder] = useState('newest'); // newest, a-z, z-a
+  const [bulkConfirm, setBulkConfirm] = useState(null); // { type: 'paid' | 'delete' }
 
   useEffect(() => {
     const handleSearchTrigger = () => setSearchOpen(true);
@@ -55,10 +57,24 @@ export default function Dashboard() {
   };
 
   const handleBulkDelete = async () => {
-    if (!window.confirm(`Delete ${selectedIds.length} records?`)) return;
     try {
+      const logs = JSON.parse(localStorage.getItem('arc_deleted_logs') || '[]');
+      selectedIds.forEach(id => {
+        const debtor = debtors.find(d => d.id === id);
+        if (debtor) {
+           logs.push({
+             id: `deleted-${id}-${Date.now()}`,
+             date: new Date().toISOString(),
+             customerName: debtor.name,
+             type: 'deleted',
+             amount: debtor.balance
+           });
+        }
+      });
       await Promise.all(selectedIds.map(id => deleteDebtor(id)));
+      localStorage.setItem('arc_deleted_logs', JSON.stringify(logs));
       setSelectedIds([]);
+      setIsSelectionMode(false);
       toast.success(`Deleted ${selectedIds.length} records`);
     } catch (err) {
       toast.error('Bulk delete failed');
@@ -79,13 +95,11 @@ export default function Dashboard() {
     }
   };
 
-  const toggleSort = () => {
-    setSortOrder(prev => {
-      if (prev === 'newest') return 'a-z';
-      if (prev === 'a-z') return 'z-a';
-      return 'newest';
-    });
-    toast.success(`Sorted by ${sortOrder === 'newest' ? 'A-Z' : sortOrder === 'a-z' ? 'Z-A' : 'Newest'}`);
+  const handleSortChange = (newOrder) => {
+    setSortOrder(newOrder);
+    setSortMenuOpen(false);
+    const label = newOrder === 'a-z' ? 'A-Z' : newOrder === 'recent' ? 'Recent Activity' : 'Newest';
+    toast.success(`Sorted by ${label}`);
   };
 
   const exportToPDF = () => {
@@ -186,6 +200,26 @@ export default function Dashboard() {
     setDataMenuOpen(false);
   };
 
+  const downloadTemplate = () => {
+    const headers = ['Name', 'Balance', 'Advance Payment', 'Date of Purchase'];
+    const sampleData = [
+      ['Juan Dela Cruz', '1000', '200', new Date().toISOString().split('T')[0]],
+      ['Maria Clara', '500', '0', new Date().toISOString().split('T')[0]]
+    ];
+    const csvContent = headers.join(",") + "\n" + sampleData.map(e => e.join(",")).join("\n");
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", "Arc_Import_Template.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    toast.success('Import Template Downloaded');
+    setDataMenuOpen(false);
+  };
+
   const handleImportCSV = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -245,15 +279,27 @@ export default function Dashboard() {
   };
 
   const handleDelete = async (id) => {
+    const debtor = debtors.find(d => d.id === id) || deleteData;
     await toast.promise(deleteDebtor(id), {
       loading: 'Deleting...',
       success: 'Debtor removed.',
       error: 'Failed to delete',
     });
+    if (debtor) {
+      const logs = JSON.parse(localStorage.getItem('arc_deleted_logs') || '[]');
+      logs.push({
+        id: `deleted-${id}-${Date.now()}`,
+        date: new Date().toISOString(),
+        customerName: debtor.name,
+        type: 'deleted',
+        amount: debtor.balance
+      });
+      localStorage.setItem('arc_deleted_logs', JSON.stringify(logs));
+    }
   };
 
-  const handlePay = async (id, amount) => {
-    await toast.promise(recordPayment(id, amount), {
+  const handlePay = async (id, amount, date) => {
+    await toast.promise(recordPayment(id, amount, date), {
       loading: 'Recording payment...',
       success: 'Payment recorded!',
       error: 'Failed to record payment',
@@ -263,7 +309,10 @@ export default function Dashboard() {
   const filteredCustomers = debtors
     .filter(d => {
       const s = search.toLowerCase();
-      const matchesSearch = d.name.toLowerCase().includes(s) || 
+      const nameMatch = d.name.toLowerCase().startsWith(s) || 
+                        d.name.toLowerCase().split(' ').some(word => word.startsWith(s));
+                        
+      const matchesSearch = nameMatch || 
                             d.id.toString().includes(s) ||
                             (d.receipt_numbers && d.receipt_numbers.some(r => r.toLowerCase().includes(s)));
       
@@ -273,7 +322,7 @@ export default function Dashboard() {
     })
     .sort((a, b) => {
       if (sortOrder === 'a-z') return a.name.localeCompare(b.name);
-      if (sortOrder === 'z-a') return b.name.localeCompare(a.name);
+      if (sortOrder === 'recent') return new Date(b.updated_at) - new Date(a.updated_at);
       return new Date(b.created_at) - new Date(a.created_at);
     });
 
@@ -356,6 +405,10 @@ export default function Dashboard() {
                       <div className="dropdown-item" onClick={exportToCSV}>
                         <FileSpreadsheet size={16} />
                         <span>Export Excel (CSV)</span>
+                      </div>
+                      <div className="dropdown-item" onClick={downloadTemplate}>
+                        <Download size={16} />
+                        <span>Download CSV Template</span>
                       </div>
                       <div className="dropdown-divider" />
                       <label className="dropdown-item" style={{ cursor: 'pointer' }}>
@@ -475,13 +528,49 @@ export default function Dashboard() {
               <option value="Completed">Completed</option>
             </select>
 
-            <button 
-              className="btn-icon-sm" 
-              onClick={toggleSort}
-              style={{ background: sortOrder !== 'newest' ? 'rgba(255, 90, 54, 0.1)' : 'var(--bg-card)' }}
-            >
-              <ArrowUpDown size={18} color={sortOrder !== 'newest' ? 'var(--accent)' : 'var(--text-secondary)'} />
-            </button>
+            <div style={{ position: 'relative' }}>
+              <button 
+                className="btn-icon-sm" 
+                onClick={() => setSortMenuOpen(!sortMenuOpen)}
+                style={{ 
+                  background: sortMenuOpen ? 'var(--accent)' : 'var(--bg-card)',
+                  borderColor: sortMenuOpen ? 'var(--accent)' : 'var(--border)'
+                }}
+              >
+                <ArrowUpDown size={18} color={sortMenuOpen ? '#000' : 'var(--text-secondary)'} />
+              </button>
+
+              <AnimatePresence>
+                {sortMenuOpen && (
+                  <>
+                    <div 
+                      style={{ position: 'fixed', inset: 0, zIndex: 99 }} 
+                      onClick={() => setSortMenuOpen(false)} 
+                    />
+                    <motion.div 
+                      className="dropdown-menu"
+                      style={{ right: 0, left: 'auto', width: 200 }}
+                      initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                    >
+                      <div className="dropdown-item" onClick={() => handleSortChange('a-z')}>
+                        <span style={{ flex: 1 }}>A-Z Names</span>
+                        {sortOrder === 'a-z' && <Check size={14} color="var(--accent)" />}
+                      </div>
+                      <div className="dropdown-item" onClick={() => handleSortChange('recent')}>
+                        <span style={{ flex: 1 }}>Recent Recorded</span>
+                        {sortOrder === 'recent' && <Check size={14} color="var(--accent)" />}
+                      </div>
+                      <div className="dropdown-item" onClick={() => handleSortChange('newest')}>
+                        <span style={{ flex: 1 }}>New Added Debtors</span>
+                        {sortOrder === 'newest' && <Check size={14} color="var(--accent)" />}
+                      </div>
+                    </motion.div>
+                  </>
+                )}
+              </AnimatePresence>
+            </div>
           </div>
         </div>
 
@@ -588,14 +677,26 @@ export default function Dashboard() {
             <div className="bulk-count">{selectedIds.length} Selected</div>
             <div className="bulk-btns">
               {selectedIds.some(id => debtors.find(d => d.id === id)?.status !== 'paid') && (
-                <button className="btn btn-primary btn-sm" onClick={handleBulkPaid}>Mark as Paid</button>
+                <button className="btn btn-primary btn-sm" onClick={() => setBulkConfirm({ type: 'paid' })}>Mark as Paid</button>
               )}
-              <button className="btn btn-outline btn-sm" style={{ borderColor: '#FF4D4D', color: '#FF4D4D' }} onClick={handleBulkDelete}>Delete All</button>
+              <button className="btn btn-outline btn-sm" style={{ borderColor: '#FF4D4D', color: '#FF4D4D' }} onClick={() => setBulkConfirm({ type: 'delete' })}>Delete All</button>
               <button className="btn btn-icon-sm" onClick={() => setSelectedIds([])}><Plus size={18} style={{ transform: 'rotate(45deg)' }} /></button>
             </div>
           </motion.div>
         )}
       </AnimatePresence>
+
+      <ConfirmModal
+        open={!!bulkConfirm}
+        onClose={() => setBulkConfirm(null)}
+        onConfirm={bulkConfirm?.type === 'paid' ? handleBulkPaid : handleBulkDelete}
+        title={bulkConfirm?.type === 'paid' ? 'Mark All as Paid?' : 'Delete Selected?'}
+        message={
+          bulkConfirm?.type === 'paid' 
+          ? `You are about to mark ${selectedIds.length} customers as fully paid. This will settle all their remaining balances.`
+          : `Are you sure you want to permanently delete ${selectedIds.length} records? This action cannot be undone.`
+        }
+      />
     </>
   );
 }

@@ -8,6 +8,52 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
+// POST bulk create (for CSV Import)
+router.post('/import-all', async (req, res) => {
+  try {
+    const customers = req.body; // Array of customer objects
+    if (!Array.isArray(customers)) {
+      return res.status(400).json({ error: 'Data must be an array of customers' });
+    }
+
+    const { data, error } = await supabase
+      .from('debtors')
+      .insert(customers.map(c => {
+        const rawBalance = parseFloat(c.balance) || 0;
+        const rawAdvance = parseFloat(c.advance_payment) || 0;
+        const storedBalance = Math.max(0, rawBalance - rawAdvance);
+        const history = [];
+        if (rawAdvance > 0) {
+          history.push({
+            date: c.advance_payment_date || c.date_borrowed || new Date().toISOString().split('T')[0],
+            amount: rawAdvance,
+            balance_after: storedBalance,
+            note: 'Advance Payment'
+          });
+        }
+        return {
+          name: c.name,
+          original_debt: rawBalance,
+          balance: storedBalance,
+          advance_payment: rawAdvance,
+          advance_payment_date: c.advance_payment_date || (rawAdvance > 0 ? (c.date_borrowed || new Date().toISOString().split('T')[0]) : null),
+          payment_history: history,
+          date_borrowed: c.date_borrowed || new Date().toISOString().split('T')[0],
+          notes: c.notes || '',
+          receipt_numbers: c.receipt_numbers || [],
+          status: rawAdvance > 0 && storedBalance > 0 ? 'partial' : storedBalance <= 0 ? 'paid' : 'active'
+        };
+      }))
+      .select();
+
+    if (error) throw error;
+    res.status(201).json(data);
+  } catch (err) {
+    console.error('API Error [POST /bulk]:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // GET all debtors (with optional search)
 router.get('/', async (req, res) => {
   try {
@@ -57,20 +103,46 @@ router.post('/', async (req, res) => {
       date_borrowed,
       due_date,
       notes,
+      original_debt: requestedOriginalDebt,
     } = req.body;
+
+    const rawBalance = parseFloat(balance) || 0;
+    const rawAdvance = parseFloat(advance_payment) || 0;
+    const originalDebt = parseFloat(requestedOriginalDebt) || rawBalance;
+
+    if (rawAdvance > originalDebt) {
+      return res.status(400).json({ error: 'Advance payment cannot be greater than the initial balance' });
+    }
+
+    const storedBalance = Math.max(0, originalDebt - rawAdvance);
+
+    // Add advance payment to history if provided
+    const history = [];
+    if (rawAdvance > 0) {
+      history.push({
+        date: advance_payment_date || date_borrowed || new Date().toISOString().split('T')[0],
+        amount: rawAdvance,
+        balance_after: storedBalance,
+        note: 'Advance Payment'
+      });
+    }
+
+    console.log('[CREATE] rawBalance:', rawBalance, 'rawAdvance:', rawAdvance, 'storedBalance:', storedBalance, 'originalDebt:', originalDebt);
 
     const { data, error } = await supabase
       .from('debtors')
       .insert([{
         name,
-        balance: parseFloat(balance),
-        advance_payment: parseFloat(advance_payment) || 0,
+        original_debt: originalDebt,
+        balance: storedBalance,
+        advance_payment: rawAdvance,
         advance_payment_date: advance_payment_date || null,
+        payment_history: history,
         receipt_numbers: receipt_numbers || [],
         date_borrowed,
         due_date: due_date || null,
         notes: notes || '',
-        status: advance_payment && parseFloat(advance_payment) > 0 ? 'partial' : 'active',
+        status: rawAdvance > 0 && storedBalance > 0 ? 'partial' : storedBalance <= 0 ? 'paid' : 'active',
       }])
       .select()
       .single();
@@ -78,6 +150,7 @@ router.post('/', async (req, res) => {
     if (error) throw error;
     res.status(201).json(data);
   } catch (err) {
+    console.error('[CREATE ERROR]', err.message);
     res.status(500).json({ error: err.message });
   }
 });
@@ -94,21 +167,56 @@ router.put('/:id', async (req, res) => {
       date_borrowed,
       due_date,
       notes,
-      status,
+      original_debt: requestedOriginalDebt,
     } = req.body;
+
+    // Fetch current
+    const { data: current, error: fetchError } = await supabase
+      .from('debtors')
+      .select('*')
+      .eq('id', req.params.id)
+      .single();
+
+    if (fetchError) throw fetchError;
+
+    const newOriginalDebt = parseFloat(requestedOriginalDebt || balance) || current.original_debt;
+    const newAdvance = parseFloat(advance_payment) || 0;
+
+    if (newAdvance > newOriginalDebt) {
+      return res.status(400).json({ error: 'Total payments cannot exceed the initial balance' });
+    }
+
+    const newBalance = Math.max(0, newOriginalDebt - newAdvance);
+
+    let history = Array.isArray(current.payment_history) ? [...current.payment_history] : [];
+
+    const historySum = history.reduce((sum, p) => sum + parseFloat(p.amount), 0);
+    // If the advance_payment form field doesn't match the history sum, it was edited
+    if (newAdvance !== historySum) {
+        history.push({
+            date: new Date().toISOString().split('T')[0],
+            amount: newAdvance - historySum,
+            balance_after: newBalance,
+            note: 'Manual Adjustment'
+        });
+    }
+
+    const newStatus = newAdvance > 0 && newBalance > 0 ? 'partial' : newBalance <= 0 ? 'paid' : 'active';
 
     const { data, error } = await supabase
       .from('debtors')
       .update({
         name,
-        balance: parseFloat(balance),
-        advance_payment: parseFloat(advance_payment) || 0,
-        advance_payment_date: advance_payment_date || null,
+        original_debt: newOriginalDebt,
+        balance: newBalance,
+        advance_payment: newAdvance,
+        advance_payment_date: advance_payment_date || current.advance_payment_date,
         receipt_numbers: receipt_numbers || [],
         date_borrowed,
         due_date: due_date || null,
         notes: notes || '',
-        status,
+        status: newStatus,
+        payment_history: history,
         updated_at: new Date().toISOString(),
       })
       .eq('id', req.params.id)

@@ -69,8 +69,12 @@ export default function PayModal({ open, onClose, debtor, onPay }) {
                 max={debtor.balance}
                 step="0.01"
                 placeholder="0.00"
+                onWheel={(e) => e.target.blur()}
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
+                onBlur={(e) => {
+                  if (e.target.value) setAmount(parseFloat(e.target.value).toFixed(2));
+                }}
                 autoFocus
               />
             </div>

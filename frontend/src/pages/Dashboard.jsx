@@ -178,13 +178,14 @@ export default function Dashboard() {
   };
 
   const exportToCSV = (exportData = debtors) => {
-    const headers = ['ID', 'Name', 'Original Debt', 'Date of Purchase', 'Advance Payment', 'Balance', 'Status'];
+    const headers = ['ID', 'Name', 'Initial Balance', 'Date of Purchase', 'Advance Payment', 'Advance Payment Date', 'Balance', 'Status'];
     const rows = exportData.map(d => [
       d.id,
       `"${d.name.replace(/"/g, '""')}"`, // Escape quotes for CSV
       d.original_debt || 0,
       d.date_borrowed,
       d.advance_payment,
+      d.advance_payment_date || '',
       d.balance,
       d.status
     ]);
@@ -205,10 +206,10 @@ export default function Dashboard() {
   };
 
   const downloadTemplate = () => {
-    const headers = ['Name', 'Balance', 'Advance Payment', 'Date of Purchase'];
+    const headers = ['Name', 'Balance', 'Advance Payment', 'Advance Payment Date', 'Date of Purchase'];
     const sampleData = [
-      ['Juan Dela Cruz', '1000', '200', new Date().toISOString().split('T')[0]],
-      ['Maria Clara', '500', '0', new Date().toISOString().split('T')[0]]
+      ['Juan Dela Cruz', '1000', '200', new Date().toISOString().split('T')[0], new Date().toISOString().split('T')[0]],
+      ['Maria Clara', '500', '0', '', new Date().toISOString().split('T')[0]]
     ];
     const csvContent = headers.join(",") + "\n" + sampleData.map(e => e.join(",")).join("\n");
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -242,8 +243,9 @@ export default function Dashboard() {
             // Map common headers to our schema
             if (header.includes('name')) obj.name = values[index];
             if (header.includes('balance')) obj.balance = values[index];
-            if (header.includes('advance')) obj.advance_payment = values[index];
-            if (header.includes('date')) obj.date_borrowed = values[index];
+            if (header.includes('advance') && !header.includes('date')) obj.advance_payment = values[index];
+            if (header.includes('advance') && header.includes('date')) obj.advance_payment_date = values[index];
+            if (header.includes('date') && !header.includes('advance')) obj.date_borrowed = values[index];
             if (header.includes('id')) obj.id = values[index];
           });
           return obj;
@@ -267,7 +269,14 @@ export default function Dashboard() {
   };
 
   const handleAdd = async (form) => {
-    await toast.promise(createDebtor(form), {
+    const rawBalance = parseFloat(form.balance || 0);
+    const rawAdvance = parseFloat(form.advance_payment || 0);
+    const payload = {
+      ...form,
+      balance: rawBalance,         // backend will compute storedBalance
+      original_debt: rawBalance,   // explicitly send original_debt = raw total debt
+    };
+    await toast.promise(createDebtor(payload), {
       loading: 'Adding debtor...',
       success: 'Debtor added!',
       error: (e) => e?.response?.data?.error || 'Failed to add debtor',
@@ -275,7 +284,13 @@ export default function Dashboard() {
   };
 
   const handleEdit = async (form) => {
-    await toast.promise(updateDebtor(editDebtor.id, form), {
+    const rawBalance = parseFloat(form.balance || 0);
+    const payload = {
+      ...form,
+      balance: rawBalance,
+      original_debt: rawBalance,
+    };
+    await toast.promise(updateDebtor(editDebtor.id, payload), {
       loading: 'Saving changes...',
       success: 'Changes saved!',
       error: (e) => e?.response?.data?.error || 'Failed to save',
@@ -605,8 +620,9 @@ export default function Dashboard() {
                   )}
                   <th className="hide-mobile">Customer ID</th>
                   <th>Full Name</th>
-                  <th className="hide-mobile">Date of Purchase</th>
-                  <th>Advance / Bal</th>
+                  <th>Date of Purchase</th>
+                  <th className="hide-mobile">Initial Balance</th>
+                  <th>Adv / Bal</th>
                   <th className="hide-tablet">Status</th>
                   <th></th>
                 </tr>

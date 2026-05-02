@@ -28,7 +28,7 @@ export default function DebtorModal({ open, onClose, onSubmit, initial = null })
       if (initial) {
         setForm({
           name: initial.name || '',
-          balance: initial.balance || '',
+          balance: initial.original_debt || initial.balance || '',
           advance_payment: initial.advance_payment || '',
           advance_payment_date: initial.advance_payment_date || '',
           receipt_numbers: initial.receipt_numbers || [],
@@ -61,7 +61,15 @@ export default function DebtorModal({ open, onClose, onSubmit, initial = null })
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (parseFloat(form.advance_payment || 0) > 0 && !form.advance_payment_date) {
+    const rawBalance = parseFloat(form.balance || 0);
+    const rawAdvance = parseFloat(form.advance_payment || 0);
+
+    if (rawAdvance > rawBalance) {
+      toast.error('Advance payment cannot be greater than the initial balance');
+      return;
+    }
+
+    if (rawAdvance > 0 && !form.advance_payment_date) {
       toast.error('Please provide a date for the advance payment');
       return;
     }
@@ -142,11 +150,15 @@ export default function DebtorModal({ open, onClose, onSubmit, initial = null })
                     min="0"
                     step="0.01"
                     placeholder=" "
+                    onWheel={(e) => e.target.blur()}
                     value={form.balance}
                     onChange={(e) => set('balance', e.target.value)}
+                    onBlur={(e) => {
+                      if (e.target.value) set('balance', parseFloat(e.target.value).toFixed(2));
+                    }}
                     required
                   />
-                  <label className="floating-label">{!initial ? 'Total Debt (₱) *' : 'Balance (₱) *'}</label>
+                  <label className="floating-label">Initial Balance (₱) *</label>
                 </div>
 
                 {/* Date Borrowed */}
@@ -171,11 +183,15 @@ export default function DebtorModal({ open, onClose, onSubmit, initial = null })
                     min="0"
                     step="0.01"
                     placeholder=" "
+                    onWheel={(e) => e.target.blur()}
                     value={form.advance_payment}
                     onChange={(e) => set('advance_payment', e.target.value)}
+                    onBlur={(e) => {
+                      if (e.target.value) set('advance_payment', parseFloat(e.target.value).toFixed(2));
+                    }}
                   />
                   <label className="floating-label">Advance Payment (₱)</label>
-                  {!initial && parseFloat(form.advance_payment || 0) > 0 && (
+                  {parseFloat(form.advance_payment || 0) > 0 && (
                     <div style={{ 
                       fontSize: 12, 
                       color: 'var(--accent)', 
@@ -205,21 +221,7 @@ export default function DebtorModal({ open, onClose, onSubmit, initial = null })
 
 
 
-                {/* Status (only on edit) */}
-                {initial && (
-                  <div className="form-group full">
-                    <label className="form-label">Status</label>
-                    <select
-                      className="form-select"
-                      value={form.status}
-                      onChange={(e) => set('status', e.target.value)}
-                    >
-                      <option value="active">Active</option>
-                      <option value="partial">Partial</option>
-                      <option value="paid">Paid</option>
-                    </select>
-                  </div>
-                )}
+
 
                 {/* Receipt Numbers */}
                 <div className="form-group full">

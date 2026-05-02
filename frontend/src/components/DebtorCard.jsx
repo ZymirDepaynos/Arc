@@ -82,7 +82,7 @@ export default function DebtorCard({ debtor, onEdit, onDelete, onPay, index, sel
         #{debtor.id.substring(0, 8)}
       </td>
 
-      {/* Assigned to */}
+      {/* Name */}
       <td>
         <div className="table-avatar-cell">
           <div className="row-avatar" style={{ border: '1px solid rgba(0, 245, 160, 0.2)' }}>{initials(debtor.name)}</div>
@@ -90,17 +90,22 @@ export default function DebtorCard({ debtor, onEdit, onDelete, onPay, index, sel
         </div>
       </td>
 
-      {/* Borrowed Date */}
-      <td className="hide-mobile">
+      {/* Date of Purchase — fills the empty column slot */}
+      <td style={{ color: 'var(--text-secondary)', fontSize: 13 }}>
         {fmtDate(debtor.date_borrowed)}
       </td>
 
-      {/* Balance / Advance */}
+      {/* Initial Balance */}
+      <td className="hide-mobile">
+        {debtor.original_debt > 0
+          ? <span style={{ fontWeight: 700, color: 'var(--status-active-text)' }}>{fmt(debtor.original_debt)}</span>
+          : <span style={{ color: 'var(--text-muted)' }}>—</span>
+        }
+      </td>
+
+      {/* Advance / Balance */}
       <td>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-          {debtor.original_debt > 0 && debtor.original_debt !== (parseFloat(debtor.balance) + parseFloat(debtor.advance_payment || 0)) && (
-            <span style={{ fontSize: 11, color: 'var(--text-muted)', textDecoration: 'line-through' }}>Orig: {fmt(debtor.original_debt)}</span>
-          )}
           <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Adv: {fmt(debtor.advance_payment)}</span>
           <span style={{ fontWeight: 700, color: 'var(--text-primary)' }}>
             Bal: {fmt(debtor.balance)}

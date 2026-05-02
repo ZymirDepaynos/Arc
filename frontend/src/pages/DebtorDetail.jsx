@@ -188,12 +188,7 @@ export default function DebtorDetail() {
       <div className="content-container" style={{ padding: '0' }}>
         {/* Balance highlight */}
         <div className="stat-box" style={{ marginBottom: 24, padding: '32px' }}>
-          {debtor.original_debt > 0 && debtor.original_debt !== debtor.balance && (
-            <div style={{ marginBottom: 6 }}>
-              <span style={{ fontSize: 12, color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Original Debt</span>
-              <span style={{ fontSize: 16, color: 'var(--text-muted)', fontWeight: 600, marginLeft: 10, textDecoration: 'line-through' }}>{fmt(debtor.original_debt)}</span>
-            </div>
-          )}
+
           <div className="detail-field-label">Current Outstanding Balance</div>
           <div style={{ 
             fontSize: 'clamp(32px, 8vw, 48px)', 
@@ -228,7 +223,7 @@ export default function DebtorDetail() {
           </div>
           {debtor.original_debt > 0 && (
             <div className="detail-field">
-              <div className="detail-field-label">Original Debt</div>
+              <div className="detail-field-label">Initial Balance</div>
               <div className="detail-field-value" style={{ color: 'var(--status-active-text)' }}>{fmt(debtor.original_debt)}</div>
             </div>
           )}
@@ -293,7 +288,7 @@ export default function DebtorDetail() {
             <div className="timeline-content">
               <div className="timeline-time">{new Date(debtor.created_at).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</div>
               <div className="timeline-title">Record Created</div>
-              <div className="timeline-desc">Initial debt of {fmt(debtor.balance + (debtor.payment_history?.reduce((acc, p) => acc + p.amount, 0) || 0))} was recorded.</div>
+              <div className="timeline-desc">Initial balance of {fmt(debtor.original_debt || (debtor.balance + (debtor.payment_history?.reduce((acc, p) => acc + p.amount, 0) || 0)))} was recorded.</div>
             </div>
           </div>
 
@@ -303,8 +298,12 @@ export default function DebtorDetail() {
               <div className="timeline-dot payment"></div>
               <div className="timeline-content">
                 <div className="timeline-time">{new Date(payment.date).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</div>
-                <div className="timeline-title">Payment Received</div>
-                <div className="timeline-desc">A payment of {fmt(payment.amount)} was made. Remaining balance: {fmt(payment.balance_after)}.</div>
+                <div className="timeline-title">{payment.note || 'Payment Received'}</div>
+                <div className="timeline-desc">
+                  {payment.note === 'Manual Adjustment' || payment.amount < 0 
+                    ? `Balance adjusted by ${fmt(payment.amount)}. Remaining balance: ${fmt(payment.balance_after)}.`
+                    : `A payment of ${fmt(payment.amount)} was made. Remaining balance: ${fmt(payment.balance_after)}.`}
+                </div>
               </div>
             </div>
           )).reverse()}

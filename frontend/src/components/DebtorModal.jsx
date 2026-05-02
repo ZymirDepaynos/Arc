@@ -68,11 +68,8 @@ export default function DebtorModal({ open, onClose, onSubmit, initial = null })
     setLoading(true);
     setError(null);
     try {
-      const finalForm = { ...form };
-      if (!initial && parseFloat(finalForm.advance_payment || 0) > 0) {
-        finalForm.balance = Math.max(0, parseFloat(finalForm.balance || 0) - parseFloat(finalForm.advance_payment || 0));
-      }
-      await onSubmit(finalForm);
+      // Send raw balance — backend computes remaining balance and stores original_debt
+      await onSubmit(form);
       onClose();
     } catch (err) {
       console.error('Submission Error:', err);

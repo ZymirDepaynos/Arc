@@ -3,6 +3,7 @@
 CREATE TABLE IF NOT EXISTS debtors (
   id                   UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name                 TEXT NOT NULL,
+  original_debt        NUMERIC(12, 2) NOT NULL DEFAULT 0,
   balance              NUMERIC(12, 2) NOT NULL DEFAULT 0,
   advance_payment      NUMERIC(12, 2) NOT NULL DEFAULT 0,
   advance_payment_date DATE,
@@ -15,6 +16,10 @@ CREATE TABLE IF NOT EXISTS debtors (
   created_at           TIMESTAMP WITH TIME ZONE DEFAULT now(),
   updated_at           TIMESTAMP WITH TIME ZONE DEFAULT now()
 );
+
+-- MIGRATION: Run this if the table already exists to add the original_debt column
+-- ALTER TABLE debtors ADD COLUMN IF NOT EXISTS original_debt NUMERIC(12, 2) NOT NULL DEFAULT 0;
+-- UPDATE debtors SET original_debt = balance + COALESCE((SELECT SUM((p->>'amount')::NUMERIC) FROM jsonb_array_elements(payment_history) AS p), 0) WHERE original_debt = 0;
 
 -- Enable Row Level Security (optional but recommended)
 ALTER TABLE debtors ENABLE ROW LEVEL SECURITY;

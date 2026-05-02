@@ -187,12 +187,13 @@ export default function DebtorDetail() {
 
       <div className="content-container" style={{ padding: '0' }}>
         {/* Balance highlight */}
-        <motion.div
-          className="stat-box"
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          style={{ marginBottom: 24, padding: '32px' }}
-        >
+        <div className="stat-box" style={{ marginBottom: 24, padding: '32px' }}>
+          {debtor.original_debt > 0 && debtor.original_debt !== debtor.balance && (
+            <div style={{ marginBottom: 6 }}>
+              <span style={{ fontSize: 12, color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Original Debt</span>
+              <span style={{ fontSize: 16, color: 'var(--text-muted)', fontWeight: 600, marginLeft: 10, textDecoration: 'line-through' }}>{fmt(debtor.original_debt)}</span>
+            </div>
+          )}
           <div className="detail-field-label">Current Outstanding Balance</div>
           <div style={{ 
             fontSize: 'clamp(32px, 8vw, 48px)', 
@@ -208,7 +209,7 @@ export default function DebtorDetail() {
               <div className="dot paid"></div> Fully recovered
             </div>
           )}
-        </motion.div>
+        </div>
 
         {/* Info grid */}
         <motion.div
@@ -225,6 +226,12 @@ export default function DebtorDetail() {
             <div className="detail-field-label">Customer ID</div>
             <div className="detail-field-value" style={{ color: 'var(--text-muted)' }}>#ARC-{debtor.id.toString().padStart(4, '0')}</div>
           </div>
+          {debtor.original_debt > 0 && (
+            <div className="detail-field">
+              <div className="detail-field-label">Original Debt</div>
+              <div className="detail-field-value" style={{ color: 'var(--status-active-text)' }}>{fmt(debtor.original_debt)}</div>
+            </div>
+          )}
           <div className="detail-field">
             <div className="detail-field-label">Advance Payment Date</div>
             <div className="detail-field-value">{fmtDate(debtor.advance_payment_date)}</div>

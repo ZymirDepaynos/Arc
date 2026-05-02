@@ -37,6 +37,8 @@ export default function Dashboard() {
   const [isSelectionMode, setIsSelectionMode] = useState(false);
   const [sortOrder, setSortOrder] = useState('newest'); // newest, a-z, z-a
   const [bulkConfirm, setBulkConfirm] = useState(null); // { type: 'paid' | 'delete' }
+  const [exportFilterOpen, setExportFilterOpen] = useState(false);
+  const [exportFilterType, setExportFilterType] = useState(null); // 'pdf' | 'csv'
 
   useEffect(() => {
     const handleSearchTrigger = () => setSearchOpen(true);
@@ -102,7 +104,7 @@ export default function Dashboard() {
     toast.success(`Sorted by ${label}`);
   };
 
-  const exportToPDF = () => {
+  const exportToPDF = (exportData = debtors) => {
     const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.getWidth();
     
@@ -119,7 +121,7 @@ export default function Dashboard() {
     doc.setTextColor(180, 180, 180);
     doc.setFont('helvetica', 'normal');
     doc.text(`DATE GENERATED: ${new Date().toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric' }).toUpperCase()}`, 14, 28);
-    doc.text(`TOTAL CUSTOMERS: ${debtors.length}`, 14, 34);
+    doc.text(`TOTAL CUSTOMERS: ${exportData.length}`, 14, 34);
 
     // 2. QUICK SUMMARY BOXES (at the top of PDF)
     doc.setFillColor(255, 90, 54); // Arc Orange
@@ -128,10 +130,11 @@ export default function Dashboard() {
     doc.setFontSize(8);
     doc.text('TOTAL OUTSTANDING', pageWidth - 57, 22);
     doc.setFontSize(12);
-    doc.text('P' + (totals?.totalBalance || 0).toLocaleString(), pageWidth - 57, 30);
+    const exportBalance = exportData.reduce((acc, d) => acc + (parseFloat(d.balance) || 0), 0);
+    doc.text('P' + exportBalance.toLocaleString(), pageWidth - 57, 30);
 
     // 3. TABLE DATA PREP
-    const tableData = debtors.map(d => [
+    const tableData = exportData.map(d => [
       d.name,
       d.date_borrowed ? new Date(d.date_borrowed).toLocaleDateString('en-PH') : '—',
       'P' + parseFloat(d.advance_payment || 0).toLocaleString(),
@@ -171,14 +174,15 @@ export default function Dashboard() {
     });
 
     doc.save(`Arc_Business_Report_${new Date().toISOString().split('T')[0]}.pdf`);
-    toast.success('Elite PDF Report Generated');
+    toast.success('PDF Report Generated');
   };
 
-  const exportToCSV = () => {
-    const headers = ['ID', 'Name', 'Date of Purchase', 'Advance Payment', 'Balance', 'Status'];
-    const rows = debtors.map(d => [
+  const exportToCSV = (exportData = debtors) => {
+    const headers = ['ID', 'Name', 'Original Debt', 'Date of Purchase', 'Advance Payment', 'Balance', 'Status'];
+    const rows = exportData.map(d => [
       d.id,
       `"${d.name.replace(/"/g, '""')}"`, // Escape quotes for CSV
+      d.original_debt || 0,
       d.date_borrowed,
       d.advance_payment,
       d.balance,
@@ -196,7 +200,7 @@ export default function Dashboard() {
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url); // Clean up memory
-    toast.success('Full Database Exported for Excel');
+    toast.success('Database Exported for Excel');
     setDataMenuOpen(false);
   };
 
@@ -398,11 +402,11 @@ export default function Dashboard() {
                       animate={{ opacity: 1, y: 0, scale: 1 }}
                       exit={{ opacity: 0, y: 10, scale: 0.95 }}
                     >
-                      <div className="dropdown-item" onClick={exportToPDF}>
+                      <div className="dropdown-item" onClick={() => { setExportFilterType('pdf'); setExportFilterOpen(true); setDataMenuOpen(false); }}>
                         <FileText size={16} />
                         <span>Export Elite PDF</span>
                       </div>
-                      <div className="dropdown-item" onClick={exportToCSV}>
+                      <div className="dropdown-item" onClick={() => { setExportFilterType('csv'); setExportFilterOpen(true); setDataMenuOpen(false); }}>
                         <FileSpreadsheet size={16} />
                         <span>Export Excel (CSV)</span>
                       </div>
@@ -697,6 +701,63 @@ export default function Dashboard() {
           : `Are you sure you want to permanently delete ${selectedIds.length} records? This action cannot be undone.`
         }
       />
+
+      {/* Export Filter Modal */}
+      <AnimatePresence>
+        {exportFilterOpen && (
+          <motion.div
+            className="modal-overlay"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setExportFilterOpen(false)}
+            style={{ zIndex: 1000 }}
+          >
+            <motion.div
+              className="modal"
+              style={{ maxWidth: 380, padding: 32 }}
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div style={{ textAlign: 'center', marginBottom: 24 }}>
+                <div style={{ width: 56, height: 56, borderRadius: 16, background: 'var(--accent-light)', color: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+                  {exportFilterType === 'pdf' ? <FileText size={26} /> : <FileSpreadsheet size={26} />}
+                </div>
+                <h2 style={{ fontSize: 22, fontWeight: 800, marginBottom: 6 }}>
+                  {exportFilterType === 'pdf' ? 'Export PDF' : 'Export CSV'}
+                </h2>
+                <p style={{ color: 'var(--text-muted)', fontSize: 14 }}>Choose which records to include</p>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 24 }}>
+                {[
+                  { label: 'All Records', value: 'all', desc: `${debtors.length} records` },
+                  { label: 'Active Only', value: 'active', desc: `${debtors.filter(d => d.status === 'active').length} records` },
+                  { label: 'Partial Only', value: 'partial', desc: `${debtors.filter(d => d.status === 'partial').length} records` },
+                  { label: 'Paid / Completed', value: 'paid', desc: `${debtors.filter(d => d.status === 'paid').length} records` },
+                ].map(opt => (
+                  <button
+                    key={opt.value}
+                    className="btn btn-outline"
+                    style={{ justifyContent: 'space-between', padding: '14px 18px', textAlign: 'left' }}
+                    onClick={() => {
+                      const filtered = opt.value === 'all' ? debtors : debtors.filter(d => d.status === opt.value);
+                      if (exportFilterType === 'pdf') exportToPDF(filtered);
+                      else exportToCSV(filtered);
+                      setExportFilterOpen(false);
+                    }}
+                  >
+                    <span style={{ fontWeight: 700 }}>{opt.label}</span>
+                    <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>{opt.desc}</span>
+                  </button>
+                ))}
+              </div>
+              <button className="btn btn-outline" style={{ width: '100%' }} onClick={() => setExportFilterOpen(false)}>Cancel</button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </>
   );
 }

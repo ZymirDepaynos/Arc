@@ -98,6 +98,9 @@ export default function DebtorCard({ debtor, onEdit, onDelete, onPay, index, sel
       {/* Balance / Advance */}
       <td>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          {debtor.original_debt > 0 && debtor.original_debt !== (parseFloat(debtor.balance) + parseFloat(debtor.advance_payment || 0)) && (
+            <span style={{ fontSize: 11, color: 'var(--text-muted)', textDecoration: 'line-through' }}>Orig: {fmt(debtor.original_debt)}</span>
+          )}
           <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Adv: {fmt(debtor.advance_payment)}</span>
           <span style={{ fontWeight: 700, color: 'var(--text-primary)' }}>
             Bal: {fmt(debtor.balance)}

@@ -20,6 +20,7 @@ router.post('/import-all', async (req, res) => {
       .from('debtors')
       .insert(customers.map(c => ({
         name: c.name,
+        original_debt: parseFloat(c.balance) || 0,
         balance: parseFloat(c.balance) || 0,
         advance_payment: parseFloat(c.advance_payment) || 0,
         date_borrowed: c.date_borrowed || new Date().toISOString().split('T')[0],
@@ -94,17 +95,22 @@ router.post('/', async (req, res) => {
       notes,
     } = req.body;
 
+    const rawBalance = parseFloat(balance);
+    const rawAdvance = parseFloat(advance_payment) || 0;
+    const storedBalance = Math.max(0, rawBalance - rawAdvance);
+
     const { data, error } = await supabase
       .from('debtors')
       .insert([{
         name,
-        balance: parseFloat(balance),
-        advance_payment: parseFloat(advance_payment) || 0,
+        original_debt: rawBalance,
+        balance: storedBalance,
+        advance_payment: rawAdvance,
         advance_payment_date: advance_payment_date || null,
         receipt_numbers: receipt_numbers || [],
         date_borrowed,
         notes: notes || '',
-        status: advance_payment && parseFloat(advance_payment) > 0 ? 'partial' : 'active',
+        status: rawAdvance > 0 && storedBalance > 0 ? 'partial' : storedBalance <= 0 ? 'paid' : 'active',
       }])
       .select();
 

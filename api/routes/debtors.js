@@ -8,6 +8,15 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
+const processDate = (inputDate) => {
+  if (!inputDate) return new Date().toISOString();
+  const todayStr = new Date().toLocaleString("en-CA", {timeZone: "Asia/Manila"}).split(',')[0];
+  if (inputDate.startsWith(todayStr)) {
+    return new Date().toISOString();
+  }
+  return inputDate;
+};
+
 // POST bulk create (for CSV Import)
 router.post('/import-all', async (req, res) => {
   try {
@@ -126,7 +135,7 @@ router.post('/', async (req, res) => {
     const history = [];
     if (rawAdvance > 0) {
       history.push({
-        date: advance_payment_date || date_borrowed || new Date().toISOString().split('T')[0],
+        date: processDate(advance_payment_date || date_borrowed),
         amount: rawAdvance,
         balance_after: storedBalance,
         note: 'Advance Payment'
@@ -177,6 +186,7 @@ router.put('/:id', async (req, res) => {
       date_borrowed,
       notes,
       original_debt: requestedOriginalDebt,
+      adjustment_date,
     } = req.body;
 
     // Fetch current
@@ -203,7 +213,7 @@ router.put('/:id', async (req, res) => {
     // If the advance_payment form field doesn't match the history sum, it was edited
     if (newAdvance !== historySum) {
         history.push({
-            date: new Date().toISOString().split('T')[0],
+            date: processDate(adjustment_date),
             amount: newAdvance - historySum,
             balance_after: newBalance,
             note: 'Manual Adjustment'
@@ -277,8 +287,8 @@ router.post('/:id/pay', async (req, res) => {
     const newBalance = currentBalance - payAmount;
     const newAdvance = parseFloat(current.advance_payment) + payAmount;
     
-    // PHT Compliance: Use client date or fallback to server local YYYY-MM-DD
-    const paymentDate = date || new Date().toISOString().split('T')[0];
+    // PHT Compliance: Use exact timestamp if today, otherwise keep date
+    const paymentDate = processDate(date);
 
     const paymentEntry = {
       date: paymentDate,

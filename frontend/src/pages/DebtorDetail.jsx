@@ -73,7 +73,19 @@ export default function DebtorDetail() {
   useEffect(() => { fetchDebtor(); }, [id]);
 
   const handleEdit = async (form) => {
-    await toast.promise(axios.put(`${API_URL}/api/debtors/${id}`, form).then((r) => setDebtor(r.data)), {
+    const rawBalance = parseFloat(form.balance || 0);
+    const currentBalance = parseFloat(form.current_balance || 0);
+    const advancePayment = Math.max(0, rawBalance - currentBalance);
+
+    const payload = {
+      ...form,
+      balance: rawBalance,
+      original_debt: rawBalance,
+      advance_payment: advancePayment,
+      adjustment_date: form.adjustment_date
+    };
+
+    await toast.promise(axios.put(`${API_URL}/api/debtors/${id}`, payload).then((r) => setDebtor(r.data)), {
       loading: 'Saving...', success: 'Saved!', error: 'Failed to save',
     });
   };
@@ -189,7 +201,7 @@ export default function DebtorDetail() {
         {/* Balance highlight */}
         <div className="stat-box" style={{ marginBottom: 24, padding: '32px' }}>
 
-          <div className="detail-field-label">Current Outstanding Balance</div>
+          <div className="detail-field-label">Current Balance</div>
           <div style={{ 
             fontSize: 'clamp(32px, 8vw, 48px)', 
             fontWeight: 700, 
@@ -293,20 +305,27 @@ export default function DebtorDetail() {
           </div>
 
           {/* Payment Events */}
-          {debtor.payment_history?.map((payment, idx) => (
-            <div key={idx} className="timeline-item">
-              <div className="timeline-dot payment"></div>
-              <div className="timeline-content">
-                <div className="timeline-time">{new Date(payment.date).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</div>
-                <div className="timeline-title">{payment.note || 'Payment Received'}</div>
-                <div className="timeline-desc">
-                  {payment.note === 'Manual Adjustment' || payment.amount < 0 
-                    ? `Balance adjusted by ${fmt(payment.amount)}. Remaining balance: ${fmt(payment.balance_after)}.`
-                    : `A payment of ${fmt(payment.amount)} was made. Remaining balance: ${fmt(payment.balance_after)}.`}
+          {debtor.payment_history?.map((payment, idx) => {
+            const isDateOnly = payment.date && (payment.date.length === 10 || !payment.date.includes('T'));
+            const dateStr = isDateOnly 
+              ? new Date(payment.date + 'T12:00:00').toLocaleString('en-US', { month: 'short', day: 'numeric' })
+              : new Date(payment.date).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+
+            return (
+              <div key={idx} className="timeline-item">
+                <div className="timeline-dot payment"></div>
+                <div className="timeline-content">
+                  <div className="timeline-time">{dateStr}</div>
+                  <div className="timeline-title">{payment.note || 'Payment Received'}</div>
+                  <div className="timeline-desc">
+                    {payment.note === 'Manual Adjustment' || payment.amount < 0 
+                      ? `Balance adjusted by ${fmt(payment.amount)}. Remaining balance: ${fmt(payment.balance_after)}.`
+                      : `A payment of ${fmt(payment.amount)} was made. Remaining balance: ${fmt(payment.balance_after)}.`}
+                  </div>
                 </div>
               </div>
-            </div>
-          )).reverse()}
+            );
+          }).reverse()}
           
           {debtor.status === 'paid' && (
             <div className="timeline-item">

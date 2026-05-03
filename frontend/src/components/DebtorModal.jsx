@@ -10,6 +10,8 @@ const EMPTY_FORM = {
   balance: '',
   advance_payment: '',
   advance_payment_date: '',
+  current_balance: '',
+  adjustment_date: getToday(),
   receipt_numbers: [],
   date_borrowed: getToday(),
   notes: '',
@@ -31,6 +33,8 @@ export default function DebtorModal({ open, onClose, onSubmit, initial = null })
           balance: initial.original_debt || initial.balance || '',
           advance_payment: initial.advance_payment || '',
           advance_payment_date: initial.advance_payment_date || '',
+          current_balance: initial.balance || '',
+          adjustment_date: getToday(),
           receipt_numbers: initial.receipt_numbers || [],
           date_borrowed: initial.date_borrowed || '',
           notes: initial.notes || '',
@@ -152,7 +156,15 @@ export default function DebtorModal({ open, onClose, onSubmit, initial = null })
                     placeholder=" "
                     onWheel={(e) => e.target.blur()}
                     value={form.balance}
-                    onChange={(e) => set('balance', e.target.value)}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setError(null);
+                      setForm((f) => ({
+                        ...f,
+                        balance: val,
+                        current_balance: Math.max(0, parseFloat(val || 0) - parseFloat(f.advance_payment || 0)).toFixed(2)
+                      }));
+                    }}
                     onBlur={(e) => {
                       if (e.target.value) set('balance', parseFloat(e.target.value).toFixed(2));
                     }}
@@ -185,39 +197,92 @@ export default function DebtorModal({ open, onClose, onSubmit, initial = null })
                     placeholder=" "
                     onWheel={(e) => e.target.blur()}
                     value={form.advance_payment}
-                    onChange={(e) => set('advance_payment', e.target.value)}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setError(null);
+                      setForm((f) => ({
+                        ...f,
+                        advance_payment: val,
+                        current_balance: Math.max(0, parseFloat(f.balance || 0) - parseFloat(val || 0)).toFixed(2)
+                      }));
+                    }}
                     onBlur={(e) => {
                       if (e.target.value) set('advance_payment', parseFloat(e.target.value).toFixed(2));
                     }}
                   />
                   <label className="floating-label">Advance Payment (₱)</label>
-                  {parseFloat(form.advance_payment || 0) > 0 && (
-                    <div style={{ 
-                      fontSize: 12, 
-                      color: 'var(--accent)', 
-                      position: 'absolute',
-                      bottom: -18,
-                      left: 4,
-                      fontWeight: 600,
-                      whiteSpace: 'nowrap'
-                    }}>
-                      Balance: ₱{Math.max(0, parseFloat(form.balance || 0) - parseFloat(form.advance_payment || 0)).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                    </div>
-                  )}
+                    {parseFloat(form.advance_payment || 0) > 0 && (
+                      <div style={{ 
+                        fontSize: 12, 
+                        color: 'var(--accent)', 
+                        position: 'absolute',
+                        bottom: -18,
+                        left: 4,
+                        fontWeight: 600,
+                        whiteSpace: 'nowrap'
+                      }}>
+                        Balance: ₱{Math.max(0, parseFloat(form.balance || 0) - parseFloat(form.advance_payment || 0)).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </div>
+                    )}
                 </div>
 
-                {/* Advance Payment Date */}
-                <div className="form-group floating-group">
-                  <input
-                    className="form-input"
-                    type="date"
-                    placeholder=" "
-                    value={form.advance_payment_date}
-                    onChange={(e) => set('advance_payment_date', e.target.value)}
-                    max={getToday()}
+                {/* Advance Payment Date (ONLY ON ADD) */}
+                {!initial && (
+                  <div className="form-group floating-group">
+                    <input
+                      className="form-input"
+                      type="date"
+                      placeholder=" "
+                      value={form.advance_payment_date}
+                      onChange={(e) => set('advance_payment_date', e.target.value)}
+                      max={getToday()}
+                    />
+                    <label className="floating-label">Advance Date</label>
+                  </div>
+                )}
+
+                {/* Current Balance (ONLY ON EDIT) */}
+                {initial && (
+                  <div className="form-group floating-group">
+                    <input
+                      className="form-input"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      placeholder=" "
+                      onWheel={(e) => e.target.blur()}
+                      value={form.current_balance}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setError(null);
+                      setForm((f) => ({
+                        ...f,
+                        current_balance: val,
+                        advance_payment: Math.max(0, parseFloat(f.balance || 0) - parseFloat(val || 0)).toFixed(2)
+                      }));
+                    }}
+                    onBlur={(e) => {
+                      if (e.target.value) set('current_balance', parseFloat(e.target.value).toFixed(2));
+                    }}
                   />
-                  <label className="floating-label">Advance Date</label>
-                </div>
+                  <label className="floating-label">Current Balance (₱)</label>
+                  </div>
+                )}
+
+                {/* Adjustment Date (ONLY ON EDIT) */}
+                {initial && (
+                  <div className="form-group floating-group">
+                    <input
+                      className="form-input"
+                      type="date"
+                      placeholder=" "
+                      value={form.adjustment_date}
+                      onChange={(e) => set('adjustment_date', e.target.value)}
+                      max={getToday()}
+                    />
+                    <label className="floating-label">Adjustment Date</label>
+                  </div>
+                )}
 
 
 

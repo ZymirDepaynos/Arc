@@ -285,10 +285,18 @@ export default function Dashboard() {
 
   const handleEdit = async (form) => {
     const rawBalance = parseFloat(form.balance || 0);
+    const currentBalance = parseFloat(form.current_balance || 0);
+    
+    // In edit mode, the user sets the Initial Balance (rawBalance) and Current Balance.
+    // The total paid (advance_payment) is mathematically derived from these two.
+    const advancePayment = Math.max(0, rawBalance - currentBalance);
+
     const payload = {
       ...form,
       balance: rawBalance,
       original_debt: rawBalance,
+      advance_payment: advancePayment,
+      adjustment_date: form.adjustment_date
     };
     await toast.promise(updateDebtor(editDebtor.id, payload), {
       loading: 'Saving changes...',

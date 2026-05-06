@@ -34,6 +34,8 @@ export default function TransactionHistory() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [dateFilter, setDateFilter] = useState('');
+  const [typeFilter, setTypeFilter] = useState('All'); // All, Recent, Payment, Created, Deleted
+  const [typeMenuOpen, setTypeMenuOpen] = useState(false);
   
   const API_URL = import.meta.env.VITE_API_URL || '';
 
@@ -41,44 +43,55 @@ export default function TransactionHistory() {
     try {
       const res = await axios.get(`${API_URL}/api/debtors`);
       const allHistory = [];
+      // clearedAt only applies to local-only logs (deleted records), NOT to real DB payment records
       const clearedAt = localStorage.getItem('arc_history_cleared_at') || 0;
       const hiddenIds = JSON.parse(localStorage.getItem('arc_hidden_transactions') || '[]');
       
       res.data.forEach(customer => {
+        // --- Real payment entries from DB ---
         if (customer.payment_history) {
           customer.payment_history.forEach((p, idx) => {
             const tId = `${customer.id}-pay-${idx}`;
-            if (new Date(p.date) > new Date(clearedAt) && !hiddenIds.includes(tId)) {
+            // Use system created_at if available, otherwise fallback to payment date for legacy records
+            const entryTime = p.created_at || p.date; 
+            if (new Date(entryTime) > new Date(clearedAt) && !hiddenIds.includes(tId)) {
               allHistory.push({
                 ...p,
                 id: tId,
                 customerId: customer.id,
                 customerName: customer.name,
-                type: 'payment'
+                type: 'payment',
+                systemDate: entryTime
               });
             }
           });
         }
         
+        // --- Account-opened entry ---
+        const accountDate = customer.date_borrowed || customer.created_at;
         const cId = `${customer.id}-created`;
+        // Use real DB created_at for "when it was added" check
         if (new Date(customer.created_at) > new Date(clearedAt) && !hiddenIds.includes(cId)) {
           allHistory.push({
             id: cId,
-            date: customer.created_at,
-            amount: customer.balance + (customer.payment_history?.reduce((acc, p) => acc + p.amount, 0) || 0),
+            date: accountDate,
+            amount: customer.original_debt || (customer.balance + (customer.payment_history?.reduce((acc, p) => acc + p.amount, 0) || 0)),
             customerId: customer.id,
             customerName: customer.name,
-            type: 'created'
+            type: 'created',
+            systemDate: customer.created_at
           });
         }
       });
 
+      // --- Deleted-record logs: localStorage only, respects clearedAt ---
       const deletedLogs = JSON.parse(localStorage.getItem('arc_deleted_logs') || '[]');
       deletedLogs.forEach(log => {
         if (new Date(log.date) > new Date(clearedAt) && !hiddenIds.includes(log.id)) {
            allHistory.push({
              ...log,
-             customerId: log.id
+             customerId: log.id,
+             systemDate: log.date
            });
         }
       });
@@ -98,7 +111,11 @@ export default function TransactionHistory() {
   const filtered = transactions.filter(t => {
     const matchesSearch = t.customerName.toLowerCase().includes(search.toLowerCase());
     const matchesDate = !dateFilter || t.date.startsWith(dateFilter);
-    return matchesSearch && matchesDate;
+    const todayStr = new Date().toLocaleDateString('en-CA');
+    const systemDateStr = t.systemDate ? new Date(t.systemDate).toLocaleDateString('en-CA') : t.date;
+    const matchesType = typeFilter === 'All' || 
+                       (typeFilter === 'Recent' ? systemDateStr === todayStr : t.type === typeFilter.toLowerCase());
+    return matchesSearch && matchesDate && matchesType;
   });
 
   const clearHistory = () => {
@@ -139,7 +156,7 @@ export default function TransactionHistory() {
       </div>
 
       {/* Filters */}
-      <div style={{ display: 'flex', gap: 12, marginBottom: 24, flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', gap: 12, marginBottom: 24, flexWrap: 'wrap', alignItems: 'center' }}>
         <div className="search-wrap" style={{ flex: 1, minWidth: 200 }}>
           <Search className="search-icon" size={16} />
           <input
@@ -150,7 +167,7 @@ export default function TransactionHistory() {
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
-        <div className="search-wrap" style={{ width: 180 }}>
+        <div className="search-wrap" style={{ width: 160 }}>
           <CalendarIcon className="search-icon" size={16} />
           <input
             type="date"
@@ -159,6 +176,63 @@ export default function TransactionHistory() {
             onChange={(e) => setDateFilter(e.target.value)}
             style={{ paddingLeft: 40 }}
           />
+        </div>
+
+        {/* Type Filter Button */}
+        <div style={{ position: 'relative' }}>
+          <button 
+            className="calendar-pill-btn" 
+            onClick={() => setTypeMenuOpen(!typeMenuOpen)}
+            style={{ 
+              height: 46,
+              padding: '0 16px',
+              borderRadius: 14,
+              background: typeFilter !== 'All' ? 'var(--accent)' : 'var(--bg-card)',
+              color: typeFilter !== 'All' ? '#000' : 'var(--text-primary)',
+              borderColor: typeFilter !== 'All' ? 'var(--accent)' : 'var(--border)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+              fontSize: 14,
+              fontWeight: 700
+            }}
+          >
+            <Filter size={16} />
+            <span>{typeFilter === 'All' ? 'Filter Type' : typeFilter}</span>
+          </button>
+
+          <AnimatePresence>
+            {typeMenuOpen && (
+              <>
+                <div 
+                  style={{ position: 'fixed', inset: 0, zIndex: 99 }} 
+                  onClick={() => setTypeMenuOpen(false)} 
+                />
+                <motion.div 
+                  className="dropdown-menu"
+                  style={{ right: 0, top: '100%', marginTop: 8, width: 180 }}
+                  initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                >
+                  {['All', 'Recent', 'Payment', 'Created', 'Deleted'].map(type => (
+                    <div 
+                      key={type}
+                      className={`dropdown-item ${typeFilter === type ? 'active' : ''}`} 
+                      onClick={() => {
+                        setTypeFilter(type);
+                        setTypeMenuOpen(false);
+                      }}
+                      style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+                    >
+                      <span>{type}</span>
+                      {typeFilter === type && <ChevronRight size={14} />}
+                    </div>
+                  ))}
+                </motion.div>
+              </>
+            )}
+          </AnimatePresence>
         </div>
       </div>
 
@@ -206,7 +280,7 @@ export default function TransactionHistory() {
                       {t.customerName}
                     </div>
                     <div style={{ fontSize: 12, color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 4 }}>
-                      <Clock size={10} /> {new Date(t.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} • {fmtDate(t.date)}
+                      {fmtDate(t.date)}
                     </div>
                   </div>
                 </div>
@@ -220,7 +294,7 @@ export default function TransactionHistory() {
                       {t.type === 'payment' ? '+' : t.type === 'deleted' ? '-' : ''}{fmt(t.amount)}
                     </div>
                     <div style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase' }}>
-                      {t.type === 'payment' ? 'Payment' : t.type === 'deleted' ? 'Deleted' : 'Acct Opened'}
+                      {t.type === 'payment' ? 'Payment' : t.type === 'deleted' ? 'Deleted' : 'Record Started'}
                     </div>
                   </div>
                   <button 

@@ -10,8 +10,9 @@ const supabase = createClient(
 
 const processDate = (inputDate) => {
   if (!inputDate) return new Date().toISOString();
+  // Ensure we compare against Manila today string YYYY-MM-DD
   const todayStr = new Date().toLocaleString("en-CA", {timeZone: "Asia/Manila"}).split(',')[0];
-  if (inputDate.startsWith(todayStr)) {
+  if (inputDate === todayStr) {
     return new Date().toISOString();
   }
   return inputDate;
@@ -37,7 +38,8 @@ router.post('/import-all', async (req, res) => {
             date: c.advance_payment_date || c.date_borrowed || new Date().toISOString().split('T')[0],
             amount: rawAdvance,
             balance_after: storedBalance,
-            note: 'Advance Payment'
+            note: 'Advance Payment',
+            created_at: new Date().toISOString()
           });
         }
         return {
@@ -138,7 +140,8 @@ router.post('/', async (req, res) => {
         date: processDate(advance_payment_date || date_borrowed),
         amount: rawAdvance,
         balance_after: storedBalance,
-        note: 'Advance Payment'
+        note: 'Advance Payment',
+        created_at: new Date().toISOString()
       });
     }
 
@@ -186,7 +189,6 @@ router.put('/:id', async (req, res) => {
       date_borrowed,
       notes,
       original_debt: requestedOriginalDebt,
-      adjustment_date,
     } = req.body;
 
     // Fetch current
@@ -208,16 +210,25 @@ router.put('/:id', async (req, res) => {
     const newBalance = Math.max(0, newOriginalDebt - newAdvance);
 
     let history = Array.isArray(current.payment_history) ? [...current.payment_history] : [];
+    const processedAdvanceDate = processDate(advance_payment_date || current.advance_payment_date);
 
     const historySum = history.reduce((sum, p) => sum + parseFloat(p.amount), 0);
-    // If the advance_payment form field doesn't match the history sum, it was edited
+    
     if (newAdvance !== historySum) {
+        // Amount changed - add new entry
         history.push({
-            date: processDate(adjustment_date),
+            date: processedAdvanceDate,
             amount: newAdvance - historySum,
             balance_after: newBalance,
-            note: 'Manual Adjustment'
+            note: 'Advance Payment',
+            created_at: new Date().toISOString()
         });
+    } else if (advance_payment_date && advance_payment_date !== current.advance_payment_date) {
+        // Date changed but amount is same - find and update the first "Advance Payment" entry
+        const advIdx = history.findIndex(p => p.note === 'Advance Payment');
+        if (advIdx !== -1) {
+            history[advIdx].date = processedAdvanceDate;
+        }
     }
 
     const newStatus = newAdvance > 0 && newBalance > 0 ? 'partial' : newBalance <= 0 ? 'paid' : 'active';
@@ -293,7 +304,9 @@ router.post('/:id/pay', async (req, res) => {
     const paymentEntry = {
       date: paymentDate,
       amount: payAmount,
-      balance_after: newBalance
+      balance_after: newBalance,
+      note: 'Advance Payment',
+      created_at: new Date().toISOString()
     };
     
     const history = Array.isArray(current.payment_history) ? [...current.payment_history, paymentEntry] : [paymentEntry];

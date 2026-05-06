@@ -21,7 +21,7 @@ export default function SummaryStats({ totals }) {
           </div>
           <div style={{ marginTop: 8 }}>
             <span className="stat-sub-value" style={{ marginLeft: 0, background: 'var(--status-paid-bg)', color: 'var(--status-paid-text)' }}>
-              Active Customers
+              Outstanding Customers
             </span>
           </div>
           
@@ -71,7 +71,7 @@ export default function SummaryStats({ totals }) {
           
           <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 12, fontSize: 11, color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
             <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-              <div className="dot active" style={{ width: 6, height: 6 }}></div> Active: {totals?.activeCount || 0}
+              <div className="dot active" style={{ width: 6, height: 6 }}></div> Outstanding: {totals?.activeCount || 0}
             </span>
             <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
               <div className="dot partial" style={{ width: 6, height: 6 }}></div> Partial: {totals?.partialCount || 0}

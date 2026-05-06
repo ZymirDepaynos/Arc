@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, CreditCard } from 'lucide-react';
 
@@ -7,23 +7,115 @@ const fmt = (n) =>
 
 const getToday = () => new Date().toLocaleDateString('en-CA');
 
+const parseNaturalDate = (input) => {
+  if (!input || !input.trim()) return null;
+  const clean = input.trim();
+  let parsedIso = null;
+  
+  if (/^\d{4}-\d{2}-\d{2}$/.test(clean)) {
+    parsedIso = clean;
+  } else {
+    const direct = new Date(clean);
+    if (!isNaN(direct.getTime())) {
+      parsedIso = direct.toLocaleDateString('en-CA');
+    } else {
+      const monthNames = ['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'];
+      const m = clean.toLowerCase().replace(',', '').replace(/\s+/g, ' ').split(' ');
+      if (m.length >= 3) {
+        const monthIdx = monthNames.findIndex(mn => m[0].startsWith(mn));
+        if (monthIdx !== -1) {
+          const day = parseInt(m[1]);
+          const year = parseInt(m[2]);
+          if (!isNaN(day) && !isNaN(year)) {
+            const d = new Date(year, monthIdx, day);
+            if (!isNaN(d.getTime())) parsedIso = d.toLocaleDateString('en-CA');
+          }
+        }
+      }
+    }
+  }
+
+  if (parsedIso) {
+    if (parsedIso > getToday()) return 'future_error';
+    return parsedIso;
+  }
+  return null;
+};
+
+const formatDisplayDate = (isoDate) => {
+  if (!isoDate) return '';
+  const d = new Date(isoDate + 'T12:00:00');
+  if (isNaN(d.getTime())) return isoDate;
+  return d.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+};
+
 export default function PayModal({ open, onClose, debtor, onPay }) {
   const [amount, setAmount] = useState('');
   const [date, setDate] = useState(getToday());
+  const [dateText, setDateText] = useState(formatDisplayDate(getToday()));
+  const [dateParsed, setDateParsed] = useState(null);
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (open) {
+      setAmount('');
+      setDate(getToday());
+      setDateText(formatDisplayDate(getToday()));
+      setDateParsed(null);
+      setLoading(false);
+    }
+  }, [open, debtor]);
 
   const handlePay = async () => {
     const payAmt = parseFloat(amount);
-    if (!amount || payAmt <= 0) return;
+    if (!amount || payAmt <= 0 || !date) return;
     setLoading(true);
     try {
-      await onPay(debtor.id, parseFloat(amount), date || getToday());
-      setAmount('');
-      setDate(getToday());
+      await onPay(debtor.id, payAmt, date);
       onClose();
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleDateText = (e) => {
+    const val = e.target.value;
+    setDateText(val);
+    const parsed = parseNaturalDate(val);
+    if (val.trim() === '') {
+      setDateParsed(null);
+      setDate('');
+    } else if (parsed === 'future_error') {
+      setDateParsed('future_error');
+      setDate('');
+    } else if (parsed) {
+      if (debtor.date_borrowed && parsed < debtor.date_borrowed) {
+        setDateParsed('past_error');
+        setDate('');
+      } else {
+        setDateParsed('ok');
+        setDate(parsed);
+      }
+    } else {
+      setDateParsed('error');
+      setDate('');
+    }
+  };
+
+  const dateHint = (parsedState, isoVal) => {
+    if (parsedState === 'ok' && isoVal) {
+      return <div style={{ fontSize: 11, color: 'var(--accent)', marginTop: 4, fontWeight: 600 }}>✓ {formatDisplayDate(isoVal)}</div>;
+    }
+    if (parsedState === 'future_error') {
+      return <div style={{ fontSize: 11, color: '#ef4444', marginTop: 4 }}>Post-dated entries are not allowed</div>;
+    }
+    if (parsedState === 'past_error') {
+      return <div style={{ fontSize: 11, color: '#ef4444', marginTop: 4 }}>Cannot be earlier than purchase date</div>;
+    }
+    if (parsedState === 'error') {
+      return <div style={{ fontSize: 11, color: '#ef4444', marginTop: 4 }}>Could not detect date. Try "May 3, 2026"</div>;
+    }
+    return null;
   };
 
   return (
@@ -79,15 +171,16 @@ export default function PayModal({ open, onClose, debtor, onPay }) {
               />
             </div>
             
-            <div className="form-group" style={{ marginBottom: 20 }}>
-              <label className="form-label">Payment Date</label>
+            <div className="form-group floating-group" style={{ marginBottom: 20 }}>
               <input
                 className="form-input"
-                type="date"
-                value={date}
-                onChange={(e) => setDate(e.target.value)}
-                max={getToday()}
+                type="text"
+                placeholder=" "
+                value={dateText}
+                onChange={handleDateText}
               />
+              <label className="floating-label">Payment Date</label>
+              {dateHint(dateParsed, date)}
             </div>
 
             <div style={{ display: 'flex', gap: 10 }}>
@@ -98,7 +191,7 @@ export default function PayModal({ open, onClose, debtor, onPay }) {
                 className="btn btn-primary"
                 style={{ flex: 2 }}
                 onClick={handlePay}
-                disabled={loading || !amount}
+                disabled={loading || !amount || !date}
               >
                 <CreditCard size={14} />
                 {loading ? 'Recording...' : 'Record Payment'}

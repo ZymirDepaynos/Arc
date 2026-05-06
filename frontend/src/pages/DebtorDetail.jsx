@@ -24,7 +24,8 @@ const fmt = (n) =>
 const fmtDate = (d) => {
   if (!d) return '—';
   try {
-    const date = new Date(d);
+    const isDateOnly = d.length === 10 || !d.includes('T');
+    const date = isDateOnly ? new Date(d + 'T12:00:00') : new Date(d);
     if (isNaN(date.getTime())) return '—';
     return date.toLocaleDateString('en-PH', { year: 'numeric', month: 'long', day: 'numeric' });
   } catch {
@@ -82,7 +83,11 @@ export default function DebtorDetail() {
       balance: rawBalance,
       original_debt: rawBalance,
       advance_payment: advancePayment,
-      adjustment_date: form.adjustment_date
+      advance_payment_date: form.advance_payment_date,
+      // Strip UI-only display keys
+      date_borrowed_text: undefined,
+      advance_payment_date_text: undefined,
+      current_balance: undefined,
     };
 
     await toast.promise(axios.put(`${API_URL}/api/debtors/${id}`, payload).then((r) => setDebtor(r.data)), {
@@ -90,16 +95,16 @@ export default function DebtorDetail() {
     });
   };
 
-  const handlePay = async (_, amount) => {
-    const localDate = new Date().toLocaleDateString('en-CA'); 
+  const handlePay = async (_, amount, date) => {
+    const payDate = date || new Date().toLocaleDateString('en-CA');
     await toast.promise(
-      axios.post(`${API_URL}/api/debtors/${id}/pay`, { amount, date: localDate }),
+      axios.post(`${API_URL}/api/debtors/${id}/pay`, { amount, date: payDate }),
       {
         loading: 'Recording...',
         success: (res) => {
           if (res.data.settled) {
             navigate('/');
-            return 'Debt settled and record removed!';
+            return 'Settled and marked as paid!';
           }
           setDebtor(res.data);
           return 'Payment recorded!';
@@ -199,23 +204,41 @@ export default function DebtorDetail() {
 
       <div className="content-container" style={{ padding: '0' }}>
         {/* Balance highlight */}
-        <div className="stat-box" style={{ marginBottom: 24, padding: '32px' }}>
-
-          <div className="detail-field-label">Current Balance</div>
-          <div style={{ 
-            fontSize: 'clamp(32px, 8vw, 48px)', 
-            fontWeight: 700, 
-            letterSpacing: '-2px',
-            color: 'var(--text-primary)',
-            marginBottom: 8 
-          }}>
-            {fmt(debtor.balance)}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 24, marginBottom: 24 }}>
+          
+          <div className="stat-box" style={{ padding: '32px' }}>
+            <div className="detail-field-label">Current Balance</div>
+            <div style={{ 
+              fontSize: 'clamp(32px, 8vw, 48px)', 
+              fontWeight: 700, 
+              letterSpacing: '-2px',
+              color: 'var(--text-primary)',
+              marginBottom: 8 
+            }}>
+              {fmt(debtor.balance)}
+            </div>
+            {debtor.status === 'paid' && (
+              <div style={{ color: 'var(--status-paid-text)', fontWeight: 600, fontSize: 14, display: 'flex', alignItems: 'center', gap: 6 }}>
+                <div className="dot paid"></div> Fully Paid
+              </div>
+            )}
           </div>
-          {debtor.status === 'paid' && (
-            <div style={{ color: 'var(--status-paid-text)', fontWeight: 600, fontSize: 14, display: 'flex', alignItems: 'center', gap: 6 }}>
-              <div className="dot paid"></div> Fully recovered
+
+          {debtor.original_debt > 0 && (
+            <div className="stat-box" style={{ padding: '32px', background: 'var(--accent-light)', borderColor: 'var(--accent)' }}>
+              <div className="detail-field-label" style={{ color: 'var(--accent)' }}>Initial Balance</div>
+              <div style={{ 
+                fontSize: 'clamp(32px, 8vw, 48px)', 
+                fontWeight: 700, 
+                letterSpacing: '-2px',
+                color: 'var(--text-primary)',
+                marginBottom: 8 
+              }}>
+                {fmt(debtor.original_debt)}
+              </div>
             </div>
           )}
+
         </div>
 
         {/* Info grid */}
@@ -230,15 +253,14 @@ export default function DebtorDetail() {
             <div className="detail-field-value">{fmtDate(debtor.date_borrowed)}</div>
           </div>
           <div className="detail-field">
-            <div className="detail-field-label">Customer ID</div>
-            <div className="detail-field-value" style={{ color: 'var(--text-muted)' }}>#ARC-{debtor.id.toString().padStart(4, '0')}</div>
-          </div>
-          {debtor.original_debt > 0 && (
-            <div className="detail-field">
-              <div className="detail-field-label">Initial Balance</div>
-              <div className="detail-field-value" style={{ color: 'var(--status-active-text)' }}>{fmt(debtor.original_debt)}</div>
+            <div className="detail-field-label">Receipt No.</div>
+            <div className="detail-field-value" style={{ color: 'var(--text-muted)' }}>
+              {debtor.receipt_numbers && debtor.receipt_numbers.length > 0
+                ? debtor.receipt_numbers.map(r => `#${r}`).join(', ')
+                : '—'}
             </div>
-          )}
+          </div>
+
           <div className="detail-field">
             <div className="detail-field-label">Advance Payment Date</div>
             <div className="detail-field-value">{fmtDate(debtor.advance_payment_date)}</div>
@@ -249,27 +271,8 @@ export default function DebtorDetail() {
           </div>
         </motion.div>
 
-        {/* Receipt numbers */}
-        {debtor.receipt_numbers && debtor.receipt_numbers.length > 0 && (
-          <motion.div
-            className="detail-field"
-            style={{ marginTop: 16 }}
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-          >
-            <div className="detail-field-label" style={{ marginBottom: 12 }}>Receipt History</div>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
-              {debtor.receipt_numbers.map((r, i) => (
-                <span key={i} className="receipt-tag-removable" style={{ padding: '8px 16px', borderRadius: 10 }}>
-                  #{r}
-                </span>
-              ))}
-            </div>
-          </motion.div>
-        )}
-
         {/* Notes */}
+        {/* Items Purchased */}
         {debtor.notes && (
           <motion.div
             className="detail-field"
@@ -278,8 +281,8 @@ export default function DebtorDetail() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.15 }}
           >
-            <div className="detail-field-label" style={{ marginBottom: 8 }}>Notes</div>
-            <div style={{ fontSize: 14, color: 'var(--text-secondary)', lineHeight: 1.6 }}>{debtor.notes}</div>
+            <div className="detail-field-label" style={{ marginBottom: 8 }}>Items Purchased</div>
+            <div style={{ fontSize: 14, color: 'var(--text-secondary)', lineHeight: 1.8, whiteSpace: 'pre-wrap', fontFamily: 'inherit' }}>{debtor.notes}</div>
           </motion.div>
         )}
       </div>
@@ -298,9 +301,14 @@ export default function DebtorDetail() {
           <div className="timeline-item">
             <div className="timeline-dot created"></div>
             <div className="timeline-content">
-              <div className="timeline-time">{new Date(debtor.created_at).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</div>
-              <div className="timeline-title">Record Created</div>
-              <div className="timeline-desc">Initial balance of {fmt(debtor.original_debt || (debtor.balance + (debtor.payment_history?.reduce((acc, p) => acc + p.amount, 0) || 0)))} was recorded.</div>
+              <div className="timeline-time">
+                {debtor.date_borrowed 
+                  ? new Date(debtor.date_borrowed + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+                  : new Date(debtor.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+                }
+              </div>
+              <div className="timeline-title">Record Started</div>
+              <div className="timeline-desc">Initial balance of <span className="timeline-money">{fmt(debtor.original_debt || (debtor.balance + (debtor.payment_history?.reduce((acc, p) => acc + p.amount, 0) || 0)))}</span> was recorded.</div>
             </div>
           </div>
 
@@ -308,19 +316,19 @@ export default function DebtorDetail() {
           {debtor.payment_history?.map((payment, idx) => {
             const isDateOnly = payment.date && (payment.date.length === 10 || !payment.date.includes('T'));
             const dateStr = isDateOnly 
-              ? new Date(payment.date + 'T12:00:00').toLocaleString('en-US', { month: 'short', day: 'numeric' })
-              : new Date(payment.date).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+              ? new Date(payment.date + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+              : new Date(payment.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 
             return (
               <div key={idx} className="timeline-item">
                 <div className="timeline-dot payment"></div>
                 <div className="timeline-content">
                   <div className="timeline-time">{dateStr}</div>
-                  <div className="timeline-title">{payment.note || 'Payment Received'}</div>
+                  <div className="timeline-title">{payment.note || 'Advance Payment'}</div>
                   <div className="timeline-desc">
                     {payment.note === 'Manual Adjustment' || payment.amount < 0 
-                      ? `Balance adjusted by ${fmt(payment.amount)}. Remaining balance: ${fmt(payment.balance_after)}.`
-                      : `A payment of ${fmt(payment.amount)} was made. Remaining balance: ${fmt(payment.balance_after)}.`}
+                      ? <>Balance adjusted by <span className="timeline-money">{fmt(payment.amount)}</span>. Remaining balance: <span className="timeline-money">{fmt(payment.balance_after)}</span>.</>
+                      : <>A payment of <span className="timeline-money">{fmt(payment.amount)}</span> was made. Remaining balance: <span className="timeline-money">{fmt(payment.balance_after)}</span>.</>}
                   </div>
                 </div>
               </div>
@@ -331,9 +339,9 @@ export default function DebtorDetail() {
             <div className="timeline-item">
               <div className="timeline-dot status"></div>
               <div className="timeline-content">
-                <div className="timeline-time">{new Date(debtor.updated_at).toLocaleString('en-US', { month: 'short', day: 'numeric' })}</div>
+                <div className="timeline-time">{new Date(debtor.updated_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</div>
                 <div className="timeline-title">Account Settled</div>
-                <div className="timeline-desc">Debt has been fully paid and closed.</div>
+                <div className="timeline-desc">Has been fully paid and closed.</div>
               </div>
             </div>
           )}
@@ -348,8 +356,8 @@ export default function DebtorDetail() {
         open={confirmSettle}
         onClose={() => setConfirmSettle(false)}
         onConfirm={() => handlePay(debtor.id, debtor.balance)}
-        title="Settle Full Debt?"
-        message={`This will pay the remaining ₱${debtor.balance.toLocaleString()} and permanently remove this record. Continue?`}
+        title="Settle Full?"
+        message={`This will pay the remaining ₱${debtor.balance.toLocaleString()} and mark this record as fully settled. Continue?`}
       />
 
       <ConfirmModal
@@ -366,7 +374,7 @@ export default function DebtorDetail() {
           style={{ width: '100%', height: 56, borderRadius: 16, fontSize: 16, fontWeight: 700 }}
           onClick={() => setConfirmSettle(true)}
         >
-          Settle Full Debt
+          Settle Full
         </button>
       </div>
 

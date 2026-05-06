@@ -10,8 +10,9 @@ const supabase = createClient(
 
 const processDate = (inputDate) => {
   if (!inputDate) return new Date().toISOString();
+  // Ensure we compare against Manila today string YYYY-MM-DD
   const todayStr = new Date().toLocaleString("en-CA", {timeZone: "Asia/Manila"}).split(',')[0];
-  if (inputDate.startsWith(todayStr)) {
+  if (inputDate === todayStr) {
     return new Date().toISOString();
   }
   return inputDate;
@@ -177,7 +178,6 @@ router.put('/:id', async (req, res) => {
       due_date,
       notes,
       original_debt: requestedOriginalDebt,
-      adjustment_date,
     } = req.body;
 
     // Fetch current
@@ -204,10 +204,10 @@ router.put('/:id', async (req, res) => {
     // If the advance_payment form field doesn't match the history sum, it was edited
     if (newAdvance !== historySum) {
         history.push({
-            date: processDate(adjustment_date),
+            date: processDate(advance_payment_date),
             amount: newAdvance - historySum,
             balance_after: newBalance,
-            note: 'Manual Adjustment'
+            note: 'Advance Payment'
         });
     }
 
@@ -284,8 +284,9 @@ router.post('/:id/pay', async (req, res) => {
 
     const paymentEntry = {
       date: paymentDate,
-      amount: payAmount,
-      balance_after: newBalance
+      amount: payAmt,
+      balance_after: newBalance,
+      note: 'Advance Payment'
     };
     
     const history = Array.isArray(current.payment_history) ? [...current.payment_history, paymentEntry] : [paymentEntry];

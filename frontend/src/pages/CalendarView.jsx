@@ -136,7 +136,7 @@ export default function CalendarView() {
               <div key={i} className="history-item" onClick={() => navigate(`/debtor/${ev.debtorId}`)}>
                 <div className="history-item-header">
                   <span className="history-name">{ev.name}</span>
-                  <span className="history-date">{new Date(ev.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
+                  <span className="history-date">{new Date(ev.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
                 </div>
                 <div className="history-amount">₱{ev.amount.toLocaleString()}</div>
               </div>

@@ -1,49 +1,55 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Plus } from 'lucide-react';
+import { X } from 'lucide-react';
 import toast from 'react-hot-toast';
 
-const getToday = () => new Date().toLocaleDateString('en-CA');
+import { getToday, parseNaturalDate, formatDisplayDate } from '../utils/dateUtils';
 
 const EMPTY_FORM = {
   name: '',
   balance: '',
   advance_payment: '',
-  advance_payment_date: '',
+  advance_payment_date: getToday(),
+  advance_payment_date_text: formatDisplayDate(getToday()),
   current_balance: '',
-  adjustment_date: getToday(),
-  receipt_numbers: [],
+  receipt_numbers: '',
   date_borrowed: getToday(),
+  date_borrowed_text: formatDisplayDate(getToday()),
   notes: '',
   status: 'active',
 };
 
 export default function DebtorModal({ open, onClose, onSubmit, initial = null }) {
   const [form, setForm] = useState(EMPTY_FORM);
-  const [receiptInput, setReceiptInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [dateParsed, setDateParsed] = useState(null); // null | 'ok' | 'error'
+  const [advDateParsed, setAdvDateParsed] = useState(null);
+  const notesRef = useRef(null);
 
   useEffect(() => {
     if (open) {
       setError(null);
+      setDateParsed(null);
+      setAdvDateParsed(null);
       if (initial) {
         setForm({
           name: initial.name || '',
           balance: initial.original_debt || initial.balance || '',
           advance_payment: initial.advance_payment || '',
-          advance_payment_date: initial.advance_payment_date || '',
+          advance_payment_date: initial.advance_payment_date || getToday(),
+          advance_payment_date_text: formatDisplayDate(initial.advance_payment_date || getToday()),
           current_balance: initial.balance || '',
-          adjustment_date: getToday(),
-          receipt_numbers: initial.receipt_numbers || [],
+          receipt_numbers: (initial.receipt_numbers && initial.receipt_numbers[0]) || '',
           date_borrowed: initial.date_borrowed || '',
+          date_borrowed_text: formatDisplayDate(initial.date_borrowed),
           notes: initial.notes || '',
           status: initial.status || 'active',
         });
       } else {
-        setForm(EMPTY_FORM);
+        const today = getToday();
+        setForm({ ...EMPTY_FORM, date_borrowed: today, date_borrowed_text: formatDisplayDate(today), advance_payment_date: today, advance_payment_date_text: formatDisplayDate(today) });
       }
-      setReceiptInput('');
     }
   }, [open, initial]);
 
@@ -52,16 +58,72 @@ export default function DebtorModal({ open, onClose, onSubmit, initial = null })
     setForm((f) => ({ ...f, [key]: val }));
   };
 
-  const addReceipt = () => {
-    const trimmed = receiptInput.trim();
-    if (trimmed && !form.receipt_numbers.includes(trimmed)) {
-      set('receipt_numbers', [...form.receipt_numbers, trimmed]);
-      setReceiptInput('');
+  // Smart date field change handler
+  const handleDateText = (fieldText, fieldIso, setParsedState) => (e) => {
+    const val = e.target.value;
+    set(fieldText, val);
+    const parsed = parseNaturalDate(val);
+    if (val.trim() === '') {
+      setParsedState(null);
+      set(fieldIso, '');
+    } else if (parsed === 'future_error') {
+      setParsedState('future_error');
+      set(fieldIso, '');
+    } else if (parsed) {
+      // Check if advance payment is before purchase date
+      if (fieldIso === 'advance_payment_date' && form.date_borrowed && parsed < form.date_borrowed) {
+        setParsedState('past_error');
+        set(fieldIso, '');
+      } else {
+        setParsedState('ok');
+        set(fieldIso, parsed);
+      }
+    } else {
+      setParsedState('error');
+      set(fieldIso, '');
     }
   };
 
-  const removeReceipt = (r) =>
-    set('receipt_numbers', form.receipt_numbers.filter((x) => x !== r));
+
+
+  // Notes: auto-number list
+  const handleNotesKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      const textarea = notesRef.current;
+      const { selectionStart, value } = textarea;
+      // Determine next number
+      const lines = value.substring(0, selectionStart).split('\n');
+      const lastLine = lines[lines.length - 1];
+      const match = lastLine.match(/^(\d+)\./);
+      const nextNum = match ? parseInt(match[1]) + 1 : null;
+
+      if (nextNum !== null) {
+        const newValue = value.substring(0, selectionStart) + `\n${nextNum}. ` + value.substring(selectionStart);
+        set('notes', newValue);
+        setTimeout(() => {
+          const newPos = selectionStart + `\n${nextNum}. `.length;
+          textarea.setSelectionRange(newPos, newPos);
+        }, 0);
+      } else {
+        const newValue = value.substring(0, selectionStart) + '\n' + value.substring(selectionStart);
+        set('notes', newValue);
+        setTimeout(() => {
+          textarea.setSelectionRange(selectionStart + 1, selectionStart + 1);
+        }, 0);
+      }
+    }
+  };
+
+  // Auto-start numbering when user types in empty notes
+  const handleNotesChange = (e) => {
+    let val = e.target.value;
+    // If notes was empty and user starts typing, auto-prefix "1. "
+    if (form.notes === '' && val.length > 0 && !val.startsWith('1.')) {
+      val = '1. ' + val;
+    }
+    set('notes', val);
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -73,15 +135,23 @@ export default function DebtorModal({ open, onClose, onSubmit, initial = null })
       return;
     }
 
-    if (rawAdvance > 0 && !form.advance_payment_date) {
-      toast.error('Please provide a date for the advance payment');
+    if (!initial && rawAdvance > 0 && !form.advance_payment_date) {
+      toast.error('Please provide a valid date for the advance payment');
       return;
     }
+
+    if (!form.date_borrowed) {
+      toast.error('Please enter a valid Date of Purchase');
+      return;
+    }
+
     setLoading(true);
     setError(null);
     try {
-      // Send raw balance — backend computes remaining balance and stores original_debt
-      await onSubmit(form);
+      await onSubmit({
+        ...form,
+        receipt_numbers: form.receipt_numbers ? [form.receipt_numbers] : []
+      });
       onClose();
     } catch (err) {
       console.error('Submission Error:', err);
@@ -89,6 +159,22 @@ export default function DebtorModal({ open, onClose, onSubmit, initial = null })
     } finally {
       setLoading(false);
     }
+  };
+
+  const dateHint = (parsedState, isoVal) => {
+    if (parsedState === 'ok' && isoVal) {
+      return <div style={{ fontSize: 11, color: 'var(--accent)', marginTop: 4, fontWeight: 600 }}>✓ {formatDisplayDate(isoVal)}</div>;
+    }
+    if (parsedState === 'future_error') {
+      return <div style={{ fontSize: 11, color: '#ef4444', marginTop: 4 }}>Post-dated entries are not allowed</div>;
+    }
+    if (parsedState === 'past_error') {
+      return <div style={{ fontSize: 11, color: '#ef4444', marginTop: 4 }}>Cannot be earlier than purchase date</div>;
+    }
+    if (parsedState === 'error') {
+      return <div style={{ fontSize: 11, color: '#ef4444', marginTop: 4 }}>Could not detect date. Try "May 3, 2026"</div>;
+    }
+    return null;
   };
 
   return (
@@ -173,18 +259,18 @@ export default function DebtorModal({ open, onClose, onSubmit, initial = null })
                   <label className="floating-label">Initial Balance (₱) *</label>
                 </div>
 
-                {/* Date Borrowed */}
+                {/* Date of Purchase — smart text input */}
                 <div className="form-group floating-group">
                   <input
                     className="form-input"
-                    type="date"
+                    type="text"
                     placeholder=" "
-                    value={form.date_borrowed}
-                    onChange={(e) => set('date_borrowed', e.target.value)}
-                    max={getToday()}
+                    value={form.date_borrowed_text || ''}
+                    onChange={handleDateText('date_borrowed_text', 'date_borrowed', setDateParsed)}
                     required
                   />
-                  <label className="floating-label">Date of Purchase</label>
+                  <label className="floating-label">Date of Purchase *</label>
+                  {dateHint(dateParsed, form.date_borrowed)}
                 </div>
 
                 {/* Advance Payment */}
@@ -211,37 +297,37 @@ export default function DebtorModal({ open, onClose, onSubmit, initial = null })
                     }}
                   />
                   <label className="floating-label">Advance Payment (₱)</label>
-                    {parseFloat(form.advance_payment || 0) > 0 && (
-                      <div style={{ 
-                        fontSize: 12, 
-                        color: 'var(--accent)', 
-                        position: 'absolute',
-                        bottom: -18,
-                        left: 4,
-                        fontWeight: 600,
-                        whiteSpace: 'nowrap'
-                      }}>
-                        Balance: ₱{Math.max(0, parseFloat(form.balance || 0) - parseFloat(form.advance_payment || 0)).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                      </div>
-                    )}
+                  {parseFloat(form.advance_payment || 0) > 0 && (
+                    <div style={{ 
+                      fontSize: 12, 
+                      color: 'var(--accent)', 
+                      position: 'absolute',
+                      bottom: -18,
+                      left: 4,
+                      fontWeight: 600,
+                      whiteSpace: 'nowrap'
+                    }}>
+                      Balance: ₱{Math.max(0, parseFloat(form.balance || 0) - parseFloat(form.advance_payment || 0)).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </div>
+                  )}
                 </div>
 
-                {/* Advance Payment Date (ONLY ON ADD) */}
+                {/* Advance Payment Date (ADD mode) — smart text input */}
                 {!initial && (
                   <div className="form-group floating-group">
                     <input
                       className="form-input"
-                      type="date"
+                      type="text"
                       placeholder=" "
-                      value={form.advance_payment_date}
-                      onChange={(e) => set('advance_payment_date', e.target.value)}
-                      max={getToday()}
+                      value={form.advance_payment_date_text || ''}
+                      onChange={handleDateText('advance_payment_date_text', 'advance_payment_date', setAdvDateParsed)}
                     />
                     <label className="floating-label">Advance Date</label>
+                    {dateHint(advDateParsed, form.advance_payment_date)}
                   </div>
                 )}
 
-                {/* Current Balance (ONLY ON EDIT) */}
+                {/* Current Balance (EDIT mode only) */}
                 {initial && (
                   <div className="form-group floating-group">
                     <input
@@ -252,88 +338,61 @@ export default function DebtorModal({ open, onClose, onSubmit, initial = null })
                       placeholder=" "
                       onWheel={(e) => e.target.blur()}
                       value={form.current_balance}
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      setError(null);
-                      setForm((f) => ({
-                        ...f,
-                        current_balance: val,
-                        advance_payment: Math.max(0, parseFloat(f.balance || 0) - parseFloat(val || 0)).toFixed(2)
-                      }));
-                    }}
-                    onBlur={(e) => {
-                      if (e.target.value) set('current_balance', parseFloat(e.target.value).toFixed(2));
-                    }}
-                  />
-                  <label className="floating-label">Current Balance (₱)</label>
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setError(null);
+                        setForm((f) => ({
+                          ...f,
+                          current_balance: val,
+                          advance_payment: Math.max(0, parseFloat(f.balance || 0) - parseFloat(val || 0)).toFixed(2)
+                        }));
+                      }}
+                      onBlur={(e) => {
+                        if (e.target.value) set('current_balance', parseFloat(e.target.value).toFixed(2));
+                      }}
+                    />
+                    <label className="floating-label">Current Balance (₱)</label>
                   </div>
                 )}
 
-                {/* Adjustment Date (ONLY ON EDIT) */}
+                {/* Advance Date (EDIT mode) — smart text input */}
                 {initial && (
                   <div className="form-group floating-group">
                     <input
                       className="form-input"
-                      type="date"
+                      type="text"
                       placeholder=" "
-                      value={form.adjustment_date}
-                      onChange={(e) => set('adjustment_date', e.target.value)}
-                      max={getToday()}
+                      value={form.advance_payment_date_text || ''}
+                      onChange={handleDateText('advance_payment_date_text', 'advance_payment_date', setAdvDateParsed)}
                     />
-                    <label className="floating-label">Adjustment Date</label>
+                    <label className="floating-label">Advance Date</label>
+                    {dateHint(advDateParsed, form.advance_payment_date)}
                   </div>
                 )}
 
-
-
-
-
-                {/* Receipt Numbers */}
-                <div className="form-group full">
-                  <label className="form-label">Receipt Numbers</label>
-                  <div className="receipt-input-wrap">
-                    {form.receipt_numbers.length > 0 && (
-                      <div className="receipt-tags-display">
-                        {form.receipt_numbers.map((r) => (
-                          <span key={r} className="receipt-tag-removable">
-                            #{r}
-                            <button type="button" onClick={() => removeReceipt(r)}>
-                              <X size={11} />
-                            </button>
-                          </span>
-                        ))}
-                      </div>
-                    )}
-                    <div className="receipt-add-row">
-                      <input
-                        className="form-input"
-                        type="text"
-                        placeholder="Enter receipt number, then press Add"
-                        value={receiptInput}
-                        onChange={(e) => setReceiptInput(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') { e.preventDefault(); addReceipt(); }
-                        }}
-                      />
-                      <button
-                        type="button"
-                        className="btn btn-outline"
-                        onClick={addReceipt}
-                      >
-                        <Plus size={14} /> Add
-                      </button>
-                    </div>
-                  </div>
+                {/* Receipt Number */}
+                <div className="form-group full floating-group">
+                  <input
+                    className="form-input"
+                    type="text"
+                    placeholder=" "
+                    value={form.receipt_numbers}
+                    onChange={(e) => set('receipt_numbers', e.target.value)}
+                  />
+                  <label className="floating-label">Receipt No.</label>
                 </div>
 
-                {/* Notes */}
+                {/* Items Purchased — numbered list */}
                 <div className="form-group full">
-                  <label className="form-label">Notes (optional)</label>
+                  <label className="form-label">Items Purchased <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>(numbered list — press Enter for next item)</span></label>
                   <textarea
+                    ref={notesRef}
                     className="form-textarea"
-                    placeholder="Any additional details..."
+                    placeholder="1. Type your first item here..."
                     value={form.notes}
-                    onChange={(e) => set('notes', e.target.value)}
+                    onChange={handleNotesChange}
+                    onKeyDown={handleNotesKeyDown}
+                    style={{ fontFamily: 'inherit', lineHeight: 1.7, minHeight: 100 }}
                   />
                 </div>
               </div>

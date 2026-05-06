@@ -15,6 +15,7 @@ import PayModal from '../components/PayModal';
 import ConfirmModal from '../components/ConfirmModal';
 import logo from '../assets/logo.png';
 import ThemeToggle from '../components/ThemeToggle';
+import { parseNaturalDate, formatDisplayDate } from '../utils/dateUtils';
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -35,7 +36,7 @@ export default function Dashboard() {
   const [searchOpen, setSearchOpen] = useState(false);
   const [selectedIds, setSelectedIds] = useState([]);
   const [isSelectionMode, setIsSelectionMode] = useState(false);
-  const [sortOrder, setSortOrder] = useState('newest'); // newest, a-z, z-a
+  const [sortOrder, setSortOrder] = useState('date-desc'); // date-desc, date-asc, a-z
   const [bulkConfirm, setBulkConfirm] = useState(null); // { type: 'paid' | 'delete' }
   const [exportFilterOpen, setExportFilterOpen] = useState(false);
   const [exportFilterType, setExportFilterType] = useState(null); // 'pdf' | 'csv'
@@ -100,8 +101,23 @@ export default function Dashboard() {
   const handleSortChange = (newOrder) => {
     setSortOrder(newOrder);
     setSortMenuOpen(false);
-    const label = newOrder === 'a-z' ? 'A-Z' : newOrder === 'recent' ? 'Recent Activity' : 'Newest';
-    toast.success(`Sorted by ${label}`);
+    const labels = {
+      'a-z': 'A-Z',
+      'date-desc': 'Recent Dates',
+      'date-asc': 'Oldest Dates'
+    };
+    toast.success(`Sorted by ${labels[newOrder]}`);
+  };
+
+  const handleModeChange = (mode) => {
+    setFilterStatus(prev => prev === mode ? 'All' : mode);
+    setSearch('');
+    setSortMenuOpen(false);
+    // Focus search bar
+    setTimeout(() => {
+      const input = document.getElementById('main-search-input') || document.getElementById('mobile-search-trigger');
+      input?.focus();
+    }, 100);
   };
 
   const exportToPDF = (exportData = debtors) => {
@@ -270,11 +286,15 @@ export default function Dashboard() {
 
   const handleAdd = async (form) => {
     const rawBalance = parseFloat(form.balance || 0);
-    const rawAdvance = parseFloat(form.advance_payment || 0);
     const payload = {
       ...form,
-      balance: rawBalance,         // backend will compute storedBalance
-      original_debt: rawBalance,   // explicitly send original_debt = raw total debt
+      balance: rawBalance,
+      original_debt: rawBalance,
+      // Strip UI-only display keys
+      date_borrowed_text: undefined,
+      advance_payment_date_text: undefined,
+      adjustment_date_text: undefined,
+      current_balance: undefined,
     };
     await toast.promise(createDebtor(payload), {
       loading: 'Adding debtor...',
@@ -286,9 +306,6 @@ export default function Dashboard() {
   const handleEdit = async (form) => {
     const rawBalance = parseFloat(form.balance || 0);
     const currentBalance = parseFloat(form.current_balance || 0);
-    
-    // In edit mode, the user sets the Initial Balance (rawBalance) and Current Balance.
-    // The total paid (advance_payment) is mathematically derived from these two.
     const advancePayment = Math.max(0, rawBalance - currentBalance);
 
     const payload = {
@@ -296,7 +313,11 @@ export default function Dashboard() {
       balance: rawBalance,
       original_debt: rawBalance,
       advance_payment: advancePayment,
-      adjustment_date: form.adjustment_date
+      advance_payment_date: form.advance_payment_date,
+      // Strip UI-only display keys
+      date_borrowed_text: undefined,
+      advance_payment_date_text: undefined,
+      current_balance: undefined,
     };
     await toast.promise(updateDebtor(editDebtor.id, payload), {
       loading: 'Saving changes...',
@@ -335,7 +356,18 @@ export default function Dashboard() {
 
   const filteredCustomers = debtors
     .filter(d => {
-      const s = search.toLowerCase();
+      const cleanSearch = search.toLowerCase().trim();
+      const s = cleanSearch.startsWith('#') ? cleanSearch.substring(1) : cleanSearch;
+      
+      if (filterStatus === 'Date') {
+        if (!s) return true;
+        const parsed = parseNaturalDate(search);
+        // Normalize stored date (may be full timestamp or plain date string)
+        const storedDate = d.date_borrowed ? d.date_borrowed.substring(0, 10) : '';
+        if (parsed) return storedDate === parsed;
+        return storedDate.includes(s);
+      }
+
       const nameMatch = d.name.toLowerCase().startsWith(s) || 
                         d.name.toLowerCase().split(' ').some(word => word.startsWith(s));
                         
@@ -345,12 +377,15 @@ export default function Dashboard() {
       
       if (filterStatus === 'All') return matchesSearch;
       if (filterStatus === 'Completed') return matchesSearch && d.status === 'paid';
-      return matchesSearch && d.status !== 'paid';
+      if (filterStatus === 'Active') return matchesSearch && d.status === 'active';
+      if (filterStatus === 'Partial') return matchesSearch && d.status === 'partial';
+      return matchesSearch;
     })
     .sort((a, b) => {
       if (sortOrder === 'a-z') return a.name.localeCompare(b.name);
-      if (sortOrder === 'recent') return new Date(b.updated_at) - new Date(a.updated_at);
-      return new Date(b.created_at) - new Date(a.created_at);
+      if (sortOrder === 'date-asc') return new Date(a.date_borrowed) - new Date(b.date_borrowed);
+      // default: date-desc
+      return new Date(b.date_borrowed) - new Date(a.date_borrowed);
     });
 
   return (
@@ -385,15 +420,51 @@ export default function Dashboard() {
         </div>
 
         <div className="top-main-actions">
-          <div className="search-wrap">
-            <Search className="search-icon" size={16} />
+          <div className="search-wrap" style={{ 
+            borderColor: filterStatus === 'Date' ? 'var(--accent)' : 'var(--border)',
+            background: filterStatus === 'Date' ? 'var(--accent-light)' : 'var(--bg-card)'
+          }}>
+            <Search className="search-icon" size={16} color={filterStatus === 'Date' ? 'var(--accent)' : 'var(--text-muted)'} />
             <input
+              id="main-search-input"
               type="text"
               className="search-input"
-              placeholder="Search customers..."
+              placeholder={
+                filterStatus === 'Date' ? "Search by Date (e.g. May 4, 2026)..." :
+                "Search by Name or Receipt #..."
+              }
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
+            {filterStatus === 'Date' && search && parseNaturalDate(search) && (
+              <div style={{ position: 'absolute', right: 48, top: '50%', transform: 'translateY(-50%)', fontSize: 11, color: 'var(--accent)', fontWeight: 700 }}>
+                ✓ {formatDisplayDate(parseNaturalDate(search))}
+              </div>
+            )}
+            <button 
+              className={`search-mode-btn ${filterStatus === 'Date' ? 'active' : ''}`}
+              onClick={() => handleModeChange('Date')}
+              title="Search by Date"
+              style={{
+                position: 'absolute',
+                right: 8,
+                top: '50%',
+                transform: 'translateY(-50%)',
+                width: 32,
+                height: 32,
+                borderRadius: 8,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                border: 'none',
+                background: filterStatus === 'Date' ? 'var(--accent)' : 'transparent',
+                color: filterStatus === 'Date' ? '#000' : 'var(--text-muted)',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease'
+              }}
+            >
+              <CalendarIcon size={16} />
+            </button>
           </div>
           
           <div className="action-buttons-group">
@@ -533,11 +604,19 @@ export default function Dashboard() {
           </div>
           <div className="table-filters">
             <div className="filter-chips hide-mobile">
-              {['All', 'Active', 'Partial', 'Completed'].map(status => (
+              {['All', 'Outstanding', 'Partial', 'Completed'].map(status => (
                 <button 
                   key={status} 
-                  className={`filter-chip ${filterStatus === status ? 'active' : ''}`}
-                  onClick={() => setFilterStatus(status)}
+                  className={`filter-chip ${filterStatus === (status === 'Outstanding' ? 'Active' : status) ? 'active' : ''}`}
+                  onClick={() => {
+                    setFilterStatus(status === 'Outstanding' ? 'Active' : status);
+                    setSearch(''); // Clear search when switching modes
+                  }}
+                  style={{
+                    padding: filterStatus === status ? '8px 24px' : '8px 18px',
+                    fontSize: filterStatus === status ? '14px' : '13px',
+                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
+                  }}
                 >
                   {status}
                 </button>
@@ -550,21 +629,27 @@ export default function Dashboard() {
               onChange={(e) => setFilterStatus(e.target.value)}
             >
               <option value="All">All Status</option>
-              <option value="Active">Active</option>
+              <option value="Active">Outstanding</option>
               <option value="Partial">Partial</option>
               <option value="Completed">Completed</option>
+              <option value="Receipt">By Receipt #</option>
+              <option value="Date">By Date</option>
             </select>
 
             <div style={{ position: 'relative' }}>
               <button 
-                className="btn-icon-sm" 
+                className="calendar-pill-btn" 
                 onClick={() => setSortMenuOpen(!sortMenuOpen)}
                 style={{ 
                   background: sortMenuOpen ? 'var(--accent)' : 'var(--bg-card)',
-                  borderColor: sortMenuOpen ? 'var(--accent)' : 'var(--border)'
+                  color: sortMenuOpen ? '#000' : 'var(--text-primary)',
+                  borderColor: sortMenuOpen ? 'var(--accent)' : 'var(--border)',
+                  padding: '0 14px',
+                  height: 34
                 }}
               >
-                <ArrowUpDown size={18} color={sortMenuOpen ? '#000' : 'var(--text-secondary)'} />
+                <ArrowUpDown size={16} />
+                <span className="hide-mobile">Sort</span>
               </button>
 
               <AnimatePresence>
@@ -585,13 +670,13 @@ export default function Dashboard() {
                         <span style={{ flex: 1 }}>A-Z Names</span>
                         {sortOrder === 'a-z' && <Check size={14} color="var(--accent)" />}
                       </div>
-                      <div className="dropdown-item" onClick={() => handleSortChange('recent')}>
-                        <span style={{ flex: 1 }}>Recent Recorded</span>
-                        {sortOrder === 'recent' && <Check size={14} color="var(--accent)" />}
+                      <div className="dropdown-item" onClick={() => handleSortChange('date-desc')}>
+                        <span style={{ flex: 1 }}>Recent to Oldest Date</span>
+                        {sortOrder === 'date-desc' && <Check size={14} color="var(--accent)" />}
                       </div>
-                      <div className="dropdown-item" onClick={() => handleSortChange('newest')}>
-                        <span style={{ flex: 1 }}>New Added Debtors</span>
-                        {sortOrder === 'newest' && <Check size={14} color="var(--accent)" />}
+                      <div className="dropdown-item" onClick={() => handleSortChange('date-asc')}>
+                        <span style={{ flex: 1 }}>Oldest to Recent Date</span>
+                        {sortOrder === 'date-asc' && <Check size={14} color="var(--accent)" />}
                       </div>
                     </motion.div>
                   </>
@@ -626,11 +711,11 @@ export default function Dashboard() {
                       </div>
                     </th>
                   )}
-                  <th className="hide-mobile">Customer ID</th>
+                  <th className="hide-mobile">Receipt No.</th>
                   <th>Full Name</th>
                   <th>Date of Purchase</th>
                   <th className="hide-mobile">Initial Balance</th>
-                  <th>Adv / Bal</th>
+                  <th>Balance</th>
                   <th className="hide-tablet">Status</th>
                   <th></th>
                 </tr>
@@ -676,7 +761,7 @@ export default function Dashboard() {
         onClose={() => setConfirmData(null)}
         onConfirm={() => handlePay(confirmData.id, confirmData.balance)}
         title="Settle Full Debt?"
-        message={`This will pay the full balance of ₱${confirmData?.balance?.toLocaleString()} and permanently remove ${confirmData?.name} from the records. Are you sure?`}
+        message={`This will pay the full balance of ₱${confirmData?.balance?.toLocaleString()} and mark ${confirmData?.name} as fully settled in the records. Continue?`}
       />
 
       <ConfirmModal

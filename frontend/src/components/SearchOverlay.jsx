@@ -69,7 +69,11 @@ export default function SearchOverlay({ open, onClose, debtors }) {
                     </div>
                     <div className="result-info">
                       <div className="result-name">{debtor.name}</div>
-                      <div className="result-status">{debtor.status}</div>
+                      <div className="result-status">
+                        {debtor.status === 'active' ? 'Outstanding' : 
+                         debtor.status === 'paid' ? 'Fully Paid' : 
+                         debtor.status.charAt(0).toUpperCase() + debtor.status.slice(1)}
+                      </div>
                     </div>
                     <ChevronRight size={18} className="result-arrow" />
                   </motion.div>

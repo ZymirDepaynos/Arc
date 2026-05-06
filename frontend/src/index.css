@@ -1503,7 +1503,7 @@ body.light-mode .filter-select-mobile {
 }
 
 .timeline-time {
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 700;
   color: var(--text-muted);
   text-transform: uppercase;
@@ -1511,14 +1511,20 @@ body.light-mode .filter-select-mobile {
 }
 
 .timeline-title {
-  font-size: 15px;
+  font-size: 18px;
   font-weight: 700;
   color: var(--text-primary);
 }
 
 .timeline-desc {
-  font-size: 13px;
+  font-size: 15px;
   color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+.timeline-money {
+  color: var(--accent);
+  font-weight: 800;
 }
 
 /* ========================

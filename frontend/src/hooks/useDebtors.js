@@ -9,12 +9,10 @@ export function useDebtors() {
 
   const API_URL = import.meta.env.VITE_API_URL || '';
 
-  const fetchDebtors = useCallback(async (searchTerm = '') => {
+  const fetchDebtors = useCallback(async () => {
     try {
       setLoading(true);
-      const res = await axios.get(`${API_URL}/api/debtors`, {
-        params: searchTerm ? { search: searchTerm } : {},
-      });
+      const res = await axios.get(`${API_URL}/api/debtors`);
       if (Array.isArray(res.data)) {
         setDebtors(res.data);
         setError(null);
@@ -29,40 +27,36 @@ export function useDebtors() {
   }, []);
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      fetchDebtors(search);
-    }, 300);
-    return () => clearTimeout(timer);
-  }, [search, fetchDebtors]);
+    fetchDebtors();
+  }, [fetchDebtors]);
 
   const createDebtor = async (data) => {
     const res = await axios.post(`${API_URL}/api/debtors`, data);
-    await fetchDebtors(search);
+    await fetchDebtors();
     return res.data;
   };
 
   const bulkCreateDebtors = async (customers) => {
     const res = await axios.post(`${API_URL}/api/debtors/import-all`, customers);
-    await fetchDebtors(search);
+    await fetchDebtors();
     return res.data;
   };
 
   const updateDebtor = async (id, data) => {
     const res = await axios.put(`${API_URL}/api/debtors/${id}`, data);
-    await fetchDebtors(search);
+    await fetchDebtors();
     return res.data;
   };
 
   const deleteDebtor = async (id) => {
     await axios.delete(`${API_URL}/api/debtors/${id}`);
-    await fetchDebtors(search);
+    await fetchDebtors();
   };
 
   const recordPayment = async (id, amount, customDate = null) => {
-    // Send local date to avoid timezone issues
-    const localDate = customDate || new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD
+    const localDate = customDate || new Date().toLocaleDateString('en-CA');
     const res = await axios.post(`${API_URL}/api/debtors/${id}/pay`, { amount, date: localDate });
-    await fetchDebtors(search);
+    await fetchDebtors();
     return res.data;
   };
 

@@ -8,7 +8,8 @@ const fmt = (n) =>
 const fmtDate = (d) => {
   if (!d) return '—';
   try {
-    const date = new Date(d);
+    const isDateOnly = d.length === 10 || !d.includes('T');
+    const date = isDateOnly ? new Date(d + 'T12:00:00') : new Date(d);
     if (isNaN(date.getTime())) return '—';
     return date.toLocaleDateString('en-PH', { year: 'numeric', month: 'short', day: 'numeric' });
   } catch {
@@ -49,7 +50,7 @@ export default function DebtorCard({ debtor, onEdit, onDelete, onPay, index, sel
     switch (debtor.status) {
       case 'active': return 'Outstanding';
       case 'partial': return 'Partial';
-      case 'paid': return 'Completed';
+      case 'paid': return 'Fully Paid';
       default: return debtor.status;
     }
   };
@@ -78,8 +79,8 @@ export default function DebtorCard({ debtor, onEdit, onDelete, onPay, index, sel
         </td>
       )}
       {/* ID */}
-      <td className="hide-mobile" style={{ color: 'var(--text-secondary)' }}>
-        #{debtor.id.substring(0, 8)}
+      <td className="hide-mobile" style={{ color: 'var(--text-secondary)', fontSize: 13, fontWeight: 600 }}>
+        {debtor.receipt_numbers && debtor.receipt_numbers.length > 0 ? `#${debtor.receipt_numbers[0]}` : '—'}
       </td>
 
       {/* Name */}
@@ -103,14 +104,9 @@ export default function DebtorCard({ debtor, onEdit, onDelete, onPay, index, sel
         }
       </td>
 
-      {/* Advance / Balance */}
+      {/* Balance */}
       <td>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-          <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Adv: {fmt(debtor.advance_payment)}</span>
-          <span style={{ fontWeight: 700, color: 'var(--text-primary)' }}>
-            Bal: {fmt(debtor.balance)}
-          </span>
-        </div>
+        <span style={{ fontWeight: 700, color: 'var(--text-primary)' }}>{fmt(debtor.balance)}</span>
       </td>
 
       {/* Status */}

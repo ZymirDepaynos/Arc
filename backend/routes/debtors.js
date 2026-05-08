@@ -106,6 +106,7 @@ router.put('/:id', async (req, res) => {
         date_borrowed,
         due_date: due_date || null,
         notes: notes || '',
+        payment_history: req.body.payment_history,
         status,
         updated_at: new Date().toISOString(),
       })

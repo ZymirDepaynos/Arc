@@ -41,6 +41,19 @@ export const parseNaturalDate = (input) => {
     }
   }
 
+  // Format: "May 3" (assume current year)
+  if (parts.length === 2) {
+    const monthIdx = monthNames.findIndex(mn => parts[0].startsWith(mn));
+    if (monthIdx !== -1) {
+      const day = parseInt(parts[1]);
+      if (!isNaN(day)) {
+        const year = new Date().getFullYear();
+        const d = new Date(year, monthIdx, day);
+        if (!isNaN(d.getTime())) return d.toLocaleDateString('en-CA');
+      }
+    }
+  }
+
   // Fallback: try native parse but append noon to avoid UTC shift
   const withNoon = clean + ' 12:00:00';
   const direct = new Date(withNoon);

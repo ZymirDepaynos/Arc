@@ -13,7 +13,6 @@ import DebtorCard from '../components/DebtorCard';
 import DebtorModal from '../components/DebtorModal';
 import PayModal from '../components/PayModal';
 import ConfirmModal from '../components/ConfirmModal';
-import logo from '../assets/logo.png';
 import ThemeToggle from '../components/ThemeToggle';
 import { parseNaturalDate, formatDisplayDate } from '../utils/dateUtils';
 
@@ -40,6 +39,8 @@ export default function Dashboard() {
   const [bulkConfirm, setBulkConfirm] = useState(null); // { type: 'paid' | 'delete' }
   const [exportFilterOpen, setExportFilterOpen] = useState(false);
   const [exportFilterType, setExportFilterType] = useState(null); // 'pdf' | 'csv'
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
   useEffect(() => {
     const handleSearchTrigger = () => setSearchOpen(true);
@@ -110,9 +111,14 @@ export default function Dashboard() {
   };
 
   const handleModeChange = (mode) => {
-    setFilterStatus(prev => prev === mode ? 'All' : mode);
+    if (mode === filterStatus) {
+      setFilterStatus('All');
+    } else {
+      setFilterStatus(mode);
+    }
     setSearch('');
     setSortMenuOpen(false);
+    setCurrentPage(1);
     // Focus search bar
     setTimeout(() => {
       const input = document.getElementById('main-search-input') || document.getElementById('mobile-search-trigger');
@@ -308,12 +314,38 @@ export default function Dashboard() {
     const currentBalance = parseFloat(form.current_balance || 0);
     const advancePayment = Math.max(0, rawBalance - currentBalance);
 
+    // Audit changes for history
+    const old = editDebtor;
+    const changes = [];
+    const fmtD = (d) => d ? new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'N/A';
+
+    if (old.date_borrowed !== form.date_borrowed) {
+      changes.push(`Purchase Date: ${fmtD(old.date_borrowed)} → ${fmtD(form.date_borrowed)}`);
+    }
+    if (old.advance_payment_date !== form.advance_payment_date) {
+      changes.push(`Advance Date: ${fmtD(old.advance_payment_date)} → ${fmtD(form.advance_payment_date)}`);
+    }
+    if (parseFloat(old.balance) !== rawBalance) {
+      changes.push(`Initial Balance: ₱${old.balance.toLocaleString()} → ₱${rawBalance.toLocaleString()}`);
+    }
+
+    let updatedHistory = [...(old.payment_history || [])];
+    if (changes.length > 0) {
+      updatedHistory.push({
+        type: 'edit',
+        date: new Date().toISOString(),
+        changes: changes.join(' | '),
+        note: 'Profile Updated'
+      });
+    }
+
     const payload = {
       ...form,
       balance: rawBalance,
       original_debt: rawBalance,
       advance_payment: advancePayment,
       advance_payment_date: form.advance_payment_date,
+      payment_history: updatedHistory,
       // Strip UI-only display keys
       date_borrowed_text: undefined,
       advance_payment_date_text: undefined,
@@ -359,19 +391,18 @@ export default function Dashboard() {
       const cleanSearch = search.toLowerCase().trim();
       const s = cleanSearch.startsWith('#') ? cleanSearch.substring(1) : cleanSearch;
       
-      if (filterStatus === 'Date') {
-        if (!s) return true;
-        const parsed = parseNaturalDate(search);
-        // Normalize stored date (may be full timestamp or plain date string)
+      let dateMatch = false;
+      const parsed = parseNaturalDate(search);
+      if (parsed) {
         const storedDate = d.date_borrowed ? d.date_borrowed.substring(0, 10) : '';
-        if (parsed) return storedDate === parsed;
-        return storedDate.includes(s);
+        dateMatch = storedDate === parsed;
       }
 
       const nameMatch = d.name.toLowerCase().startsWith(s) || 
                         d.name.toLowerCase().split(' ').some(word => word.startsWith(s));
                         
       const matchesSearch = nameMatch || 
+                            dateMatch ||
                             d.id.toString().includes(s) ||
                             (d.receipt_numbers && d.receipt_numbers.some(r => r.toLowerCase().includes(s)));
       
@@ -387,6 +418,16 @@ export default function Dashboard() {
       // default: date-desc
       return new Date(b.date_borrowed) - new Date(a.date_borrowed);
     });
+
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentCustomers = filteredCustomers.slice(indexOfFirstItem, indexOfLastItem);
+  const totalPages = Math.ceil(filteredCustomers.length / itemsPerPage);
+
+  // Reset to first page when filtering
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search, filterStatus, sortOrder]);
 
   return (
     <>
@@ -409,62 +450,25 @@ export default function Dashboard() {
       {/* Desktop Top Bar */}
       <div className="top-bar hide-mobile">
         <div className="logo-brand" onClick={() => navigate('/')} style={{ cursor: 'pointer' }}>
-          <div className="logo-img-wrapper">
-            <img 
-              src={logo} 
-              alt="Arc Logo" 
-              className="logo-img"
-            />
-          </div>
           <span className="logo-text">Arc</span>
         </div>
 
         <div className="top-main-actions">
-          <div className="search-wrap" style={{ 
-            borderColor: filterStatus === 'Date' ? 'var(--accent)' : 'var(--border)',
-            background: filterStatus === 'Date' ? 'var(--accent-light)' : 'var(--bg-card)'
-          }}>
-            <Search className="search-icon" size={16} color={filterStatus === 'Date' ? 'var(--accent)' : 'var(--text-muted)'} />
+          <div className="search-wrap" style={{ position: 'relative' }}>
+            <Search className="search-icon" size={16} color="var(--text-muted)" />
             <input
               id="main-search-input"
               type="text"
               className="search-input"
-              placeholder={
-                filterStatus === 'Date' ? "Search by Date (e.g. May 4, 2026)..." :
-                "Search by Name or Receipt #..."
-              }
+              placeholder="Search Name, Receipt, or Date (e.g. May 4)..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
-            {filterStatus === 'Date' && search && parseNaturalDate(search) && (
-              <div style={{ position: 'absolute', right: 48, top: '50%', transform: 'translateY(-50%)', fontSize: 11, color: 'var(--accent)', fontWeight: 700 }}>
+            {search && parseNaturalDate(search) && (
+              <div style={{ position: 'absolute', right: 16, top: '50%', transform: 'translateY(-50%)', fontSize: 11, color: 'var(--accent)', fontWeight: 700 }}>
                 ✓ {formatDisplayDate(parseNaturalDate(search))}
               </div>
             )}
-            <button 
-              className={`search-mode-btn ${filterStatus === 'Date' ? 'active' : ''}`}
-              onClick={() => handleModeChange('Date')}
-              title="Search by Date"
-              style={{
-                position: 'absolute',
-                right: 8,
-                top: '50%',
-                transform: 'translateY(-50%)',
-                width: 32,
-                height: 32,
-                borderRadius: 8,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                border: 'none',
-                background: filterStatus === 'Date' ? 'var(--accent)' : 'transparent',
-                color: filterStatus === 'Date' ? '#000' : 'var(--text-muted)',
-                cursor: 'pointer',
-                transition: 'all 0.2s ease'
-              }}
-            >
-              <CalendarIcon size={16} />
-            </button>
           </div>
           
           <div className="action-buttons-group">
@@ -632,8 +636,6 @@ export default function Dashboard() {
               <option value="Active">Outstanding</option>
               <option value="Partial">Partial</option>
               <option value="Completed">Completed</option>
-              <option value="Receipt">By Receipt #</option>
-              <option value="Date">By Date</option>
             </select>
 
             <div style={{ position: 'relative' }}>
@@ -721,7 +723,7 @@ export default function Dashboard() {
                 </tr>
               </thead>
               <motion.tbody initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-                {filteredCustomers.map((debtor, i) => (
+                {currentCustomers.map((debtor, i) => (
                   <DebtorCard
                     key={debtor.id}
                     debtor={debtor}
@@ -737,6 +739,31 @@ export default function Dashboard() {
                 ))}
               </motion.tbody>
             </table>
+
+            {/* Pagination Controls */}
+            {totalPages > 1 && (
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 24, padding: '0 8px' }}>
+                <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>
+                  Showing {indexOfFirstItem + 1}-{Math.min(indexOfLastItem, filteredCustomers.length)} of {filteredCustomers.length} customers
+                </div>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <button 
+                    className="btn btn-outline btn-sm" 
+                    disabled={currentPage === 1}
+                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                  >
+                    Previous
+                  </button>
+                  <button 
+                    className="btn btn-outline btn-sm" 
+                    disabled={currentPage === totalPages}
+                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                  >
+                    Next
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>

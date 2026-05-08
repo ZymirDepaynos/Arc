@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, X, User, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { parseNaturalDate, formatDisplayDate } from '../utils/dateUtils';
 
 export default function SearchOverlay({ open, onClose, debtors }) {
   const [query, setQuery] = useState('');
@@ -16,9 +17,24 @@ export default function SearchOverlay({ open, onClose, debtors }) {
   }, [open]);
 
   const filtered = debtors.filter(d => {
-    const s = query.toLowerCase();
-    return d.name.toLowerCase().startsWith(s) || 
-           d.name.toLowerCase().split(' ').some(word => word.startsWith(s));
+    const cleanSearch = query.toLowerCase().trim();
+    if (!cleanSearch) return true;
+    
+    const s = cleanSearch.startsWith('#') ? cleanSearch.substring(1) : cleanSearch;
+    
+    // Check if it's a date search
+    const parsed = parseNaturalDate(query);
+    if (parsed) {
+      const storedDate = d.date_borrowed ? d.date_borrowed.substring(0, 10) : '';
+      if (storedDate === parsed) return true;
+    }
+
+    const nameMatch = d.name.toLowerCase().startsWith(s) || 
+                      d.name.toLowerCase().split(' ').some(word => word.startsWith(s));
+                      
+    return nameMatch || 
+           d.id.toString().includes(s) ||
+           (d.receipt_numbers && d.receipt_numbers.some(r => r.toLowerCase().includes(s)));
   }).slice(0, 8);
 
   if (!open) return null;
@@ -38,11 +54,16 @@ export default function SearchOverlay({ open, onClose, debtors }) {
               <input
                 ref={inputRef}
                 type="text"
-                placeholder="Search debtors..."
+                placeholder="Search Name, Receipt, or Date..."
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 className="overlay-search-input"
               />
+              {query && parseNaturalDate(query) && (
+                <div style={{ position: 'absolute', right: 48, top: '50%', transform: 'translateY(-50%)', fontSize: 11, color: 'var(--accent)', fontWeight: 700 }}>
+                  ✓ {formatDisplayDate(parseNaturalDate(query))}
+                </div>
+              )}
               <button className="close-search-btn" onClick={onClose}>
                 <X size={20} />
               </button>

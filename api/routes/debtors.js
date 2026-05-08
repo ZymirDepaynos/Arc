@@ -233,6 +233,38 @@ router.put('/:id', async (req, res) => {
 
     const newStatus = newAdvance > 0 && newBalance > 0 ? 'partial' : newBalance <= 0 ? 'paid' : 'active';
 
+    // Track Profile Changes
+    const changes = [];
+    if (name && current.name !== name) changes.push(`Name to "${name}"`);
+    
+    const oldDate = (current.date_borrowed || '').substring(0, 10);
+    const newDate = (date_borrowed || '').substring(0, 10);
+    if (oldDate && newDate && oldDate !== newDate) {
+      changes.push(`Purchase Date from ${oldDate} to ${newDate}`);
+    }
+    
+    if (current.original_debt !== newOriginalDebt) changes.push(`Initial Balance to ₱${newOriginalDebt}`);
+    
+    const currentReceipts = current.receipt_numbers || [];
+    const newReceipts = receipt_numbers || [];
+    if (currentReceipts.join(',') !== newReceipts.join(',')) {
+      changes.push(`Receipt No. to "${newReceipts.join(', ')}"`);
+    }
+
+    if (current.notes !== (notes || '')) changes.push(`Items Purchased updated`);
+
+    if (changes.length > 0) {
+      history.push({
+        type: 'edit',
+        note: 'Profile Updated',
+        changes: changes.join(' • '),
+        date: new Date().toISOString().split('T')[0],
+        created_at: new Date().toISOString(),
+        amount: 0,
+        balance_after: newBalance
+      });
+    }
+
     const { data, error } = await supabase
       .from('debtors')
       .update({

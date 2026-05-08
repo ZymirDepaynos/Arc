@@ -78,12 +78,38 @@ export default function DebtorDetail() {
     const currentBalance = parseFloat(form.current_balance || 0);
     const advancePayment = Math.max(0, rawBalance - currentBalance);
 
+    // Audit changes for history
+    const old = debtor;
+    const changes = [];
+    const fmtD = (d) => d ? new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'N/A';
+
+    if (old.date_borrowed !== form.date_borrowed) {
+      changes.push(`Purchase Date: ${fmtD(old.date_borrowed)} → ${fmtD(form.date_borrowed)}`);
+    }
+    if (old.advance_payment_date !== form.advance_payment_date) {
+      changes.push(`Advance Date: ${fmtD(old.advance_payment_date)} → ${fmtD(form.advance_payment_date)}`);
+    }
+    if (parseFloat(old.balance) !== rawBalance) {
+      changes.push(`Initial Balance: ₱${old.balance.toLocaleString()} → ₱${rawBalance.toLocaleString()}`);
+    }
+
+    let updatedHistory = [...(old.payment_history || [])];
+    if (changes.length > 0) {
+      updatedHistory.push({
+        type: 'edit',
+        date: new Date().toISOString(),
+        changes: changes.join(' | '),
+        note: 'Profile Updated'
+      });
+    }
+
     const payload = {
       ...form,
       balance: rawBalance,
       original_debt: rawBalance,
       advance_payment: advancePayment,
       advance_payment_date: form.advance_payment_date,
+      payment_history: updatedHistory,
       // Strip UI-only display keys
       date_borrowed_text: undefined,
       advance_payment_date_text: undefined,
@@ -115,9 +141,25 @@ export default function DebtorDetail() {
   };
 
   const handleDelete = async () => {
+    const debtorName = debtor.name;
+    const debtorBalance = debtor.balance;
+    const debtorId = id;
+
     await toast.promise(axios.delete(`${API_URL}/api/debtors/${id}`), {
       loading: 'Deleting...', success: 'Record deleted', error: 'Failed to delete',
     });
+
+    // Log to history
+    const logs = JSON.parse(localStorage.getItem('arc_deleted_logs') || '[]');
+    logs.push({
+      id: `deleted-${debtorId}-${Date.now()}`,
+      date: new Date().toISOString(),
+      customerName: debtorName,
+      type: 'deleted',
+      amount: debtorBalance
+    });
+    localStorage.setItem('arc_deleted_logs', JSON.stringify(logs));
+
     navigate('/');
   };
 
@@ -132,171 +174,130 @@ export default function DebtorDetail() {
   if (!debtor) return null;
 
   return (
-    <div style={{ minHeight: '100vh', paddingBottom: 80 }}>
-      {/* Sub-header */}
-      <div style={{ 
-        background: 'var(--bg-page)', 
-        marginBottom: 24,
-        padding: '12px 0'
-      }}>
-        <div className="content-container" style={{ padding: '32px 0' }}>
+    <div style={{ minHeight: '100vh', paddingBottom: 80, padding: '40px 32px', maxWidth: '100%' }}>
+      
+      {/* Header Row */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 24, marginBottom: 40 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
           <button
-            className="btn btn-outline btn-sm"
+            className="btn btn-outline back-btn-static"
             onClick={() => navigate('/')}
-            style={{ marginBottom: 24 }}
+            style={{ width: 48, height: 48, padding: 0, borderRadius: 24 }}
           >
-            <ArrowLeft size={14} /> Back to Records
+            <ArrowLeft size={20} />
           </button>
-
-          <div className="stat-box" style={{ padding: '24px 32px' }}>
-            <div className="detail-header">
-              <div className="detail-avatar">{initials(debtor.name)}</div>
-              <div style={{ flex: 1 }}>
-                <div style={{ display: 'flex', flexDirection: 'column' }}>
-                <h1 style={{ fontSize: 'clamp(24px, 5vw, 32px)', fontWeight: 900, margin: 0, color: 'var(--text-primary)', letterSpacing: '-1px' }}>
-                  {debtor.name}
-                </h1>
-                <div style={{ fontSize: 13, color: 'var(--text-muted)', fontWeight: 600, marginTop: 4 }}>
-                  Customer since {fmtDate(debtor.created_at)}
-                </div>
-              </div>
-              </div>
-              <div className="detail-actions">
-                <button className="btn btn-outline btn-sm" onClick={() => setEditOpen(true)} title="Edit Profile">
-                  <Edit2 size={13} /> <span>Edit Profile</span>
-                </button>
-                {(debtor.status !== 'paid' && parseFloat(debtor.balance) > 0) && (
-                  <>
-                    <button
-                      className="btn btn-outline btn-sm"
-                      onClick={() => setPayOpen(true)}
-                      title="Add Payment"
-                    >
-                      <CreditCard size={13} /> <span>Add Payment</span>
-                    </button>
-                    <button
-                      className="btn btn-primary btn-sm"
-                      onClick={() => setConfirmSettle(true)}
-                    >
-                      Settle Full
-                    </button>
-                  </>
-                )}
-                <button 
-                  className="btn btn-outline btn-sm" 
-                  onClick={() => setConfirmDelete(true)} 
-                  title="Delete"
-                  style={{ 
-                    borderColor: 'rgba(255, 77, 77, 0.3)', 
-                    color: '#FF4D4D',
-                    background: 'rgba(255, 77, 77, 0.05)',
-                    padding: '0 12px',
-                    height: 38
-                  }}
-                >
-                  <Trash2 size={14} />
-                </button>
-              </div>
+          <div style={{ width: 80, height: 80, borderRadius: 24, background: 'var(--accent-light)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 32, fontWeight: 900, color: 'var(--accent)' }}>
+            {initials(debtor.name)}
+          </div>
+          <div>
+            <h1 style={{ fontSize: 32, fontWeight: 900, color: 'var(--text-primary)', margin: '0 0 4px 0', letterSpacing: '-0.5px' }}>
+              {debtor.name}
+            </h1>
+            <div style={{ fontSize: 14, color: 'var(--text-muted)', fontWeight: 600 }}>
+              Customer since {fmtDate(debtor.created_at)}
             </div>
           </div>
         </div>
+
+        <div style={{ display: 'flex', gap: 12 }}>
+          <button className="btn btn-outline" onClick={() => setEditOpen(true)} style={{ height: 48, padding: '0 24px', borderRadius: 24 }}>
+            <Edit2 size={16} style={{ marginRight: 8 }} /> Edit Profile
+          </button>
+          <button className="btn btn-outline" onClick={() => setConfirmDelete(true)} style={{ height: 48, padding: '0 24px', borderRadius: 24, color: '#EF4444', borderColor: 'rgba(239, 68, 68, 0.2)', background: 'rgba(239, 68, 68, 0.05)' }}>
+            <Trash2 size={16} style={{ marginRight: 8 }} /> Delete
+          </button>
+        </div>
       </div>
 
-      <div className="content-container" style={{ padding: '0' }}>
-        {/* Balance highlight */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 24, marginBottom: 24 }}>
-          
-          <div className="stat-box" style={{ padding: '32px' }}>
-            <div className="detail-field-label">Current Balance</div>
-            <div style={{ 
-              fontSize: 'clamp(32px, 8vw, 48px)', 
-              fontWeight: 700, 
-              letterSpacing: '-2px',
-              color: 'var(--text-primary)',
-              marginBottom: 8 
-            }}>
-              {fmt(debtor.balance)}
-            </div>
-            {debtor.status === 'paid' && (
-              <div style={{ color: 'var(--status-paid-text)', fontWeight: 600, fontSize: 14, display: 'flex', alignItems: 'center', gap: 6 }}>
-                <div className="dot paid"></div> Fully Paid
-              </div>
-            )}
+      {/* METRICS ROW (3 Columns utilizing full width) */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 24, marginBottom: 24 }}>
+        
+        {/* Card 1: Current Balance */}
+        <div className="stat-box" style={{ padding: 24, borderRadius: 24, background: 'var(--bg-card)', display: 'flex', flexDirection: 'column', justifyContent: 'center', border: '1px solid var(--border)' }}>
+          <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>
+            Current Balance
+          </div>
+          <div style={{ fontSize: 40, fontWeight: 900, color: 'var(--text-primary)', letterSpacing: '-1px', lineHeight: 1, marginBottom: 20 }}>
+            {fmt(debtor.balance)}
           </div>
 
-          {debtor.original_debt > 0 && (
-            <div className="stat-box" style={{ padding: '32px', background: 'var(--accent-light)', borderColor: 'var(--accent)' }}>
-              <div className="detail-field-label" style={{ color: 'var(--accent)' }}>Initial Balance</div>
-              <div style={{ 
-                fontSize: 'clamp(32px, 8vw, 48px)', 
-                fontWeight: 700, 
-                letterSpacing: '-2px',
-                color: 'var(--text-primary)',
-                marginBottom: 8 
-              }}>
-                {fmt(debtor.original_debt)}
-              </div>
+          {debtor.status === 'paid' ? (
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'var(--status-paid-bg)', color: 'var(--status-paid-text)', padding: '6px 12px', borderRadius: 10, fontSize: 14, fontWeight: 800 }}>
+              Fully Settled
+            </div>
+          ) : (
+            <div style={{ display: 'flex', gap: 12 }}>
+              <button className="btn btn-primary" onClick={() => setPayOpen(true)} style={{ flex: 1, height: 44, borderRadius: 12, fontSize: 14 }}>
+                Add Payment
+              </button>
+              <button className="btn btn-outline" onClick={() => setConfirmSettle(true)} style={{ flex: 1, height: 44, borderRadius: 12, fontSize: 14, background: 'var(--bg-page)' }}>
+                Settle Full
+              </button>
             </div>
           )}
-
         </div>
 
-        {/* Info grid */}
-        <motion.div
-          className="detail-info-grid"
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.05 }}
-        >
-          <div className="detail-field">
-            <div className="detail-field-label">Date of Purchase</div>
-            <div className="detail-field-value">{fmtDate(debtor.date_borrowed)}</div>
+        {/* Card 2: Initial Balance */}
+        <div className="stat-box" style={{ padding: 24, borderRadius: 24, background: 'var(--bg-card)', border: '1px solid var(--border)', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+          <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>
+            Initial Balance
           </div>
-          <div className="detail-field">
-            <div className="detail-field-label">Receipt No.</div>
-            <div className="detail-field-value" style={{ color: 'var(--text-muted)' }}>
-              {debtor.receipt_numbers && debtor.receipt_numbers.length > 0
-                ? debtor.receipt_numbers.map(r => `#${r}`).join(', ')
-                : '—'}
-            </div>
+          <div style={{ fontSize: 32, fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.5px' }}>
+            {fmt(debtor.original_debt || debtor.balance)}
           </div>
+        </div>
 
-          <div className="detail-field">
-            <div className="detail-field-label">Advance Payment Date</div>
-            <div className="detail-field-value">{fmtDate(debtor.advance_payment_date)}</div>
+        {/* Card 3: Receipt Information */}
+        <div className="stat-box" style={{ padding: 24, borderRadius: 24, background: 'var(--bg-card)', border: '1px solid var(--border)', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+          <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>
+            Receipt Number
           </div>
-          <div className="detail-field">
-            <div className="detail-field-label">Last Activity</div>
-            <div className="detail-field-value">{fmtDate(debtor.updated_at)}</div>
+          <div style={{ fontSize: 24, fontWeight: 800, color: 'var(--text-primary)', wordBreak: 'break-all' }}>
+            {debtor.receipt_numbers?.length ? debtor.receipt_numbers.map(r => `#${r}`).join(', ') : '—'}
           </div>
-        </motion.div>
-
-        {/* Notes */}
-        {/* Items Purchased */}
-        {debtor.notes && (
-          <motion.div
-            className="detail-field"
-            style={{ marginTop: 16 }}
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.15 }}
-          >
-            <div className="detail-field-label" style={{ marginBottom: 8 }}>Items Purchased</div>
-            <div style={{ fontSize: 14, color: 'var(--text-secondary)', lineHeight: 1.8, whiteSpace: 'pre-wrap', fontFamily: 'inherit' }}>{debtor.notes}</div>
-          </motion.div>
-        )}
+        </div>
       </div>
 
-      {/* Timeline Audit Log */}
-      <div className="timeline-section">
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 }}>
-          <div className="row-avatar" style={{ background: 'var(--accent-light)', color: 'var(--accent)' }}>
-            <History size={20} />
+      {/* BOTTOM ROW (Consolidated Details & Larger Timeline) */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Left: Consolidated Details & Items */}
+        <div className="lg:col-span-1 flex flex-col gap-8">
+          <div className="stat-box" style={{ padding: 24, borderRadius: 24, background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
+            {/* Section 1: Dates */}
+            <div style={{ marginBottom: 24, paddingBottom: 24, borderBottom: '1px solid var(--border)' }}>
+              <h3 style={{ fontSize: 15, fontWeight: 800, color: 'var(--text-primary)', marginBottom: 16, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Key Dates</h3>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: 13, color: 'var(--text-muted)', fontWeight: 600 }}>Purchase Date</span>
+                  <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-secondary)' }}>{fmtDate(debtor.date_borrowed)}</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: 13, color: 'var(--text-muted)', fontWeight: 600 }}>Advance Payment Date</span>
+                  <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-secondary)' }}>{fmtDate(debtor.advance_payment_date)}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Section 2: Items Purchased */}
+            <div>
+              <h3 style={{ fontSize: 15, fontWeight: 800, color: 'var(--text-primary)', marginBottom: 12, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Items Purchased</h3>
+              <div style={{ fontSize: 15, color: 'var(--text-secondary)', lineHeight: 1.6, whiteSpace: 'pre-wrap', background: 'var(--bg-page)', padding: 12, borderRadius: 12, border: '1px solid var(--border)' }}>
+                {debtor.notes || 'No items listed'}
+              </div>
+            </div>
           </div>
-          <h2 style={{ fontSize: 20, fontWeight: 800, margin: 0, color: 'var(--text-primary)' }}>Timeline Audit Log</h2>
         </div>
 
-        <div className="timeline-container">
+        {/* Right: Larger Timeline (2/3 width) */}
+        <div className="lg:col-span-2">
+          <div className="stat-box" style={{ padding: 32, borderRadius: 24, background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24, paddingBottom: 16, borderBottom: '1px solid var(--border)' }}>
+              <div className="row-avatar" style={{ background: 'var(--accent-light)', color: 'var(--accent)', width: 44, height: 44, borderRadius: 12 }}>
+                <History size={20} />
+              </div>
+              <h2 style={{ fontSize: 20, fontWeight: 800, margin: 0, color: 'var(--text-primary)', letterSpacing: '-0.3px' }}>Timeline & History</h2>
+            </div>
+            <div className="timeline-container">
           {/* Created Event */}
           <div className="timeline-item">
             <div className="timeline-dot created"></div>
@@ -308,7 +309,7 @@ export default function DebtorDetail() {
                 }
               </div>
               <div className="timeline-title">Record Started</div>
-              <div className="timeline-desc">Initial balance of <span className="timeline-money">{fmt(debtor.original_debt || (debtor.balance + (debtor.payment_history?.reduce((acc, p) => acc + p.amount, 0) || 0)))}</span> was recorded.</div>
+              <div className="timeline-desc">Initial balance of <span className="timeline-money">{fmt(debtor.original_debt || (debtor.balance + (debtor.payment_history?.filter(p => p.amount).reduce((acc, p) => acc + p.amount, 0) || 0)))}</span> was recorded.</div>
             </div>
           </div>
 
@@ -321,14 +322,16 @@ export default function DebtorDetail() {
 
             return (
               <div key={idx} className="timeline-item">
-                <div className="timeline-dot payment"></div>
+                <div className={`timeline-dot ${payment.type === 'edit' ? 'status' : 'payment'}`}></div>
                 <div className="timeline-content">
                   <div className="timeline-time">{dateStr}</div>
-                  <div className="timeline-title">{payment.note || 'Advance Payment'}</div>
+                  <div className="timeline-title">{payment.type === 'edit' ? 'Profile Updated' : (payment.note || 'Advance Payment')}</div>
                   <div className="timeline-desc">
-                    {payment.note === 'Manual Adjustment' || payment.amount < 0 
-                      ? <>Balance adjusted by <span className="timeline-money">{fmt(payment.amount)}</span>. Remaining balance: <span className="timeline-money">{fmt(payment.balance_after)}</span>.</>
-                      : <>A payment of <span className="timeline-money">{fmt(payment.amount)}</span> was made. Remaining balance: <span className="timeline-money">{fmt(payment.balance_after)}</span>.</>}
+                    {payment.type === 'edit' 
+                      ? <>{payment.changes}</>
+                      : payment.note === 'Manual Adjustment' || payment.amount < 0 
+                        ? <>Balance adjusted by <span className="timeline-money">{fmt(payment.amount)}</span>. Remaining balance: <span className="timeline-money">{fmt(payment.balance_after)}</span>.</>
+                        : <>A payment of <span className="timeline-money">{fmt(payment.amount)}</span> was made. Remaining balance: <span className="timeline-money">{fmt(payment.balance_after)}</span>.</>}
                   </div>
                 </div>
               </div>
@@ -346,6 +349,8 @@ export default function DebtorDetail() {
             </div>
           )}
         </div>
+        </div>
+      </div>
       </div>
 
       {/* Modals */}

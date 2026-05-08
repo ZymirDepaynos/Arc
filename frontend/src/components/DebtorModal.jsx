@@ -66,13 +66,13 @@ export default function DebtorModal({ open, onClose, onSubmit, initial = null })
     if (val.trim() === '') {
       setParsedState(null);
       set(fieldIso, '');
-    } else if (parsed === 'future_error') {
-      setParsedState('future_error');
-      set(fieldIso, '');
     } else if (parsed) {
       // Check if advance payment is before purchase date
       if (fieldIso === 'advance_payment_date' && form.date_borrowed && parsed < form.date_borrowed) {
         setParsedState('past_error');
+        set(fieldIso, '');
+      } else if (fieldIso === 'date_borrowed' && form.advance_payment_date && parsed > form.advance_payment_date) {
+        setParsedState('limit_error');
         set(fieldIso, '');
       } else {
         setParsedState('ok');
@@ -89,13 +89,19 @@ export default function DebtorModal({ open, onClose, onSubmit, initial = null })
   // Notes: auto-number list
   const handleNotesKeyDown = (e) => {
     if (e.key === 'Enter') {
-      e.preventDefault();
       const textarea = notesRef.current;
       const { selectionStart, value } = textarea;
-      // Determine next number
       const lines = value.substring(0, selectionStart).split('\n');
       const lastLine = lines[lines.length - 1];
       const match = lastLine.match(/^(\d+)\./);
+
+      // If the current line is just a number with no text, prevent Enter
+      if (match && lastLine.trim() === match[0]) {
+        e.preventDefault();
+        return;
+      }
+
+      e.preventDefault();
       const nextNum = match ? parseInt(match[1]) + 1 : null;
 
       if (nextNum !== null) {
@@ -135,14 +141,25 @@ export default function DebtorModal({ open, onClose, onSubmit, initial = null })
       return;
     }
 
-    if (!initial && rawAdvance > 0 && !form.advance_payment_date) {
-      toast.error('Please provide a valid date for the advance payment');
+    // Final safety check on dates before submission
+    const pDate = parseNaturalDate(form.date_borrowed_text);
+    const aDate = parseNaturalDate(form.advance_payment_date_text);
+    const today = getToday();
+
+    if (!pDate) {
+      toast.error('Invalid Date of Purchase');
       return;
     }
 
-    if (!form.date_borrowed) {
-      toast.error('Please enter a valid Date of Purchase');
-      return;
+    if (rawAdvance > 0) {
+      if (!aDate) {
+        toast.error('Invalid Advance Payment Date');
+        return;
+      }
+      if (aDate < pDate) {
+        toast.error('Advance payment date cannot be earlier than the purchase date');
+        return;
+      }
     }
 
     setLoading(true);
@@ -150,6 +167,8 @@ export default function DebtorModal({ open, onClose, onSubmit, initial = null })
     try {
       await onSubmit({
         ...form,
+        date_borrowed: pDate,
+        advance_payment_date: aDate,
         receipt_numbers: form.receipt_numbers ? [form.receipt_numbers] : []
       });
       onClose();
@@ -170,6 +189,9 @@ export default function DebtorModal({ open, onClose, onSubmit, initial = null })
     }
     if (parsedState === 'past_error') {
       return <div style={{ fontSize: 11, color: '#ef4444', marginTop: 4 }}>Cannot be earlier than purchase date</div>;
+    }
+    if (parsedState === 'limit_error') {
+      return <div style={{ fontSize: 11, color: '#ef4444', marginTop: 4 }}>Cannot be later than advance payment date</div>;
     }
     if (parsedState === 'error') {
       return <div style={{ fontSize: 11, color: '#ef4444', marginTop: 4 }}>Could not detect date. Try "May 3, 2026"</div>;
@@ -377,7 +399,10 @@ export default function DebtorModal({ open, onClose, onSubmit, initial = null })
                     type="text"
                     placeholder=" "
                     value={form.receipt_numbers}
-                    onChange={(e) => set('receipt_numbers', e.target.value)}
+                    onChange={(e) => {
+                      const onlyNumbers = e.target.value.replace(/\D/g, '');
+                      set('receipt_numbers', onlyNumbers);
+                    }}
                   />
                   <label className="floating-label">Receipt No.</label>
                 </div>

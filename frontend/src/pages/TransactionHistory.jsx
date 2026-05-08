@@ -12,10 +12,12 @@ import {
   Clock,
   User,
   History as HistoryIcon,
-  X
+  X,
+  FileText
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import MobileNav from '../components/MobileNav';
+import { parseNaturalDate, formatDisplayDate } from '../utils/dateUtils';
 
 const fmt = (n) =>
   '₱' + parseFloat(n || 0).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -60,7 +62,7 @@ export default function TransactionHistory() {
                 id: tId,
                 customerId: customer.id,
                 customerName: customer.name,
-                type: 'payment',
+                type: p.type || 'payment',
                 systemDate: entryTime
               });
             }
@@ -109,13 +111,24 @@ export default function TransactionHistory() {
   useEffect(() => { fetchAllTransactions(); }, []);
 
   const filtered = transactions.filter(t => {
-    const matchesSearch = t.customerName.toLowerCase().includes(search.toLowerCase());
-    const matchesDate = !dateFilter || t.date.startsWith(dateFilter);
+    const cleanSearch = search.toLowerCase().trim();
+    const matchesSearch = t.customerName.toLowerCase().includes(cleanSearch);
+    
+    let dateMatch = !dateFilter || t.date.startsWith(dateFilter);
+    
+    // Natural language date search
+    const parsedSearchDate = parseNaturalDate(search);
+    if (parsedSearchDate) {
+      const entryDate = t.date ? t.date.substring(0, 10) : '';
+      if (entryDate === parsedSearchDate) dateMatch = true;
+    }
+
     const todayStr = new Date().toLocaleDateString('en-CA');
     const systemDateStr = t.systemDate ? new Date(t.systemDate).toLocaleDateString('en-CA') : t.date;
     const matchesType = typeFilter === 'All' || 
                        (typeFilter === 'Recent' ? systemDateStr === todayStr : t.type === typeFilter.toLowerCase());
-    return matchesSearch && matchesDate && matchesType;
+    
+    return (matchesSearch || (parsedSearchDate && dateMatch)) && dateMatch && matchesType;
   });
 
   const clearHistory = () => {
@@ -148,7 +161,7 @@ export default function TransactionHistory() {
         <button 
           className="btn-icon-sm" 
           onClick={clearHistory}
-          style={{ marginLeft: 'auto', color: 'var(--danger)', background: 'rgba(255, 77, 77, 0.1)' }}
+          style={{ marginLeft: 'auto', color: 'var(--danger)' }}
           title="Clear Log"
         >
           <Trash2 size={18} />
@@ -157,25 +170,20 @@ export default function TransactionHistory() {
 
       {/* Filters */}
       <div style={{ display: 'flex', gap: 12, marginBottom: 24, flexWrap: 'wrap', alignItems: 'center' }}>
-        <div className="search-wrap" style={{ flex: 1, minWidth: 200 }}>
+        <div className="search-wrap" style={{ flex: 1, minWidth: 280 }}>
           <Search className="search-icon" size={16} />
           <input
             type="text"
             className="search-input"
-            placeholder="Search by name..."
+            placeholder="Search name or date (e.g. May 8)..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
-        </div>
-        <div className="search-wrap" style={{ width: 160 }}>
-          <CalendarIcon className="search-icon" size={16} />
-          <input
-            type="date"
-            className="search-input"
-            value={dateFilter}
-            onChange={(e) => setDateFilter(e.target.value)}
-            style={{ paddingLeft: 40 }}
-          />
+          {search && parseNaturalDate(search) && (
+            <div style={{ position: 'absolute', right: 16, top: '50%', transform: 'translateY(-50%)', fontSize: 10, color: 'var(--accent)', fontWeight: 800, whiteSpace: 'nowrap' }}>
+              ✓ {formatDisplayDate(parseNaturalDate(search))}
+            </div>
+          )}
         </div>
 
         {/* Type Filter Button */}
@@ -273,14 +281,15 @@ export default function TransactionHistory() {
                     color: t.type === 'payment' ? 'var(--status-paid-text)' : t.type === 'deleted' ? 'var(--danger)' : 'var(--accent)',
                     fontSize: 14
                   }}>
-                    {t.type === 'payment' ? '$' : t.type === 'deleted' ? <Trash2 size={16} /> : '+'}
+                    {t.type === 'payment' ? '$' : t.type === 'deleted' ? <Trash2 size={16} /> : t.type === 'edit' ? <FileText size={16} /> : '+'}
                   </div>
                   <div>
                     <div style={{ fontWeight: 700, color: 'var(--text-primary)', fontSize: 15 }}>
                       {t.customerName}
                     </div>
-                    <div style={{ fontSize: 12, color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 4 }}>
+                    <div style={{ fontSize: 12, color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 4, flexWrap: 'wrap' }}>
                       {fmtDate(t.date)}
+                      {t.type === 'edit' && <span style={{ color: 'var(--accent)', fontWeight: 600 }}>• {t.changes}</span>}
                     </div>
                   </div>
                 </div>
@@ -291,10 +300,10 @@ export default function TransactionHistory() {
                       color: t.type === 'payment' ? 'var(--status-paid-text)' : t.type === 'deleted' ? 'var(--danger)' : 'var(--text-primary)',
                       fontSize: 16
                     }}>
-                      {t.type === 'payment' ? '+' : t.type === 'deleted' ? '-' : ''}{fmt(t.amount)}
+                      {t.type === 'edit' ? 'Update' : (t.type === 'payment' ? '+' : t.type === 'deleted' ? '-' : '') + (t.amount ? fmt(t.amount) : '0.00')}
                     </div>
                     <div style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase' }}>
-                      {t.type === 'payment' ? 'Payment' : t.type === 'deleted' ? 'Deleted' : 'Record Started'}
+                      {t.type === 'payment' ? 'Payment' : t.type === 'deleted' ? 'Deleted' : t.type === 'edit' ? 'Profile Updated' : 'Record Started'}
                     </div>
                   </div>
                   <button 

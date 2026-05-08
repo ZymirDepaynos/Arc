@@ -756,8 +756,8 @@ export default function CalendarView() {
           margin: 0;
         }
         .modal-header .btn-icon {
-          background: rgba(255, 255, 255, 0.04);
-          border: 1px solid rgba(255, 255, 255, 0.08);
+          background: var(--bg-card);
+          border: 1px solid var(--border);
           width: 42px;
           height: 42px;
           border-radius: 12px;
@@ -769,10 +769,20 @@ export default function CalendarView() {
           transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
         }
         .modal-header .btn-icon:hover {
-          background: rgba(255, 255, 255, 0.12);
-          border-color: rgba(255, 255, 255, 0.3);
-          transform: translateX(-3px) scale(1.05);
-          color: #FFF;
+          transform: scale(1.1);
+          color: var(--accent);
+          border-color: var(--accent);
+          box-shadow: var(--shadow-sm);
+        }
+        
+        body.light-mode .modal-header .btn-icon {
+          background: #FFFFFF;
+          border-color: rgba(0, 0, 0, 0.08);
+        }
+        
+        body.light-mode .modal-header .btn-icon:hover {
+          background: #FFFFFF;
+          color: var(--accent);
         }
         .modal-scroll {
           padding: 24px;

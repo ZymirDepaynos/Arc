@@ -281,9 +281,29 @@ export default function DebtorDetail() {
             {/* Section 2: Items Purchased */}
             <div>
               <h3 style={{ fontSize: 15, fontWeight: 800, color: 'var(--text-primary)', marginBottom: 12, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Items Purchased</h3>
-              <div style={{ fontSize: 15, color: 'var(--text-secondary)', lineHeight: 1.6, whiteSpace: 'pre-wrap', background: 'var(--bg-page)', padding: 12, borderRadius: 12, border: '1px solid var(--border)' }}>
-                {debtor.notes || 'No items listed'}
-              </div>
+              {(() => {
+                let items = [];
+                if (debtor.notes) {
+                  try {
+                    const parsed = JSON.parse(debtor.notes);
+                    if (Array.isArray(parsed)) items = parsed;
+                  } catch (_) {
+                    // Legacy plain text — split by newline
+                    items = debtor.notes.split('\n').map(l => l.replace(/^\d+\.\s*/, '').trim()).filter(Boolean);
+                  }
+                }
+                return items.length > 0 ? (
+                  <ul style={{ margin: 0, paddingLeft: 20, listStyleType: 'disc', display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    {items.map((item, idx) => (
+                      <li key={idx} style={{ fontSize: 14, color: 'var(--text-secondary)', fontWeight: 500, lineHeight: 1.5 }}>
+                        {item}
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <div style={{ fontSize: 14, color: 'var(--text-muted)', fontStyle: 'italic' }}>No items listed</div>
+                );
+              })()}
             </div>
           </div>
         </div>
@@ -298,57 +318,108 @@ export default function DebtorDetail() {
               <h2 style={{ fontSize: 20, fontWeight: 800, margin: 0, color: 'var(--text-primary)', letterSpacing: '-0.3px' }}>Timeline & History</h2>
             </div>
             <div className="timeline-container">
-          {/* Created Event */}
-          <div className="timeline-item">
-            <div className="timeline-dot created"></div>
-            <div className="timeline-content">
-              <div className="timeline-time">
-                {debtor.date_borrowed 
-                  ? new Date(debtor.date_borrowed + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-                  : new Date(debtor.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+              {(() => {
+                const isSettled = debtor.status === 'paid';
+                const events = [];
+
+                // 1. Record Started Event
+                events.push({
+                  id: 'created',
+                  type: 'created',
+                  timestamp: debtor.date_borrowed 
+                    ? new Date(debtor.date_borrowed + 'T12:00:00').getTime()
+                    : new Date(debtor.created_at).getTime(),
+                  dateStr: debtor.date_borrowed 
+                    ? new Date(debtor.date_borrowed + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+                    : new Date(debtor.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+                });
+
+                // 2. Payment/Edit Events
+                if (debtor.payment_history) {
+                  debtor.payment_history.forEach((payment, idx) => {
+                    const isDateOnly = payment.date && (payment.date.length === 10 || !payment.date.includes('T'));
+                    const pDate = isDateOnly 
+                      ? new Date(payment.date + 'T12:00:00')
+                      : new Date(payment.date);
+                    
+                    events.push({
+                      id: `payment-${idx}`,
+                      type: 'payment_or_edit',
+                      timestamp: pDate.getTime(),
+                      dateStr: pDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+                      payment
+                    });
+                  });
                 }
-              </div>
-              <div className="timeline-title">Record Started</div>
-              <div className="timeline-desc">Initial balance of <span className="timeline-money">{fmt(debtor.original_debt || (debtor.balance + (debtor.payment_history?.filter(p => p.amount).reduce((acc, p) => acc + p.amount, 0) || 0)))}</span> was recorded.</div>
-            </div>
-          </div>
 
-          {/* Payment Events */}
-          {debtor.payment_history?.map((payment, idx) => {
-            const isDateOnly = payment.date && (payment.date.length === 10 || !payment.date.includes('T'));
-            const dateStr = isDateOnly 
-              ? new Date(payment.date + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-              : new Date(payment.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                // 3. Settled Event
+                if (isSettled) {
+                  events.push({
+                    id: 'settled',
+                    type: 'settled',
+                    timestamp: new Date(debtor.updated_at).getTime(),
+                    dateStr: new Date(debtor.updated_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+                  });
+                }
 
-            return (
-              <div key={idx} className="timeline-item">
-                <div className={`timeline-dot ${payment.type === 'edit' ? 'status' : 'payment'}`}></div>
-                <div className="timeline-content">
-                  <div className="timeline-time">{dateStr}</div>
-                  <div className="timeline-title">{payment.type === 'edit' ? 'Profile Updated' : (payment.note || 'Advance Payment')}</div>
-                  <div className="timeline-desc">
-                    {payment.type === 'edit' 
-                      ? <>{payment.changes}</>
-                      : payment.note === 'Manual Adjustment' || payment.amount < 0 
-                        ? <>Balance adjusted by <span className="timeline-money">{fmt(payment.amount)}</span>. Remaining balance: <span className="timeline-money">{fmt(payment.balance_after)}</span>.</>
-                        : <>A payment of <span className="timeline-money">{fmt(payment.amount)}</span> was made. Remaining balance: <span className="timeline-money">{fmt(payment.balance_after)}</span>.</>}
-                  </div>
-                </div>
-              </div>
-            );
-          }).reverse()}
-          
-          {debtor.status === 'paid' && (
-            <div className="timeline-item">
-              <div className="timeline-dot status"></div>
-              <div className="timeline-content">
-                <div className="timeline-time">{new Date(debtor.updated_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</div>
-                <div className="timeline-title">Account Settled</div>
-                <div className="timeline-desc">Has been fully paid and closed.</div>
-              </div>
+                // Sort events dynamically
+                events.sort((a, b) => {
+                  if (isSettled) {
+                    // Condition B: Settled -> Ascending (oldest at top)
+                    return a.timestamp - b.timestamp;
+                  } else {
+                    // Condition A: Unsettled -> Descending (newest at top)
+                    return b.timestamp - a.timestamp;
+                  }
+                });
+
+                return events.map((ev) => {
+                  if (ev.type === 'created') {
+                    return (
+                      <div key={ev.id} className="timeline-item">
+                        <div className="timeline-dot created"></div>
+                        <div className="timeline-content">
+                          <div className="timeline-time">{ev.dateStr}</div>
+                          <div className="timeline-title">Record Started</div>
+                          <div className="timeline-desc">Initial balance of <span className="timeline-money">{fmt(debtor.original_debt || (debtor.balance + (debtor.payment_history?.filter(p => p.amount).reduce((acc, p) => acc + p.amount, 0) || 0)))}</span> was recorded.</div>
+                        </div>
+                      </div>
+                    );
+                  }
+
+                  if (ev.type === 'settled') {
+                    return (
+                      <div key={ev.id} className="timeline-item">
+                        <div className="timeline-dot status"></div>
+                        <div className="timeline-content">
+                          <div className="timeline-time">{ev.dateStr}</div>
+                          <div className="timeline-title">Account Settled</div>
+                          <div className="timeline-desc">Has been fully paid and closed.</div>
+                        </div>
+                      </div>
+                    );
+                  }
+
+                  const p = ev.payment;
+                  return (
+                    <div key={ev.id} className="timeline-item">
+                      <div className={`timeline-dot ${p.type === 'edit' ? 'status' : 'payment'}`}></div>
+                      <div className="timeline-content">
+                        <div className="timeline-time">{ev.dateStr}</div>
+                        <div className="timeline-title">{p.type === 'edit' ? 'Profile Updated' : (p.note || 'Advance Payment')}</div>
+                        <div className="timeline-desc">
+                          {p.type === 'edit' 
+                            ? <>{p.changes}</>
+                            : p.note === 'Manual Adjustment' || p.amount < 0 
+                              ? <>Balance adjusted by <span className="timeline-money">{fmt(p.amount)}</span>. Remaining balance: <span className="timeline-money">{fmt(p.balance_after)}</span>.</>
+                              : <>A payment of <span className="timeline-money">{fmt(p.amount)}</span> was made. Remaining balance: <span className="timeline-money">{fmt(p.balance_after)}</span>.</>}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                });
+              })()}
             </div>
-          )}
-        </div>
         </div>
       </div>
       </div>

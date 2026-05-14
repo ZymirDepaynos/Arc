@@ -3,7 +3,7 @@ import { Toaster } from 'react-hot-toast';
 import Dashboard from './pages/Dashboard';
 import DebtorDetail from './pages/DebtorDetail';
 import CalendarView from './pages/CalendarView';
-import TransactionHistory from './pages/TransactionHistory';
+
 
 export default function App() {
   return (
@@ -32,7 +32,7 @@ export default function App() {
             <Route path="/" element={<Dashboard />} />
             <Route path="/debtor/:id" element={<DebtorDetail />} />
             <Route path="/calendar" element={<CalendarView />} />
-            <Route path="/history" element={<TransactionHistory />} />
+
           </Routes>
         </main>
       </div>

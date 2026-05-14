@@ -1,5 +1,5 @@
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Home, Calendar, History, Plus, Search } from 'lucide-react';
+import { Home, Calendar, Plus, Search } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 export default function MobileNav({ onAddClick }) {
@@ -10,7 +10,6 @@ export default function MobileNav({ onAddClick }) {
     { icon: Home, label: 'Home', path: '/' },
     { icon: Calendar, label: 'Calendar', path: '/calendar' },
     { icon: Plus, label: 'Add', action: onAddClick, isCenter: true },
-    { icon: History, label: 'History', path: '/history' },
     { icon: Search, label: 'Search', action: 'search' },
   ];
 

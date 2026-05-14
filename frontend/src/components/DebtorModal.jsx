@@ -1,6 +1,6 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X } from 'lucide-react';
+import { X, Trash2, Calendar as CalendarIcon } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 import { getToday, parseNaturalDate, formatDisplayDate } from '../utils/dateUtils';
@@ -9,46 +9,59 @@ const EMPTY_FORM = {
   name: '',
   balance: '',
   advance_payment: '',
-  advance_payment_date: getToday(),
-  advance_payment_date_text: formatDisplayDate(getToday()),
+  advance_payment_date: '',
+  advance_payment_date_text: '',
   current_balance: '',
   receipt_numbers: '',
   date_borrowed: getToday(),
   date_borrowed_text: formatDisplayDate(getToday()),
-  notes: '',
   status: 'active',
 };
 
+// Parse stored notes back into an items array
+function parseItems(notes) {
+  if (!notes) return [];
+  try {
+    const parsed = JSON.parse(notes);
+    if (Array.isArray(parsed)) return parsed;
+  } catch (_) { /* not JSON — legacy plain text */ }
+  // Legacy: treat each non-empty line as an item
+  return notes.split('\n').map(l => l.replace(/^\d+\.\s*/, '').trim()).filter(Boolean);
+}
+
 export default function DebtorModal({ open, onClose, onSubmit, initial = null }) {
   const [form, setForm] = useState(EMPTY_FORM);
+  const [items, setItems] = useState([]);
+  const [itemInput, setItemInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [dateParsed, setDateParsed] = useState(null); // null | 'ok' | 'error'
+  const [dateParsed, setDateParsed] = useState(null);
   const [advDateParsed, setAdvDateParsed] = useState(null);
-  const notesRef = useRef(null);
 
   useEffect(() => {
     if (open) {
       setError(null);
       setDateParsed(null);
       setAdvDateParsed(null);
+      setItemInput('');
       if (initial) {
         setForm({
           name: initial.name || '',
           balance: initial.original_debt || initial.balance || '',
           advance_payment: initial.advance_payment || '',
-          advance_payment_date: initial.advance_payment_date || getToday(),
-          advance_payment_date_text: formatDisplayDate(initial.advance_payment_date || getToday()),
+          advance_payment_date: initial.advance_payment_date || '',
+          advance_payment_date_text: initial.advance_payment_date ? formatDisplayDate(initial.advance_payment_date) : '',
           current_balance: initial.balance || '',
           receipt_numbers: (initial.receipt_numbers && initial.receipt_numbers[0]) || '',
           date_borrowed: initial.date_borrowed || '',
           date_borrowed_text: formatDisplayDate(initial.date_borrowed),
-          notes: initial.notes || '',
           status: initial.status || 'active',
         });
+        setItems(parseItems(initial.notes));
       } else {
         const today = getToday();
-        setForm({ ...EMPTY_FORM, date_borrowed: today, date_borrowed_text: formatDisplayDate(today), advance_payment_date: today, advance_payment_date_text: formatDisplayDate(today) });
+        setForm({ ...EMPTY_FORM, date_borrowed: today, date_borrowed_text: formatDisplayDate(today) });
+        setItems([]);
       }
     }
   }, [open, initial]);
@@ -58,7 +71,6 @@ export default function DebtorModal({ open, onClose, onSubmit, initial = null })
     setForm((f) => ({ ...f, [key]: val }));
   };
 
-  // Smart date field change handler
   const handleDateText = (fieldText, fieldIso, setParsedState) => (e) => {
     const val = e.target.value;
     set(fieldText, val);
@@ -67,7 +79,6 @@ export default function DebtorModal({ open, onClose, onSubmit, initial = null })
       setParsedState(null);
       set(fieldIso, '');
     } else if (parsed) {
-      // Check if advance payment is before purchase date
       if (fieldIso === 'advance_payment_date' && form.date_borrowed && parsed < form.date_borrowed) {
         setParsedState('past_error');
         set(fieldIso, '');
@@ -84,51 +95,19 @@ export default function DebtorModal({ open, onClose, onSubmit, initial = null })
     }
   };
 
-
-
-  // Notes: auto-number list
-  const handleNotesKeyDown = (e) => {
+  // Items Purchased — Enter to add
+  const handleItemKeyDown = (e) => {
     if (e.key === 'Enter') {
-      const textarea = notesRef.current;
-      const { selectionStart, value } = textarea;
-      const lines = value.substring(0, selectionStart).split('\n');
-      const lastLine = lines[lines.length - 1];
-      const match = lastLine.match(/^(\d+)\./);
-
-      // If the current line is just a number with no text, prevent Enter
-      if (match && lastLine.trim() === match[0]) {
-        e.preventDefault();
-        return;
-      }
-
       e.preventDefault();
-      const nextNum = match ? parseInt(match[1]) + 1 : null;
-
-      if (nextNum !== null) {
-        const newValue = value.substring(0, selectionStart) + `\n${nextNum}. ` + value.substring(selectionStart);
-        set('notes', newValue);
-        setTimeout(() => {
-          const newPos = selectionStart + `\n${nextNum}. `.length;
-          textarea.setSelectionRange(newPos, newPos);
-        }, 0);
-      } else {
-        const newValue = value.substring(0, selectionStart) + '\n' + value.substring(selectionStart);
-        set('notes', newValue);
-        setTimeout(() => {
-          textarea.setSelectionRange(selectionStart + 1, selectionStart + 1);
-        }, 0);
-      }
+      const trimmed = itemInput.trim();
+      if (!trimmed) return;
+      setItems(prev => [...prev, trimmed]);
+      setItemInput('');
     }
   };
 
-  // Auto-start numbering when user types in empty notes
-  const handleNotesChange = (e) => {
-    let val = e.target.value;
-    // If notes was empty and user starts typing, auto-prefix "1. "
-    if (form.notes === '' && val.length > 0 && !val.startsWith('1.')) {
-      val = '1. ' + val;
-    }
-    set('notes', val);
+  const removeItem = (idx) => {
+    setItems(prev => prev.filter((_, i) => i !== idx));
   };
 
   const handleSubmit = async (e) => {
@@ -141,25 +120,14 @@ export default function DebtorModal({ open, onClose, onSubmit, initial = null })
       return;
     }
 
-    // Final safety check on dates before submission
     const pDate = parseNaturalDate(form.date_borrowed_text);
     const aDate = parseNaturalDate(form.advance_payment_date_text);
-    const today = getToday();
 
-    if (!pDate) {
-      toast.error('Invalid Date of Purchase');
-      return;
-    }
+    if (!pDate) { toast.error('Invalid Date of Purchase'); return; }
 
     if (rawAdvance > 0) {
-      if (!aDate) {
-        toast.error('Invalid Advance Payment Date');
-        return;
-      }
-      if (aDate < pDate) {
-        toast.error('Advance payment date cannot be earlier than the purchase date');
-        return;
-      }
+      if (!aDate) { toast.error('Invalid Advance Payment Date'); return; }
+      if (aDate < pDate) { toast.error('Advance payment date cannot be earlier than the purchase date'); return; }
     }
 
     setLoading(true);
@@ -169,7 +137,8 @@ export default function DebtorModal({ open, onClose, onSubmit, initial = null })
         ...form,
         date_borrowed: pDate,
         advance_payment_date: aDate,
-        receipt_numbers: form.receipt_numbers ? [form.receipt_numbers] : []
+        receipt_numbers: form.receipt_numbers ? [form.receipt_numbers] : [],
+        notes: JSON.stringify(items),
       });
       onClose();
     } catch (err) {
@@ -181,21 +150,24 @@ export default function DebtorModal({ open, onClose, onSubmit, initial = null })
   };
 
   const dateHint = (parsedState, isoVal) => {
-    if (parsedState === 'ok' && isoVal) {
-      return <div style={{ fontSize: 11, color: 'var(--accent)', marginTop: 4, fontWeight: 600 }}>✓ {formatDisplayDate(isoVal)}</div>;
-    }
-    if (parsedState === 'future_error') {
-      return <div style={{ fontSize: 11, color: '#ef4444', marginTop: 4 }}>Post-dated entries are not allowed</div>;
-    }
-    if (parsedState === 'past_error') {
-      return <div style={{ fontSize: 11, color: '#ef4444', marginTop: 4 }}>Cannot be earlier than purchase date</div>;
-    }
-    if (parsedState === 'limit_error') {
-      return <div style={{ fontSize: 11, color: '#ef4444', marginTop: 4 }}>Cannot be later than advance payment date</div>;
-    }
-    if (parsedState === 'error') {
-      return <div style={{ fontSize: 11, color: '#ef4444', marginTop: 4 }}>Could not detect date. Try "May 3, 2026"</div>;
-    }
+    const baseStyle = {
+      fontSize: 11,
+      position: 'absolute',
+      bottom: -18,
+      left: 4,
+      fontWeight: 600,
+      whiteSpace: 'nowrap',
+      zIndex: 5
+    };
+
+    if (parsedState === 'ok' && isoVal)
+      return <div style={{ ...baseStyle, color: 'var(--accent)' }}>✓ {formatDisplayDate(isoVal)}</div>;
+    if (parsedState === 'past_error')
+      return <div style={{ ...baseStyle, color: '#ef4444' }}>Cannot be earlier than purchase date</div>;
+    if (parsedState === 'limit_error')
+      return <div style={{ ...baseStyle, color: '#ef4444' }}>Cannot be later than advance payment date</div>;
+    if (parsedState === 'error')
+      return <div style={{ ...baseStyle, color: '#ef4444' }}>Could not detect date. Try "May 3, 2026"</div>;
     return null;
   };
 
@@ -228,11 +200,11 @@ export default function DebtorModal({ open, onClose, onSubmit, initial = null })
 
             <form onSubmit={handleSubmit}>
               {error && (
-                <div style={{ 
-                  background: 'rgba(239, 68, 68, 0.1)', 
-                  color: '#ef4444', 
-                  padding: '12px', 
-                  borderRadius: '8px', 
+                <div style={{
+                  background: 'rgba(239, 68, 68, 0.1)',
+                  color: '#ef4444',
+                  padding: '12px',
+                  borderRadius: '8px',
                   marginBottom: '16px',
                   fontSize: '14px',
                   border: '1px solid rgba(239, 68, 68, 0.2)'
@@ -240,6 +212,7 @@ export default function DebtorModal({ open, onClose, onSubmit, initial = null })
                   Error: {error}
                 </div>
               )}
+
               <div className="form-grid">
                 {/* Name */}
                 <div className="form-group full floating-group">
@@ -273,25 +246,58 @@ export default function DebtorModal({ open, onClose, onSubmit, initial = null })
                         current_balance: Math.max(0, parseFloat(val || 0) - parseFloat(f.advance_payment || 0)).toFixed(2)
                       }));
                     }}
-                    onBlur={(e) => {
-                      if (e.target.value) set('balance', parseFloat(e.target.value).toFixed(2));
-                    }}
+                    onBlur={(e) => { if (e.target.value) set('balance', parseFloat(e.target.value).toFixed(2)); }}
                     required
                   />
                   <label className="floating-label">Initial Balance (₱) *</label>
                 </div>
 
-                {/* Date of Purchase — smart text input */}
+                {/* Date of Purchase */}
                 <div className="form-group floating-group">
-                  <input
-                    className="form-input"
-                    type="text"
-                    placeholder=" "
-                    value={form.date_borrowed_text || ''}
-                    onChange={handleDateText('date_borrowed_text', 'date_borrowed', setDateParsed)}
-                    required
-                  />
-                  <label className="floating-label">Date of Purchase *</label>
+                  <div style={{ position: 'relative' }}>
+                    <input
+                      className="form-input"
+                      type="text"
+                      placeholder=" "
+                      value={form.date_borrowed_text || ''}
+                      onChange={handleDateText('date_borrowed_text', 'date_borrowed', setDateParsed)}
+                      style={{ paddingRight: 40 }}
+                      required
+                    />
+                    <label className="floating-label">Date of Purchase *</label>
+                    <input
+                      type="date"
+                      value={form.date_borrowed || ''}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        set('date_borrowed', val);
+                        set('date_borrowed_text', formatDisplayDate(val));
+                        setDateParsed('ok');
+                      }}
+                      style={{
+                        position: 'absolute',
+                        right: 12,
+                        top: '50%',
+                        transform: 'translateY(-50%)',
+                        opacity: 0,
+                        width: 24,
+                        height: 24,
+                        cursor: 'pointer',
+                        zIndex: 10
+                      }}
+                    />
+                    <CalendarIcon 
+                      size={18} 
+                      color="var(--text-muted)" 
+                      style={{
+                        position: 'absolute',
+                        right: 15,
+                        top: '50%',
+                        transform: 'translateY(-50%)',
+                        pointerEvents: 'none'
+                      }}
+                    />
+                  </div>
                   {dateHint(dateParsed, form.date_borrowed)}
                 </div>
 
@@ -314,15 +320,13 @@ export default function DebtorModal({ open, onClose, onSubmit, initial = null })
                         current_balance: Math.max(0, parseFloat(f.balance || 0) - parseFloat(val || 0)).toFixed(2)
                       }));
                     }}
-                    onBlur={(e) => {
-                      if (e.target.value) set('advance_payment', parseFloat(e.target.value).toFixed(2));
-                    }}
+                    onBlur={(e) => { if (e.target.value) set('advance_payment', parseFloat(e.target.value).toFixed(2)); }}
                   />
                   <label className="floating-label">Advance Payment (₱)</label>
                   {parseFloat(form.advance_payment || 0) > 0 && (
-                    <div style={{ 
-                      fontSize: 12, 
-                      color: 'var(--accent)', 
+                    <div style={{
+                      fontSize: 12,
+                      color: 'var(--accent)',
                       position: 'absolute',
                       bottom: -18,
                       left: 4,
@@ -334,22 +338,57 @@ export default function DebtorModal({ open, onClose, onSubmit, initial = null })
                   )}
                 </div>
 
-                {/* Advance Payment Date (ADD mode) — smart text input */}
+                {/* Advance Date (ADD mode) */}
                 {!initial && (
                   <div className="form-group floating-group">
-                    <input
-                      className="form-input"
-                      type="text"
-                      placeholder=" "
-                      value={form.advance_payment_date_text || ''}
-                      onChange={handleDateText('advance_payment_date_text', 'advance_payment_date', setAdvDateParsed)}
-                    />
-                    <label className="floating-label">Advance Date</label>
+                    <div style={{ position: 'relative' }}>
+                      <input
+                        className="form-input"
+                        type="text"
+                        placeholder=" "
+                        value={form.advance_payment_date_text || ''}
+                        onChange={handleDateText('advance_payment_date_text', 'advance_payment_date', setAdvDateParsed)}
+                        style={{ paddingRight: 40 }}
+                      />
+                      <label className="floating-label">Advance Date</label>
+                      <input
+                        type="date"
+                        value={form.advance_payment_date || ''}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          set('advance_payment_date', val);
+                          set('advance_payment_date_text', formatDisplayDate(val));
+                          setAdvDateParsed('ok');
+                        }}
+                        style={{
+                          position: 'absolute',
+                          right: 12,
+                          top: '50%',
+                          transform: 'translateY(-50%)',
+                          opacity: 0,
+                          width: 24,
+                          height: 24,
+                          cursor: 'pointer',
+                          zIndex: 10
+                        }}
+                      />
+                      <CalendarIcon 
+                        size={18} 
+                        color="var(--text-muted)" 
+                        style={{
+                          position: 'absolute',
+                          right: 15,
+                          top: '50%',
+                          transform: 'translateY(-50%)',
+                          pointerEvents: 'none'
+                        }}
+                      />
+                    </div>
                     {dateHint(advDateParsed, form.advance_payment_date)}
                   </div>
                 )}
 
-                {/* Current Balance (EDIT mode only) */}
+                {/* Current Balance (EDIT mode) */}
                 {initial && (
                   <div className="form-group floating-group">
                     <input
@@ -369,25 +408,58 @@ export default function DebtorModal({ open, onClose, onSubmit, initial = null })
                           advance_payment: Math.max(0, parseFloat(f.balance || 0) - parseFloat(val || 0)).toFixed(2)
                         }));
                       }}
-                      onBlur={(e) => {
-                        if (e.target.value) set('current_balance', parseFloat(e.target.value).toFixed(2));
-                      }}
+                      onBlur={(e) => { if (e.target.value) set('current_balance', parseFloat(e.target.value).toFixed(2)); }}
                     />
                     <label className="floating-label">Current Balance (₱)</label>
                   </div>
                 )}
 
-                {/* Advance Date (EDIT mode) — smart text input */}
+                {/* Advance Date (EDIT mode) */}
                 {initial && (
                   <div className="form-group floating-group">
-                    <input
-                      className="form-input"
-                      type="text"
-                      placeholder=" "
-                      value={form.advance_payment_date_text || ''}
-                      onChange={handleDateText('advance_payment_date_text', 'advance_payment_date', setAdvDateParsed)}
-                    />
-                    <label className="floating-label">Advance Date</label>
+                    <div style={{ position: 'relative' }}>
+                      <input
+                        className="form-input"
+                        type="text"
+                        placeholder=" "
+                        value={form.advance_payment_date_text || ''}
+                        onChange={handleDateText('advance_payment_date_text', 'advance_payment_date', setAdvDateParsed)}
+                        style={{ paddingRight: 40 }}
+                      />
+                      <label className="floating-label">Advance Date</label>
+                      <input
+                        type="date"
+                        value={form.advance_payment_date || ''}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          set('advance_payment_date', val);
+                          set('advance_payment_date_text', formatDisplayDate(val));
+                          setAdvDateParsed('ok');
+                        }}
+                        style={{
+                          position: 'absolute',
+                          right: 12,
+                          top: '50%',
+                          transform: 'translateY(-50%)',
+                          opacity: 0,
+                          width: 24,
+                          height: 24,
+                          cursor: 'pointer',
+                          zIndex: 10
+                        }}
+                      />
+                      <CalendarIcon 
+                        size={18} 
+                        color="var(--text-muted)" 
+                        style={{
+                          position: 'absolute',
+                          right: 15,
+                          top: '50%',
+                          transform: 'translateY(-50%)',
+                          pointerEvents: 'none'
+                        }}
+                      />
+                    </div>
                     {dateHint(advDateParsed, form.advance_payment_date)}
                   </div>
                 )}
@@ -407,18 +479,91 @@ export default function DebtorModal({ open, onClose, onSubmit, initial = null })
                   <label className="floating-label">Receipt No.</label>
                 </div>
 
-                {/* Items Purchased — numbered list */}
-                <div className="form-group full">
-                  <label className="form-label">Items Purchased <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>(numbered list — press Enter for next item)</span></label>
-                  <textarea
-                    ref={notesRef}
-                    className="form-textarea"
-                    placeholder="1. Type your first item here..."
-                    value={form.notes}
-                    onChange={handleNotesChange}
-                    onKeyDown={handleNotesKeyDown}
-                    style={{ fontFamily: 'inherit', lineHeight: 1.7, minHeight: 100 }}
+                {/* Items Purchased — dynamic bullet list */}
+                <div className="form-group full" style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  <label className="form-label" style={{ marginBottom: 0 }}>
+                    Items Purchased
+                    <span style={{ color: 'var(--text-muted)', fontWeight: 400, fontSize: 11, marginLeft: 8 }}>
+                      type an item then press Enter
+                    </span>
+                  </label>
+
+                  {/* Input row */}
+                  <input
+                    id="items-purchased-input"
+                    className="form-input"
+                    type="text"
+                    placeholder="e.g. 1 tire"
+                    value={itemInput}
+                    onChange={(e) => setItemInput(e.target.value)}
+                    onKeyDown={handleItemKeyDown}
+                    autoComplete="off"
                   />
+
+                  {/* Bullet list */}
+                  <AnimatePresence initial={false}>
+                    {items.length > 0 && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        exit={{ opacity: 0, height: 0 }}
+                        style={{
+                          background: 'rgba(255,255,255,0.03)',
+                          border: '1px solid var(--border)',
+                          borderRadius: 12,
+                          padding: '12px 16px',
+                          overflow: 'hidden',
+                        }}
+                      >
+                        <ul style={{ margin: 0, paddingLeft: 20, listStyleType: 'disc' }}>
+                          <AnimatePresence initial={false}>
+                            {items.map((item, idx) => (
+                              <motion.li
+                                key={idx}
+                                initial={{ opacity: 0, x: -8 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                exit={{ opacity: 0, x: 8 }}
+                                transition={{ duration: 0.15 }}
+                                style={{
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'space-between',
+                                  fontSize: 14,
+                                  fontWeight: 500,
+                                  color: 'var(--text-primary)',
+                                  padding: '3px 0',
+                                  lineHeight: 1.5,
+                                }}
+                              >
+                                <span>{item}</span>
+                                <button
+                                  type="button"
+                                  onClick={() => removeItem(idx)}
+                                  style={{
+                                    background: 'none',
+                                    border: 'none',
+                                    color: 'var(--text-muted)',
+                                    cursor: 'pointer',
+                                    padding: '2px 4px',
+                                    borderRadius: 6,
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    flexShrink: 0,
+                                    transition: 'color 0.15s',
+                                  }}
+                                  onMouseEnter={e => e.currentTarget.style.color = '#ef4444'}
+                                  onMouseLeave={e => e.currentTarget.style.color = 'var(--text-muted)'}
+                                  title="Remove item"
+                                >
+                                  <Trash2 size={13} />
+                                </button>
+                              </motion.li>
+                            ))}
+                          </AnimatePresence>
+                        </ul>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
               </div>
 

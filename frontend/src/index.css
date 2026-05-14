@@ -384,6 +384,196 @@ h1,
 /* .top-actions removed as it's merged into .action-buttons-group */
 
 /* ========================
+   ENHANCED SEARCH BAR (Mode Tabs)
+======================== */
+.search-wrap-enhanced {
+  width: 360px;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+@media (max-width: 768px) {
+  .search-wrap-enhanced {
+    width: 100%;
+  }
+}
+
+/* Mode tabs row above the input */
+.search-mode-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  background: var(--glass-bg);
+  border: 1px solid var(--border);
+  border-bottom: none;
+  border-radius: var(--radius-md) var(--radius-md) 0 0;
+}
+
+.search-mode-tab {
+  flex: 1;
+  padding: 5px 10px;
+  font-size: 11px;
+  font-weight: 700;
+  font-family: inherit;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.search-mode-tab:hover {
+  background: var(--accent-light);
+  color: var(--accent);
+}
+
+.search-mode-tab.active {
+  background: var(--accent);
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(255, 107, 0, 0.35);
+}
+
+body.light-mode .search-mode-tabs {
+  background: #FFFFFF;
+  border-color: rgba(0,0,0,0.07);
+}
+
+body.light-mode .search-mode-tab {
+  color: var(--text-muted);
+}
+
+/* Input inside enhanced wrap — rounded bottom only */
+.search-input-enhanced {
+  border-radius: 0 0 var(--radius-md) var(--radius-md) !important;
+  padding-right: 96px; /* space for Aa + ab + X buttons */
+}
+
+/* Search icon position adjustment inside enhanced wrap */
+.search-icon-shifted {
+  top: auto;
+  bottom: 0;
+  height: 44px;
+  transform: none;
+  display: flex;
+  align-items: center;
+}
+
+/* Date parse confirmation badge */
+.search-date-badge {
+  position: absolute;
+  right: 36px;
+  bottom: 0;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--accent);
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+/* Search controls group (Aa | ab | X) — sits at the right side of the input */
+.search-controls {
+  position: absolute;
+  right: 8px;
+  bottom: 0;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+/* Toggle buttons: Aa and ab */
+.search-toggle-btn {
+  height: 26px;
+  min-width: 26px;
+  padding: 0 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 5px;
+  font-size: 11px;
+  font-weight: 700;
+  font-family: inherit;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  letter-spacing: -0.02em;
+}
+
+.search-toggle-btn:hover {
+  background: var(--accent-light);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.search-toggle-btn.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+  box-shadow: 0 1px 6px rgba(255, 107, 0, 0.4);
+}
+
+body.light-mode .search-toggle-btn {
+  color: var(--text-muted);
+}
+
+/* Thin divider between toggles and X */
+.search-controls-divider {
+  width: 1px;
+  height: 16px;
+  background: var(--border);
+  margin: 0 2px;
+}
+
+/* Inline clear button inside .search-controls */
+.search-clear-btn {
+  position: absolute;
+  right: 10px;
+  bottom: 0;
+  height: 44px;
+  width: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  border-radius: 6px;
+  transition: color 0.2s ease, background 0.2s ease;
+}
+
+.search-clear-btn:hover {
+  color: var(--accent);
+  background: var(--accent-light);
+}
+
+/* When inside .search-controls the clear button is not absolute */
+.search-controls .search-clear-btn,
+.search-clear-inline {
+  position: static !important;
+  height: 26px;
+  width: 26px;
+  border-radius: 5px;
+  border: 1px solid transparent;
+}
+
+.search-controls .search-clear-btn:hover,
+.search-clear-inline:hover {
+  border-color: rgba(255,255,255,0.08);
+}
+
+
+/* ========================
    BUTTONS
 ======================== */
 .btn {
@@ -531,6 +721,28 @@ body.light-mode .btn-danger:hover {
 .btn-sm {
   padding: 8px 16px;
   font-size: 12px;
+}
+
+/* ========================
+   PAGINATION
+======================== */
+/* Hide number input spinners */
+#pagination-page-input::-webkit-outer-spin-button,
+#pagination-page-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+#pagination-page-input[type=number] {
+  -moz-appearance: textfield;
+}
+#pagination-page-input:focus {
+  box-shadow: 0 0 0 3px var(--accent-light) !important;
+  border-color: var(--accent) !important;
+}
+
+body.light-mode #pagination-page-input {
+  background: #fff !important;
+  color: var(--text-primary) !important;
 }
 
 /* ========================
@@ -1608,16 +1820,22 @@ body.light-mode .filter-select-mobile {
   bottom: 100px; /* Above MobileNav */
   left: 50%;
   transform: translateX(-50%);
-  background: var(--bg-card);
+  background: #111111; /* Solid dark background */
   border: 1px solid var(--accent);
   border-radius: 20px;
   padding: 12px 24px;
   display: flex;
   align-items: center;
   gap: 24px;
-  box-shadow: 0 10px 40px rgba(0, 245, 160, 0.2);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5); /* Stronger shadow for depth */
   z-index: 950;
   min-width: 320px;
+  backdrop-filter: none !important; /* Force remove glass blur */
+}
+
+body.light-mode .bulk-actions-bar {
+  background: #FFFFFF;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
 }
 
 @media (max-width: 768px) {

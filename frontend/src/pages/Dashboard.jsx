@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, UserX, Search, Download, Bell, Calendar as CalendarIcon, ArrowUpDown, Check, CheckSquare, Square, FileText, FileSpreadsheet, History } from 'lucide-react';
+import { Plus, UserX, Search, Download, Bell, Calendar as CalendarIcon, ArrowUpDown, Check, CheckSquare, Square, FileText, FileSpreadsheet, X } from 'lucide-react';
 import MobileNav from '../components/MobileNav';
 import SearchOverlay from '../components/SearchOverlay';
 import toast from 'react-hot-toast';
@@ -14,7 +14,7 @@ import DebtorModal from '../components/DebtorModal';
 import PayModal from '../components/PayModal';
 import ConfirmModal from '../components/ConfirmModal';
 import ThemeToggle from '../components/ThemeToggle';
-import { parseNaturalDate, formatDisplayDate } from '../utils/dateUtils';
+import { parseNaturalDate } from '../utils/dateUtils';
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -35,12 +35,18 @@ export default function Dashboard() {
   const [searchOpen, setSearchOpen] = useState(false);
   const [selectedIds, setSelectedIds] = useState([]);
   const [isSelectionMode, setIsSelectionMode] = useState(false);
-  const [sortOrder, setSortOrder] = useState('date-desc'); // date-desc, date-asc, a-z
+  const [sortOrder, setSortOrder] = useState('recently-added'); // recently-added, date-desc, date-asc, a-z
   const [bulkConfirm, setBulkConfirm] = useState(null); // { type: 'paid' | 'delete' }
   const [exportFilterOpen, setExportFilterOpen] = useState(false);
   const [exportFilterType, setExportFilterType] = useState(null); // 'pdf' | 'csv'
   const [currentPage, setCurrentPage] = useState(1);
+  const [pageInputVal, setPageInputVal] = useState('1');
+  const [searchMode, setSearchMode] = useState('all'); // 'all' | 'name' | 'date'
+  const [matchCase, setMatchCase] = useState(false);
+  const [wholeWord, setWholeWord] = useState(false);
   const itemsPerPage = 10;
+
+  const SEARCH_PLACEHOLDER = 'Search by name or date (e.g. May, May 4)…';
 
   useEffect(() => {
     const handleSearchTrigger = () => setSearchOpen(true);
@@ -52,13 +58,6 @@ export default function Dashboard() {
     setSelectedIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
   };
 
-  const toggleAll = () => {
-    if (selectedIds.length === filteredCustomers.length) {
-      setSelectedIds([]);
-    } else {
-      setSelectedIds(filteredCustomers.map(d => d.id));
-    }
-  };
 
   const handleBulkDelete = async () => {
     try {
@@ -103,6 +102,7 @@ export default function Dashboard() {
     setSortOrder(newOrder);
     setSortMenuOpen(false);
     const labels = {
+      'recently-added': 'Recently Added',
       'a-z': 'A-Z',
       'date-desc': 'Recent Dates',
       'date-asc': 'Oldest Dates'
@@ -386,26 +386,91 @@ export default function Dashboard() {
     });
   };
 
+  // Partial date matching: 'may' → all May, 'may 4' → all May 4th any year, 'may 4 2026' → exact
+  const matchesDate = (dateBorrowed, rawInput) => {
+    if (!dateBorrowed || !rawInput) return false;
+    const storedDate = dateBorrowed.substring(0, 10); // YYYY-MM-DD
+    const [syear, smonth, sday] = storedDate.split('-').map(Number);
+
+    const MONTH_NAMES = ['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'];
+    const clean = rawInput.toLowerCase().replace(/,/g, '').trim();
+    const parts = clean.split(/\s+/);
+
+    const monthIdx = MONTH_NAMES.findIndex(mn => parts[0].startsWith(mn) && parts[0].length >= 3);
+
+    if (monthIdx !== -1) {
+      const monthNum = monthIdx + 1;
+      if (parts.length === 1) {
+        // 'may' → match any record with month = May, any year/day
+        return smonth === monthNum;
+      }
+      const secondNum = parseInt(parts[1]);
+      if (!isNaN(secondNum)) {
+        if (parts.length === 2) {
+          // 'may 4' → match month + day, any year
+          return smonth === monthNum && sday === secondNum;
+        }
+        const thirdNum = parseInt(parts[2]);
+        if (parts.length >= 3 && !isNaN(thirdNum) && thirdNum > 1900) {
+          // 'may 4 2026' → exact date match
+          return smonth === monthNum && sday === secondNum && syear === thirdNum;
+        }
+      }
+    }
+
+    // Fallback: try exact ISO parse
+    const parsed = parseNaturalDate(rawInput);
+    if (parsed) return storedDate === parsed;
+
+    return false;
+  };
+
   const filteredCustomers = debtors
     .filter(d => {
-      const cleanSearch = search.toLowerCase().trim();
-      const s = cleanSearch.startsWith('#') ? cleanSearch.substring(1) : cleanSearch;
-      
-      let dateMatch = false;
-      const parsed = parseNaturalDate(search);
-      if (parsed) {
-        const storedDate = d.date_borrowed ? d.date_borrowed.substring(0, 10) : '';
-        dateMatch = storedDate === parsed;
+      const rawS = search.trim();
+      if (!rawS) return true;
+
+      // Apply case sensitivity
+      const term = matchCase ? rawS : rawS.toLowerCase();
+      const s = term.startsWith('#') ? term.substring(1) : term;
+
+      // --- Name matching (case + whole-word aware) ---
+      let nameMatch;
+      if (wholeWord) {
+        // Enforce strict boundaries on both sides (\bterm\b)
+        const escaped = s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const wordBoundaryRe = new RegExp(`\\b${escaped}\\b`, matchCase ? '' : 'i');
+        nameMatch = wordBoundaryRe.test(d.name);
+      } else {
+        // Partial match (substring)
+        const nameToCompare = matchCase ? d.name : d.name.toLowerCase();
+        nameMatch = nameToCompare.includes(s);
       }
 
-      const nameMatch = d.name.toLowerCase().startsWith(s) || 
-                        d.name.toLowerCase().split(' ').some(word => word.startsWith(s));
-                        
-      const matchesSearch = nameMatch || 
-                            dateMatch ||
-                            d.id.toString().includes(s) ||
-                            (d.receipt_numbers && d.receipt_numbers.some(r => r.toLowerCase().includes(s)));
-      
+      // --- Date matching (always case-insensitive, case/whole-word flags don't apply) ---
+      const dateMatch = matchesDate(d.date_borrowed, rawS);
+
+      // --- Receipt / ID matching ---
+      const idMatch = wholeWord 
+        ? d.id.toString() === s 
+        : d.id.toString().includes(s);
+
+      const receiptMatch = d.receipt_numbers &&
+        d.receipt_numbers.some(r => {
+          const rComp = matchCase ? r : r.toLowerCase();
+          return wholeWord ? rComp === s : rComp.includes(s);
+        });
+
+      // --- Scoped to searchMode ---
+      let matchesSearch;
+      if (searchMode === 'name') {
+        matchesSearch = nameMatch;
+      } else if (searchMode === 'date') {
+        matchesSearch = dateMatch;
+      } else {
+        matchesSearch = nameMatch || dateMatch || idMatch || receiptMatch;
+      }
+
       if (filterStatus === 'All') return matchesSearch;
       if (filterStatus === 'Completed') return matchesSearch && d.status === 'paid';
       if (filterStatus === 'Active') return matchesSearch && d.status === 'active';
@@ -415,8 +480,9 @@ export default function Dashboard() {
     .sort((a, b) => {
       if (sortOrder === 'a-z') return a.name.localeCompare(b.name);
       if (sortOrder === 'date-asc') return new Date(a.date_borrowed) - new Date(b.date_borrowed);
-      // default: date-desc
-      return new Date(b.date_borrowed) - new Date(a.date_borrowed);
+      if (sortOrder === 'date-desc') return new Date(b.date_borrowed) - new Date(a.date_borrowed);
+      // default: recently-added — sort by id descending (newest record first)
+      return (b.id ?? 0) - (a.id ?? 0);
     });
 
   const indexOfLastItem = currentPage * itemsPerPage;
@@ -424,10 +490,27 @@ export default function Dashboard() {
   const currentCustomers = filteredCustomers.slice(indexOfFirstItem, indexOfLastItem);
   const totalPages = Math.ceil(filteredCustomers.length / itemsPerPage);
 
-  // Reset to first page when filtering
+  const toggleAll = () => {
+    const pageIds = currentCustomers.map(d => d.id);
+    const allPageSelected = pageIds.length > 0 && pageIds.every(id => selectedIds.includes(id));
+    if (allPageSelected) {
+      setSelectedIds(prev => prev.filter(id => !pageIds.includes(id)));
+    } else {
+      setSelectedIds(prev => [...new Set([...prev, ...pageIds])]);
+    }
+  };
+
+  // Reset to first page + clear selections when filtering
   useEffect(() => {
     setCurrentPage(1);
-  }, [search, filterStatus, sortOrder]);
+    setPageInputVal('1');
+    setSelectedIds([]);
+  }, [search, filterStatus, sortOrder, searchMode, matchCase, wholeWord]);
+
+  // Clear selections when page changes
+  useEffect(() => {
+    setSelectedIds([]);
+  }, [currentPage]);
 
   return (
     <>
@@ -454,21 +537,60 @@ export default function Dashboard() {
         </div>
 
         <div className="top-main-actions">
-          <div className="search-wrap" style={{ position: 'relative' }}>
-            <Search className="search-icon" size={16} color="var(--text-muted)" />
+          <div className="search-wrap search-wrap-enhanced" style={{ position: 'relative' }}>
+            {/* Mode pill tabs */}
+            <div className="search-mode-tabs">
+              {[['all', 'All'], ['name', 'Name'], ['date', 'Date']].map(([mode, label]) => (
+                <button
+                  key={mode}
+                  className={`search-mode-tab ${searchMode === mode ? 'active' : ''}`}
+                  onClick={() => { setSearchMode(mode); setSearch(''); }}
+                  type="button"
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+            <Search className="search-icon search-icon-shifted" size={16} color="var(--text-muted)" />
             <input
               id="main-search-input"
               type="text"
-              className="search-input"
-              placeholder="Search Name, Receipt, or Date (e.g. May 4)..."
+              className="search-input search-input-enhanced"
+              placeholder={SEARCH_PLACEHOLDER}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
-            {search && parseNaturalDate(search) && (
-              <div style={{ position: 'absolute', right: 16, top: '50%', transform: 'translateY(-50%)', fontSize: 11, color: 'var(--accent)', fontWeight: 700 }}>
-                ✓ {formatDisplayDate(parseNaturalDate(search))}
-              </div>
-            )}
+            {/* Search Controls: Aa | ab | X */}
+            <div className="search-controls">
+              <button
+                className={`search-toggle-btn ${matchCase ? 'active' : ''}`}
+                onClick={() => setMatchCase(v => !v)}
+                type="button"
+                title="Match Case (Aa)"
+                aria-pressed={matchCase}
+              >
+                Aa
+              </button>
+              <button
+                className={`search-toggle-btn ${wholeWord ? 'active' : ''}`}
+                onClick={() => setWholeWord(v => !v)}
+                type="button"
+                title="Match Whole Word (ab)"
+                aria-pressed={wholeWord}
+              >
+                <span style={{ textDecoration: 'underline' }}>ab</span>
+              </button>
+              {search && (
+                <button
+                  className="search-clear-btn search-clear-inline"
+                  onClick={() => setSearch('')}
+                  type="button"
+                  aria-label="Clear search"
+                >
+                  <X size={13} />
+                </button>
+              )}
+            </div>
           </div>
           
           <div className="action-buttons-group">
@@ -528,14 +650,7 @@ export default function Dashboard() {
                 )}
               </AnimatePresence>
             </div>
-            <button 
-              className="calendar-pill-btn" 
-              onClick={() => navigate('/history')}
-              title="Transaction History"
-            >
-              <History size={16} />
-              <span>History</span>
-            </button>
+
             <button 
               className="calendar-pill-btn" 
               onClick={() => navigate('/calendar')}
@@ -555,22 +670,79 @@ export default function Dashboard() {
 
       {/* Mobile Search Bar */}
       <div className="hide-desktop" style={{ padding: '0 24px 24px' }}>
-        <div className="search-wrap">
-          <Search className="search-icon" size={18} />
+        <div className="search-wrap search-wrap-enhanced">
+          {/* Mobile mode tabs */}
+          <div className="search-mode-tabs">
+            {[['all', 'All'], ['name', 'Name'], ['date', 'Date']].map(([mode, label]) => (
+              <button
+                key={mode}
+                className={`search-mode-tab ${searchMode === mode ? 'active' : ''}`}
+                onClick={() => { setSearchMode(mode); setSearch(''); }}
+                type="button"
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          <Search className="search-icon search-icon-shifted" size={18} />
           <input
             type="text"
-            className="search-input"
-            placeholder="Search customer..."
-            style={{ borderRadius: 16, padding: '14px 16px 14px 48px' }}
+            className="search-input search-input-enhanced"
+            placeholder={SEARCH_PLACEHOLDER}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             id="mobile-search-trigger"
           />
+          {/* Search Controls: Aa | ab | X */}
+          <div className="search-controls">
+            <button
+              className={`search-toggle-btn ${matchCase ? 'active' : ''}`}
+              onClick={() => setMatchCase(v => !v)}
+              type="button"
+              title="Match Case"
+              aria-pressed={matchCase}
+            >
+              Aa
+            </button>
+            <button
+              className={`search-toggle-btn ${wholeWord ? 'active' : ''}`}
+              onClick={() => setWholeWord(v => !v)}
+              type="button"
+              title="Whole Word"
+              aria-pressed={wholeWord}
+            >
+              <span style={{ textDecoration: 'underline' }}>ab</span>
+            </button>
+            {search && (
+              <button
+                className="search-clear-btn search-clear-inline"
+                onClick={() => setSearch('')}
+                type="button"
+                aria-label="Clear search"
+              >
+                <X size={13} />
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
       {/* Stats Section */}
-      <SummaryStats totals={totals} />
+      <SummaryStats
+        totals={totals}
+        filteredTotals={search.trim() ? filteredCustomers.reduce(
+          (acc, d) => {
+            acc.totalBalance += parseFloat(d.balance) || 0;
+            acc.totalAdvance += parseFloat(d.advance_payment) || 0;
+            if (d.status === 'active') acc.activeCount++;
+            if (d.status === 'partial') acc.partialCount++;
+            if (d.status === 'paid') acc.paidCount++;
+            return acc;
+          },
+          { totalBalance: 0, totalAdvance: 0, activeCount: 0, partialCount: 0, paidCount: 0 }
+        ) : null}
+        searchLabel={search.trim() || null}
+      />
 
       {/* Table Section */}
       <div className="table-section">
@@ -668,6 +840,10 @@ export default function Dashboard() {
                       animate={{ opacity: 1, y: 0, scale: 1 }}
                       exit={{ opacity: 0, y: 10, scale: 0.95 }}
                     >
+                      <div className="dropdown-item" onClick={() => handleSortChange('recently-added')}>
+                        <span style={{ flex: 1 }}>Recently Added</span>
+                        {sortOrder === 'recently-added' && <Check size={14} color="var(--accent)" />}
+                      </div>
                       <div className="dropdown-item" onClick={() => handleSortChange('a-z')}>
                         <span style={{ flex: 1 }}>A-Z Names</span>
                         {sortOrder === 'a-z' && <Check size={14} color="var(--accent)" />}
@@ -706,10 +882,10 @@ export default function Dashboard() {
                   {isSelectionMode && (
                     <th style={{ width: 40 }}>
                       <div 
-                        className={`checkbox-custom ${selectedIds.length === filteredCustomers.length && filteredCustomers.length > 0 ? 'checked' : ''}`}
+                        className={`checkbox-custom ${currentCustomers.length > 0 && currentCustomers.every(d => selectedIds.includes(d.id)) ? 'checked' : ''}`}
                         onClick={toggleAll}
                       >
-                        {selectedIds.length === filteredCustomers.length && filteredCustomers.length > 0 && <Check size={14} />}
+                        {currentCustomers.length > 0 && currentCustomers.every(d => selectedIds.includes(d.id)) && <Check size={14} />}
                       </div>
                     </th>
                   )}
@@ -742,24 +918,90 @@ export default function Dashboard() {
 
             {/* Pagination Controls */}
             {totalPages > 1 && (
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 24, padding: '0 8px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 24, padding: '0 8px', flexWrap: 'wrap', gap: 12 }}>
                 <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>
-                  Showing {indexOfFirstItem + 1}-{Math.min(indexOfLastItem, filteredCustomers.length)} of {filteredCustomers.length} customers
+                  Showing {indexOfFirstItem + 1}–{Math.min(indexOfLastItem, filteredCustomers.length)} of {filteredCustomers.length} customers
                 </div>
-                <div style={{ display: 'flex', gap: 8 }}>
-                  <button 
-                    className="btn btn-outline btn-sm" 
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  {/* Prev */}
+                  <button
+                    className="btn btn-outline btn-sm"
                     disabled={currentPage === 1}
-                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                    onClick={() => {
+                      const next = Math.max(1, currentPage - 1);
+                      setCurrentPage(next);
+                      setPageInputVal(String(next));
+                    }}
+                    style={{ borderRadius: 10, padding: '6px 14px', minWidth: 'unset' }}
                   >
-                    Previous
+                    ‹ Prev
                   </button>
-                  <button 
-                    className="btn btn-outline btn-sm" 
+
+                  {/* Page Input */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <input
+                      id="pagination-page-input"
+                      type="number"
+                      min={1}
+                      max={totalPages}
+                      value={pageInputVal}
+                      onChange={(e) => setPageInputVal(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          const parsed = parseInt(pageInputVal, 10);
+                          if (!isNaN(parsed)) {
+                            const clamped = Math.min(totalPages, Math.max(1, parsed));
+                            setCurrentPage(clamped);
+                            setPageInputVal(String(clamped));
+                          } else {
+                            setPageInputVal(String(currentPage));
+                          }
+                          e.target.blur();
+                        }
+                      }}
+                      onBlur={() => {
+                        const parsed = parseInt(pageInputVal, 10);
+                        if (!isNaN(parsed)) {
+                          const clamped = Math.min(totalPages, Math.max(1, parsed));
+                          setCurrentPage(clamped);
+                          setPageInputVal(String(clamped));
+                        } else {
+                          setPageInputVal(String(currentPage));
+                        }
+                      }}
+                      style={{
+                        width: 52,
+                        height: 34,
+                        textAlign: 'center',
+                        fontSize: 13,
+                        fontWeight: 700,
+                        fontFamily: 'inherit',
+                        background: 'var(--glass-bg)',
+                        color: 'var(--text-primary)',
+                        border: '1px solid var(--accent)',
+                        borderRadius: 10,
+                        outline: 'none',
+                        boxShadow: '0 0 0 3px var(--accent-light)',
+                        MozAppearance: 'textfield',
+                      }}
+                    />
+                    <span style={{ fontSize: 13, color: 'var(--text-muted)', fontWeight: 600, whiteSpace: 'nowrap' }}>
+                      / {totalPages}
+                    </span>
+                  </div>
+
+                  {/* Next */}
+                  <button
+                    className="btn btn-outline btn-sm"
                     disabled={currentPage === totalPages}
-                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                    onClick={() => {
+                      const next = Math.min(totalPages, currentPage + 1);
+                      setCurrentPage(next);
+                      setPageInputVal(String(next));
+                    }}
+                    style={{ borderRadius: 10, padding: '6px 14px', minWidth: 'unset' }}
                   >
-                    Next
+                    Next ›
                   </button>
                 </div>
               </div>
@@ -820,7 +1062,7 @@ export default function Dashboard() {
                 <button className="btn btn-primary btn-sm" onClick={() => setBulkConfirm({ type: 'paid' })}>Mark as Paid</button>
               )}
               <button className="btn btn-outline btn-sm" style={{ borderColor: '#FF4D4D', color: '#FF4D4D' }} onClick={() => setBulkConfirm({ type: 'delete' })}>Delete All</button>
-              <button className="btn btn-icon-sm" onClick={() => setSelectedIds([])}><Plus size={18} style={{ transform: 'rotate(45deg)' }} /></button>
+              <button className="btn" style={{ background: 'var(--accent)', color: '#FFFFFF', width: 42, height: 42, borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 }} onClick={() => setSelectedIds([])}><X size={20} /></button>
             </div>
           </motion.div>
         )}

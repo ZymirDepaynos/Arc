@@ -103,17 +103,27 @@ export default function PayModal({ open, onClose, debtor, onPay }) {
   };
 
   const dateHint = (parsedState, isoVal) => {
+    const baseStyle = {
+      fontSize: 11,
+      position: 'absolute',
+      bottom: -18,
+      left: 4,
+      fontWeight: 600,
+      whiteSpace: 'nowrap',
+      zIndex: 5
+    };
+
     if (parsedState === 'ok' && isoVal) {
-      return <div style={{ fontSize: 11, color: 'var(--accent)', marginTop: 4, fontWeight: 600 }}>✓ {formatDisplayDate(isoVal)}</div>;
+      return <div style={{ ...baseStyle, color: 'var(--accent)' }}>✓ {formatDisplayDate(isoVal)}</div>;
     }
     if (parsedState === 'future_error') {
-      return <div style={{ fontSize: 11, color: '#ef4444', marginTop: 4 }}>Post-dated entries are not allowed</div>;
+      return <div style={{ ...baseStyle, color: '#ef4444' }}>Post-dated entries are not allowed</div>;
     }
     if (parsedState === 'past_error') {
-      return <div style={{ fontSize: 11, color: '#ef4444', marginTop: 4 }}>Cannot be earlier than purchase date</div>;
+      return <div style={{ ...baseStyle, color: '#ef4444' }}>Cannot be earlier than purchase date</div>;
     }
     if (parsedState === 'error') {
-      return <div style={{ fontSize: 11, color: '#ef4444', marginTop: 4 }}>Could not detect date. Try "May 3, 2026"</div>;
+      return <div style={{ ...baseStyle, color: '#ef4444' }}>Could not detect date. Try "May 3, 2026"</div>;
     }
     return null;
   };

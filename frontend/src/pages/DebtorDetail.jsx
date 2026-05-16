@@ -399,7 +399,7 @@ export default function DebtorDetail() {
                   // 2. Payments and Adjustments
                   if (debtor.payment_history) {
                     debtor.payment_history.forEach((payment, idx) => {
-                      if (payment.type !== 'edit') {
+                      if (payment.type !== 'edit' && payment.type !== 'manual_adjustment') {
                         const isDateOnly = payment.date && (payment.date.length === 10 || !payment.date.includes('T'));
                         const pDate = isDateOnly 
                           ? new Date(payment.date + 'T12:00:00')
@@ -429,7 +429,7 @@ export default function DebtorDetail() {
                   // Edits Log
                   if (debtor.payment_history) {
                     debtor.payment_history.forEach((payment, idx) => {
-                      if (payment.type === 'edit') {
+                      if (payment.type === 'edit' || payment.type === 'manual_adjustment') {
                         const isDateOnly = payment.date && (payment.date.length === 10 || !payment.date.includes('T'));
                         const pDate = isDateOnly 
                           ? new Date(payment.date + 'T12:00:00')

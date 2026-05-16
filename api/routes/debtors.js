@@ -383,4 +383,57 @@ router.post('/:id/pay', async (req, res) => {
   }
 });
 
+// POST adjust balance
+router.post('/:id/adjust', async (req, res) => {
+  try {
+    const { newBalance, reason } = req.body;
+    
+    // Get current record
+    const { data: current, error: fetchError } = await supabase
+      .from('debtors')
+      .select('*')
+      .eq('id', req.params.id)
+      .single();
+
+    if (fetchError) throw fetchError;
+
+    const oldBalance = parseFloat(current.balance);
+    const parsedNewBalance = parseFloat(newBalance);
+
+    const changes = [`Manual Adjustment: Balance changed from ₱${oldBalance.toLocaleString('en-PH', {minimumFractionDigits:2})} to ₱${parsedNewBalance.toLocaleString('en-PH', {minimumFractionDigits:2})}. Reason: ${reason}`];
+    
+    const paymentEntry = {
+      id: Date.now().toString(),
+      type: 'manual_adjustment',
+      amount: oldBalance - parsedNewBalance,
+      balance_after: parsedNewBalance,
+      date: new Date().toISOString(),
+      note: 'Manual Adjustment',
+      changes: changes.join(' | '),
+      created_at: new Date().toISOString()
+    };
+    
+    const history = Array.isArray(current.payment_history) ? [...current.payment_history, paymentEntry] : [paymentEntry];
+
+    const newStatus = parsedNewBalance <= 0 ? 'paid' : (parseFloat(current.advance_payment) > 0 ? 'partial' : 'active');
+
+    const { data, error } = await supabase
+      .from('debtors')
+      .update({
+        balance: parsedNewBalance,
+        payment_history: history,
+        status: newStatus,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', req.params.id)
+      .select()
+      .single();
+
+    if (error) throw error;
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 export default router;

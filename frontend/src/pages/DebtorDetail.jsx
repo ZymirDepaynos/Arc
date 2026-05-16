@@ -125,35 +125,17 @@ export default function DebtorDetail() {
   };
 
   const handleAdjustBalance = async (idToAdjust, newBalance, reason) => {
-    const changes = [`Manual Adjustment: Balance changed from ₱${debtor.balance.toLocaleString('en-PH', {minimumFractionDigits:2, maximumFractionDigits:2})} to ₱${newBalance.toLocaleString('en-PH', {minimumFractionDigits:2, maximumFractionDigits:2})}. Reason: ${reason}`];
-    
-    let updatedHistory = [...(debtor.payment_history || [])];
-    updatedHistory.push({
-      id: Date.now().toString(),
-      type: 'manual_adjustment',
-      amount: debtor.balance - newBalance,
-      balance_after: newBalance,
-      date: new Date().toISOString(),
-      note: 'Manual Adjustment',
-      changes: changes.join(' | ')
-    });
-
-    const payload = {
-      name: debtor.name,
-      balance: newBalance,
-      original_debt: debtor.original_debt,
-      advance_payment: debtor.advance_payment,
-      advance_payment_date: debtor.advance_payment_date,
-      date_borrowed: debtor.date_borrowed,
-      receipt_numbers: debtor.receipt_numbers,
-      notes: debtor.notes,
-      status: debtor.status,
-      payment_history: updatedHistory
-    };
-
-    await toast.promise(axios.put(`${API_URL}/api/debtors/${idToAdjust}`, payload).then((r) => setDebtor(r.data)), {
-      loading: 'Applying Adjustment...', success: 'Balance adjusted!', error: 'Failed to adjust balance',
-    });
+    await toast.promise(
+      axios.post(`${API_URL}/api/debtors/${idToAdjust}/adjust`, { newBalance, reason }),
+      {
+        loading: 'Applying Adjustment...',
+        success: (res) => {
+          setDebtor(res.data);
+          return 'Balance adjusted!';
+        },
+        error: 'Failed to adjust balance',
+      }
+    );
   };
 
   const handlePay = async (_, amount, date) => {

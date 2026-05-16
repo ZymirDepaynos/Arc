@@ -248,8 +248,15 @@ export default function DebtorModal({ open, onClose, onSubmit, initial = null })
                     }}
                     onBlur={(e) => { if (e.target.value) set('balance', parseFloat(e.target.value).toFixed(2)); }}
                     required
+                    readOnly={initial && parseFloat(initial.advance_payment || 0) > 0}
+                    style={initial && parseFloat(initial.advance_payment || 0) > 0 ? { background: 'rgba(0,0,0,0.03)', color: 'var(--text-muted)' } : {}}
                   />
                   <label className="floating-label">Initial Balance (₱) *</label>
+                  {initial && parseFloat(initial.advance_payment || 0) > 0 && (
+                    <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4, position: 'absolute', bottom: -18, left: 4 }}>
+                      Locked because an advance payment exists
+                    </div>
+                  )}
                 </div>
 
                 {/* Date of Purchase */}
@@ -301,42 +308,44 @@ export default function DebtorModal({ open, onClose, onSubmit, initial = null })
                   {dateHint(dateParsed, form.date_borrowed)}
                 </div>
 
-                {/* Advance Payment */}
-                <div className="form-group floating-group">
-                  <input
-                    className="form-input"
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    placeholder=" "
-                    onWheel={(e) => e.target.blur()}
-                    value={form.advance_payment}
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      setError(null);
-                      setForm((f) => ({
-                        ...f,
-                        advance_payment: val,
-                        current_balance: Math.max(0, parseFloat(f.balance || 0) - parseFloat(val || 0)).toFixed(2)
-                      }));
-                    }}
-                    onBlur={(e) => { if (e.target.value) set('advance_payment', parseFloat(e.target.value).toFixed(2)); }}
-                  />
-                  <label className="floating-label">Advance Payment (₱)</label>
-                  {parseFloat(form.advance_payment || 0) > 0 && (
-                    <div style={{
-                      fontSize: 12,
-                      color: 'var(--accent)',
-                      position: 'absolute',
-                      bottom: -18,
-                      left: 4,
-                      fontWeight: 600,
-                      whiteSpace: 'nowrap'
-                    }}>
-                      Balance: ₱{Math.max(0, parseFloat(form.balance || 0) - parseFloat(form.advance_payment || 0)).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                    </div>
-                  )}
-                </div>
+                {/* Advance Payment (ADD mode only) */}
+                {!initial && (
+                  <div className="form-group floating-group">
+                    <input
+                      className="form-input"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      placeholder=" "
+                      onWheel={(e) => e.target.blur()}
+                      value={form.advance_payment}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setError(null);
+                        setForm((f) => ({
+                          ...f,
+                          advance_payment: val,
+                          current_balance: Math.max(0, parseFloat(f.balance || 0) - parseFloat(val || 0)).toFixed(2)
+                        }));
+                      }}
+                      onBlur={(e) => { if (e.target.value) set('advance_payment', parseFloat(e.target.value).toFixed(2)); }}
+                    />
+                    <label className="floating-label">Advance Payment (₱)</label>
+                    {parseFloat(form.advance_payment || 0) > 0 && (
+                      <div style={{
+                        fontSize: 12,
+                        color: 'var(--accent)',
+                        position: 'absolute',
+                        bottom: -18,
+                        left: 4,
+                        fontWeight: 600,
+                        whiteSpace: 'nowrap'
+                      }}>
+                        Balance: ₱{Math.max(0, parseFloat(form.balance || 0) - parseFloat(form.advance_payment || 0)).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 {/* Advance Date (ADD mode) */}
                 {!initial && (
@@ -388,81 +397,7 @@ export default function DebtorModal({ open, onClose, onSubmit, initial = null })
                   </div>
                 )}
 
-                {/* Current Balance (EDIT mode) */}
-                {initial && (
-                  <div className="form-group floating-group">
-                    <input
-                      className="form-input"
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      placeholder=" "
-                      onWheel={(e) => e.target.blur()}
-                      value={form.current_balance}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        setError(null);
-                        setForm((f) => ({
-                          ...f,
-                          current_balance: val,
-                          advance_payment: Math.max(0, parseFloat(f.balance || 0) - parseFloat(val || 0)).toFixed(2)
-                        }));
-                      }}
-                      onBlur={(e) => { if (e.target.value) set('current_balance', parseFloat(e.target.value).toFixed(2)); }}
-                    />
-                    <label className="floating-label">Current Balance (₱)</label>
-                  </div>
-                )}
 
-                {/* Advance Date (EDIT mode) */}
-                {initial && (
-                  <div className="form-group floating-group">
-                    <div style={{ position: 'relative' }}>
-                      <input
-                        className="form-input"
-                        type="text"
-                        placeholder=" "
-                        value={form.advance_payment_date_text || ''}
-                        onChange={handleDateText('advance_payment_date_text', 'advance_payment_date', setAdvDateParsed)}
-                        style={{ paddingRight: 40 }}
-                      />
-                      <label className="floating-label">Advance Date</label>
-                      <input
-                        type="date"
-                        value={form.advance_payment_date || ''}
-                        onChange={(e) => {
-                          const val = e.target.value;
-                          set('advance_payment_date', val);
-                          set('advance_payment_date_text', formatDisplayDate(val));
-                          setAdvDateParsed('ok');
-                        }}
-                        style={{
-                          position: 'absolute',
-                          right: 12,
-                          top: '50%',
-                          transform: 'translateY(-50%)',
-                          opacity: 0,
-                          width: 24,
-                          height: 24,
-                          cursor: 'pointer',
-                          zIndex: 10
-                        }}
-                      />
-                      <CalendarIcon 
-                        size={18} 
-                        color="var(--text-muted)" 
-                        style={{
-                          position: 'absolute',
-                          right: 15,
-                          top: '50%',
-                          transform: 'translateY(-50%)',
-                          pointerEvents: 'none'
-                        }}
-                      />
-                    </div>
-                    {dateHint(advDateParsed, form.advance_payment_date)}
-                  </div>
-                )}
 
                 {/* Receipt Number */}
                 <div className="form-group full floating-group">

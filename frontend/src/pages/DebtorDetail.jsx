@@ -7,7 +7,8 @@ import {
   Trash2, 
   CreditCard, 
   History, 
-  Search as SearchIcon 
+  Search as SearchIcon,
+  Settings2
 } from 'lucide-react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
@@ -17,6 +18,7 @@ import PayModal from '../components/PayModal';
 import ConfirmModal from '../components/ConfirmModal';
 import MobileNav from '../components/MobileNav';
 import SearchOverlay from '../components/SearchOverlay';
+import AdjustBalanceModal from '../components/AdjustBalanceModal';
 
 const fmt = (n) =>
   '₱' + parseFloat(n || 0).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -43,6 +45,8 @@ export default function DebtorDetail() {
   const [loading, setLoading] = useState(true);
   const [editOpen, setEditOpen] = useState(false);
   const [payOpen, setPayOpen] = useState(false);
+  const [adjustOpen, setAdjustOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState('transactions');
   const [confirmSettle, setConfirmSettle] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
@@ -75,27 +79,26 @@ export default function DebtorDetail() {
 
   const handleEdit = async (form) => {
     const rawBalance = parseFloat(form.balance || 0);
-    const currentBalance = parseFloat(form.current_balance || 0);
-    const advancePayment = Math.max(0, rawBalance - currentBalance);
 
     // Audit changes for history
     const old = debtor;
     const changes = [];
     const fmtD = (d) => d ? new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'N/A';
 
+    if (old.name !== form.name) {
+      changes.push(`Name: ${old.name} → ${form.name}`);
+    }
     if (old.date_borrowed !== form.date_borrowed) {
       changes.push(`Purchase Date: ${fmtD(old.date_borrowed)} → ${fmtD(form.date_borrowed)}`);
     }
-    if (old.advance_payment_date !== form.advance_payment_date) {
-      changes.push(`Advance Date: ${fmtD(old.advance_payment_date)} → ${fmtD(form.advance_payment_date)}`);
-    }
-    if (parseFloat(old.balance) !== rawBalance) {
-      changes.push(`Initial Balance: ₱${old.balance.toLocaleString()} → ₱${rawBalance.toLocaleString()}`);
+    if (parseFloat(old.original_debt || old.balance) !== rawBalance) {
+      changes.push(`Initial Balance: ₱${parseFloat(old.original_debt || old.balance).toLocaleString()} → ₱${rawBalance.toLocaleString()}`);
     }
 
     let updatedHistory = [...(old.payment_history || [])];
     if (changes.length > 0) {
       updatedHistory.push({
+        id: Date.now().toString(),
         type: 'edit',
         date: new Date().toISOString(),
         changes: changes.join(' | '),
@@ -105,10 +108,10 @@ export default function DebtorDetail() {
 
     const payload = {
       ...form,
-      balance: rawBalance,
       original_debt: rawBalance,
-      advance_payment: advancePayment,
-      advance_payment_date: form.advance_payment_date,
+      balance: old.balance, // Don't modify current balance during edit
+      advance_payment: old.advance_payment, // Don't modify advance payment
+      advance_payment_date: old.advance_payment_date,
       payment_history: updatedHistory,
       // Strip UI-only display keys
       date_borrowed_text: undefined,
@@ -118,6 +121,38 @@ export default function DebtorDetail() {
 
     await toast.promise(axios.put(`${API_URL}/api/debtors/${id}`, payload).then((r) => setDebtor(r.data)), {
       loading: 'Saving...', success: 'Saved!', error: 'Failed to save',
+    });
+  };
+
+  const handleAdjustBalance = async (idToAdjust, newBalance, reason) => {
+    const changes = [`Manual Adjustment: Balance changed from ₱${debtor.balance.toLocaleString('en-PH', {minimumFractionDigits:2, maximumFractionDigits:2})} to ₱${newBalance.toLocaleString('en-PH', {minimumFractionDigits:2, maximumFractionDigits:2})}. Reason: ${reason}`];
+    
+    let updatedHistory = [...(debtor.payment_history || [])];
+    updatedHistory.push({
+      id: Date.now().toString(),
+      type: 'manual_adjustment',
+      amount: debtor.balance - newBalance,
+      balance_after: newBalance,
+      date: new Date().toISOString(),
+      note: 'Manual Adjustment',
+      changes: changes.join(' | ')
+    });
+
+    const payload = {
+      name: debtor.name,
+      balance: newBalance,
+      original_debt: debtor.original_debt,
+      advance_payment: debtor.advance_payment,
+      advance_payment_date: debtor.advance_payment_date,
+      date_borrowed: debtor.date_borrowed,
+      receipt_numbers: debtor.receipt_numbers,
+      notes: debtor.notes,
+      status: debtor.status,
+      payment_history: updatedHistory
+    };
+
+    await toast.promise(axios.put(`${API_URL}/api/debtors/${idToAdjust}`, payload).then((r) => setDebtor(r.data)), {
+      loading: 'Applying Adjustment...', success: 'Balance adjusted!', error: 'Failed to adjust balance',
     });
   };
 
@@ -226,12 +261,17 @@ export default function DebtorDetail() {
               Fully Settled
             </div>
           ) : (
-            <div style={{ display: 'flex', gap: 12 }}>
-              <button className="btn btn-primary" onClick={() => setPayOpen(true)} style={{ flex: 1, height: 44, borderRadius: 12, fontSize: 14 }}>
-                Add Payment
-              </button>
-              <button className="btn btn-outline" onClick={() => setConfirmSettle(true)} style={{ flex: 1, height: 44, borderRadius: 12, fontSize: 14, background: 'var(--bg-page)' }}>
-                Settle Full
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <div style={{ display: 'flex', gap: 12 }}>
+                <button className="btn btn-primary" onClick={() => setPayOpen(true)} style={{ flex: 1, height: 44, borderRadius: 12, fontSize: 14 }}>
+                  Add Payment
+                </button>
+                <button className="btn btn-outline" onClick={() => setConfirmSettle(true)} style={{ flex: 1, height: 44, borderRadius: 12, fontSize: 14, background: 'var(--bg-page)' }}>
+                  Settle Full
+                </button>
+              </div>
+              <button className="btn btn-outline" onClick={() => setAdjustOpen(true)} style={{ width: '100%', height: 44, borderRadius: 12, fontSize: 14, color: 'var(--text-muted)' }}>
+                <Settings2 size={16} style={{ marginRight: 8 }} /> Adjust Balance
               </button>
             </div>
           )}
@@ -311,67 +351,132 @@ export default function DebtorDetail() {
         {/* Right: Larger Timeline (2/3 width) */}
         <div className="lg:col-span-2">
           <div className="stat-box" style={{ padding: 32, borderRadius: 24, background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24, paddingBottom: 16, borderBottom: '1px solid var(--border)' }}>
-              <div className="row-avatar" style={{ background: 'var(--accent-light)', color: 'var(--accent)', width: 44, height: 44, borderRadius: 12 }}>
-                <History size={20} />
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24, paddingBottom: 16, borderBottom: '1px solid var(--border)', flexWrap: 'wrap', gap: 16 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <div className="row-avatar" style={{ background: 'var(--accent-light)', color: 'var(--accent)', width: 44, height: 44, borderRadius: 12 }}>
+                  <History size={20} />
+                </div>
+                <h2 style={{ fontSize: 20, fontWeight: 800, margin: 0, color: 'var(--text-primary)', letterSpacing: '-0.3px' }}>Timeline & History</h2>
               </div>
-              <h2 style={{ fontSize: 20, fontWeight: 800, margin: 0, color: 'var(--text-primary)', letterSpacing: '-0.3px' }}>Timeline & History</h2>
+              
+              <div style={{ display: 'flex', gap: 8, background: 'var(--bg-page)', padding: 4, borderRadius: 12 }}>
+                <button
+                  onClick={() => setActiveTab('transactions')}
+                  style={{
+                    padding: '8px 16px',
+                    borderRadius: 8,
+                    fontSize: 13,
+                    fontWeight: 700,
+                    background: activeTab === 'transactions' ? 'var(--bg-card)' : 'transparent',
+                    color: activeTab === 'transactions' ? 'var(--text-primary)' : 'var(--text-muted)',
+                    border: 'none',
+                    boxShadow: activeTab === 'transactions' ? 'var(--shadow-sm)' : 'none',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s'
+                  }}
+                >
+                  Transactions
+                </button>
+                <button
+                  onClick={() => setActiveTab('edits')}
+                  style={{
+                    padding: '8px 16px',
+                    borderRadius: 8,
+                    fontSize: 13,
+                    fontWeight: 700,
+                    background: activeTab === 'edits' ? 'var(--bg-card)' : 'transparent',
+                    color: activeTab === 'edits' ? 'var(--text-primary)' : 'var(--text-muted)',
+                    border: 'none',
+                    boxShadow: activeTab === 'edits' ? 'var(--shadow-sm)' : 'none',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s'
+                  }}
+                >
+                  Profile Updates
+                </button>
+              </div>
             </div>
             <div className="timeline-container">
               {(() => {
                 const isSettled = debtor.status === 'paid';
                 const events = [];
 
-                // 1. Record Started Event
-                events.push({
-                  id: 'created',
-                  type: 'created',
-                  timestamp: debtor.date_borrowed 
-                    ? new Date(debtor.date_borrowed + 'T12:00:00').getTime()
-                    : new Date(debtor.created_at).getTime(),
-                  dateStr: debtor.date_borrowed 
-                    ? new Date(debtor.date_borrowed + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-                    : new Date(debtor.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
-                });
-
-                // 2. Payment/Edit Events
-                if (debtor.payment_history) {
-                  debtor.payment_history.forEach((payment, idx) => {
-                    const isDateOnly = payment.date && (payment.date.length === 10 || !payment.date.includes('T'));
-                    const pDate = isDateOnly 
-                      ? new Date(payment.date + 'T12:00:00')
-                      : new Date(payment.date);
-                    
-                    events.push({
-                      id: `payment-${idx}`,
-                      type: 'payment_or_edit',
-                      timestamp: pDate.getTime(),
-                      dateStr: pDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
-                      payment
-                    });
-                  });
-                }
-
-                // 3. Settled Event
-                if (isSettled) {
+                if (activeTab === 'transactions') {
+                  // 1. Record Started Event
                   events.push({
-                    id: 'settled',
-                    type: 'settled',
-                    timestamp: new Date(debtor.updated_at).getTime(),
-                    dateStr: new Date(debtor.updated_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+                    id: 'created',
+                    type: 'created',
+                    timestamp: debtor.date_borrowed 
+                      ? new Date(debtor.date_borrowed + 'T12:00:00').getTime()
+                      : new Date(debtor.created_at).getTime(),
+                    dateStr: debtor.date_borrowed 
+                      ? new Date(debtor.date_borrowed + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+                      : new Date(debtor.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
                   });
+
+                  // 2. Payments and Adjustments
+                  if (debtor.payment_history) {
+                    debtor.payment_history.forEach((payment, idx) => {
+                      if (payment.type !== 'edit') {
+                        const isDateOnly = payment.date && (payment.date.length === 10 || !payment.date.includes('T'));
+                        const pDate = isDateOnly 
+                          ? new Date(payment.date + 'T12:00:00')
+                          : new Date(payment.date);
+                        
+                        events.push({
+                          id: `payment-${idx}`,
+                          type: 'payment_or_edit',
+                          timestamp: pDate.getTime(),
+                          dateStr: pDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+                          payment
+                        });
+                      }
+                    });
+                  }
+
+                  // 3. Settled Event
+                  if (isSettled) {
+                    events.push({
+                      id: 'settled',
+                      type: 'settled',
+                      timestamp: new Date(debtor.updated_at).getTime(),
+                      dateStr: new Date(debtor.updated_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+                    });
+                  }
+                } else {
+                  // Edits Log
+                  if (debtor.payment_history) {
+                    debtor.payment_history.forEach((payment, idx) => {
+                      if (payment.type === 'edit') {
+                        const isDateOnly = payment.date && (payment.date.length === 10 || !payment.date.includes('T'));
+                        const pDate = isDateOnly 
+                          ? new Date(payment.date + 'T12:00:00')
+                          : new Date(payment.date);
+                        
+                        events.push({
+                          id: `edit-${idx}`,
+                          type: 'payment_or_edit',
+                          timestamp: pDate.getTime(),
+                          dateStr: pDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+                          payment
+                        });
+                      }
+                    });
+                  }
                 }
 
-                // Sort events dynamically
+                // Sort events dynamically (Condition A / B applies to BOTH tabs)
                 events.sort((a, b) => {
                   if (isSettled) {
-                    // Condition B: Settled -> Ascending (oldest at top)
                     return a.timestamp - b.timestamp;
                   } else {
-                    // Condition A: Unsettled -> Descending (newest at top)
                     return b.timestamp - a.timestamp;
                   }
                 });
+
+                if (events.length === 0) {
+                  return <div style={{ fontSize: 14, color: 'var(--text-muted)', fontStyle: 'italic', marginLeft: -32, marginTop: 16 }}>No records found.</div>;
+                }
 
                 return events.map((ev) => {
                   if (ev.type === 'created') {
@@ -381,7 +486,7 @@ export default function DebtorDetail() {
                         <div className="timeline-content">
                           <div className="timeline-time">{ev.dateStr}</div>
                           <div className="timeline-title">Record Started</div>
-                          <div className="timeline-desc">Initial balance of <span className="timeline-money">{fmt(debtor.original_debt || (debtor.balance + (debtor.payment_history?.filter(p => p.amount).reduce((acc, p) => acc + p.amount, 0) || 0)))}</span> was recorded.</div>
+                          <div className="timeline-desc">Initial balance of <span className="timeline-money">{fmt(debtor.original_debt || (debtor.balance + (debtor.payment_history?.filter(p => p.amount && p.type !== 'manual_adjustment').reduce((acc, p) => acc + p.amount, 0) || 0)))}</span> was recorded.</div>
                         </div>
                       </div>
                     );
@@ -403,16 +508,18 @@ export default function DebtorDetail() {
                   const p = ev.payment;
                   return (
                     <div key={ev.id} className="timeline-item">
-                      <div className={`timeline-dot ${p.type === 'edit' ? 'status' : 'payment'}`}></div>
+                      <div className={`timeline-dot ${p.type === 'edit' ? 'status' : (p.type === 'manual_adjustment' ? 'created' : 'payment')}`}></div>
                       <div className="timeline-content">
                         <div className="timeline-time">{ev.dateStr}</div>
                         <div className="timeline-title">{p.type === 'edit' ? 'Profile Updated' : (p.note || 'Advance Payment')}</div>
                         <div className="timeline-desc">
                           {p.type === 'edit' 
                             ? <>{p.changes}</>
-                            : p.note === 'Manual Adjustment' || p.amount < 0 
-                              ? <>Balance adjusted by <span className="timeline-money">{fmt(p.amount)}</span>. Remaining balance: <span className="timeline-money">{fmt(p.balance_after)}</span>.</>
-                              : <>A payment of <span className="timeline-money">{fmt(p.amount)}</span> was made. Remaining balance: <span className="timeline-money">{fmt(p.balance_after)}</span>.</>}
+                            : p.type === 'manual_adjustment'
+                              ? <>{p.changes}</>
+                              : p.amount < 0 
+                                ? <>Balance adjusted by <span className="timeline-money">{fmt(Math.abs(p.amount))}</span>. Remaining balance: <span className="timeline-money">{fmt(p.balance_after)}</span>.</>
+                                : <>A payment of <span className="timeline-money">{fmt(p.amount)}</span> was made. Remaining balance: <span className="timeline-money">{fmt(p.balance_after)}</span>.</>}
                         </div>
                       </div>
                     </div>
@@ -427,6 +534,7 @@ export default function DebtorDetail() {
       {/* Modals */}
       <DebtorModal open={editOpen} onClose={() => setEditOpen(false)} onSubmit={handleEdit} initial={debtor} />
       <PayModal open={payOpen} onClose={() => setPayOpen(false)} debtor={debtor} onPay={handlePay} />
+      <AdjustBalanceModal open={adjustOpen} onClose={() => setAdjustOpen(false)} debtor={debtor} onAdjust={handleAdjustBalance} />
       
       <ConfirmModal
         open={confirmSettle}

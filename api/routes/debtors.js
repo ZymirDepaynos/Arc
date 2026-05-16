@@ -209,61 +209,8 @@ router.put('/:id', async (req, res) => {
 
     const newBalance = Math.max(0, newOriginalDebt - newAdvance);
 
-    let history = Array.isArray(current.payment_history) ? [...current.payment_history] : [];
-    const processedAdvanceDate = processDate(advance_payment_date || current.advance_payment_date);
-
-    const historySum = history.reduce((sum, p) => sum + parseFloat(p.amount), 0);
-    
-    if (newAdvance !== historySum) {
-        // Amount changed - add new entry
-        history.push({
-            date: processedAdvanceDate,
-            amount: newAdvance - historySum,
-            balance_after: newBalance,
-            note: 'Advance Payment',
-            created_at: new Date().toISOString()
-        });
-    } else if (advance_payment_date && advance_payment_date !== current.advance_payment_date) {
-        // Date changed but amount is same - find and update the first "Advance Payment" entry
-        const advIdx = history.findIndex(p => p.note === 'Advance Payment');
-        if (advIdx !== -1) {
-            history[advIdx].date = processedAdvanceDate;
-        }
-    }
-
+    const history = req.body.payment_history || current.payment_history || [];
     const newStatus = newAdvance > 0 && newBalance > 0 ? 'partial' : newBalance <= 0 ? 'paid' : 'active';
-
-    // Track Profile Changes
-    const changes = [];
-    if (name && current.name !== name) changes.push(`Name to "${name}"`);
-    
-    const oldDate = (current.date_borrowed || '').substring(0, 10);
-    const newDate = (date_borrowed || '').substring(0, 10);
-    if (oldDate && newDate && oldDate !== newDate) {
-      changes.push(`Purchase Date from ${oldDate} to ${newDate}`);
-    }
-    
-    if (current.original_debt !== newOriginalDebt) changes.push(`Initial Balance to ₱${newOriginalDebt}`);
-    
-    const currentReceipts = current.receipt_numbers || [];
-    const newReceipts = receipt_numbers || [];
-    if (currentReceipts.join(',') !== newReceipts.join(',')) {
-      changes.push(`Receipt No. to "${newReceipts.join(', ')}"`);
-    }
-
-    if (current.notes !== (notes || '')) changes.push(`Items Purchased updated`);
-
-    if (changes.length > 0) {
-      history.push({
-        type: 'edit',
-        note: 'Profile Updated',
-        changes: changes.join(' • '),
-        date: new Date().toISOString().split('T')[0],
-        created_at: new Date().toISOString(),
-        amount: 0,
-        balance_after: newBalance
-      });
-    }
 
     const { data, error } = await supabase
       .from('debtors')

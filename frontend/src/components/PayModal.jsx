@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, CreditCard } from 'lucide-react';
+import { X, CreditCard, Calendar } from 'lucide-react';
 
 const fmt = (n) =>
   '₱' + parseFloat(n || 0).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -182,14 +182,57 @@ export default function PayModal({ open, onClose, debtor, onPay }) {
             </div>
             
             <div className="form-group floating-group" style={{ marginBottom: 20 }}>
-              <input
-                className="form-input"
-                type="text"
-                placeholder=" "
-                value={dateText}
-                onChange={handleDateText}
-              />
-              <label className="floating-label">Payment Date</label>
+              <div style={{ position: 'relative' }}>
+                <input
+                  className="form-input"
+                  type="text"
+                  placeholder=" "
+                  value={dateText}
+                  onChange={handleDateText}
+                  style={{ paddingRight: 40 }}
+                />
+                <label className="floating-label">Payment Date</label>
+                <input
+                  type="date"
+                  value={date || ''}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (val > getToday()) {
+                      setDateParsed('future_error');
+                      setDate('');
+                    } else if (debtor.date_borrowed && val < debtor.date_borrowed) {
+                      setDateParsed('past_error');
+                      setDate('');
+                    } else {
+                      setDate(val);
+                      setDateText(formatDisplayDate(val));
+                      setDateParsed('ok');
+                    }
+                  }}
+                  style={{
+                    position: 'absolute',
+                    right: 12,
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    opacity: 0,
+                    width: 24,
+                    height: 24,
+                    cursor: 'pointer',
+                    zIndex: 10
+                  }}
+                />
+                <Calendar 
+                  size={18} 
+                  color="var(--text-muted)" 
+                  style={{
+                    position: 'absolute',
+                    right: 15,
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    pointerEvents: 'none'
+                  }}
+                />
+              </div>
               {dateHint(dateParsed, date)}
             </div>
 

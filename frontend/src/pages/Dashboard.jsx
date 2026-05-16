@@ -156,18 +156,37 @@ export default function Dashboard() {
     doc.text('P' + exportBalance.toLocaleString(), pageWidth - 57, 30);
 
     // 3. TABLE DATA PREP
-    const tableData = exportData.map(d => [
-      d.name,
-      d.date_borrowed ? new Date(d.date_borrowed).toLocaleDateString('en-PH') : '—',
-      'P' + parseFloat(d.advance_payment || 0).toLocaleString(),
-      'P' + parseFloat(d.balance || 0).toLocaleString(),
-      d.status.toUpperCase()
-    ]);
+    const isCompletedExport = exportData.length > 0 && exportData.every(d => d.status === 'paid');
+
+    const headers = isCompletedExport 
+      ? ['CUSTOMER NAME', 'PURCHASE DATE', 'TOTAL PAID', 'DATE SETTLED', 'STATUS']
+      : ['CUSTOMER NAME', 'PURCHASE DATE', 'ADVANCE', 'BALANCE', 'STATUS'];
+
+    const tableData = exportData.map(d => {
+      const displayStatus = d.status === 'active' ? 'OUTSTANDING' : d.status.toUpperCase();
+      if (isCompletedExport) {
+        return [
+          d.name,
+          d.date_borrowed ? new Date(d.date_borrowed).toLocaleDateString('en-PH') : '—',
+          'P' + parseFloat(d.original_debt || 0).toLocaleString(),
+          d.updated_at ? new Date(d.updated_at).toLocaleDateString('en-PH') : '—',
+          displayStatus
+        ];
+      } else {
+        return [
+          d.name,
+          d.date_borrowed ? new Date(d.date_borrowed).toLocaleDateString('en-PH') : '—',
+          'P' + parseFloat(d.advance_payment || 0).toLocaleString(),
+          'P' + parseFloat(d.balance || 0).toLocaleString(),
+          displayStatus
+        ];
+      }
+    });
 
     // 4. ELITE TABLE GENERATION
     autoTable(doc, {
       startY: 55,
-      head: [['CUSTOMER NAME', 'PURCHASE DATE', 'ADVANCE', 'BALANCE', 'STATUS']],
+      head: [headers],
       body: tableData,
       theme: 'striped',
       headStyles: { 
@@ -1111,7 +1130,7 @@ export default function Dashboard() {
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 24 }}>
                 {[
                   { label: 'All Records', value: 'all', desc: `${debtors.length} records` },
-                  { label: 'Active Only', value: 'active', desc: `${debtors.filter(d => d.status === 'active').length} records` },
+                  { label: 'Outstanding Only', value: 'active', desc: `${debtors.filter(d => d.status === 'active').length} records` },
                   { label: 'Partial Only', value: 'partial', desc: `${debtors.filter(d => d.status === 'partial').length} records` },
                   { label: 'Paid / Completed', value: 'paid', desc: `${debtors.filter(d => d.status === 'paid').length} records` },
                 ].map(opt => (

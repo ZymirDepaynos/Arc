@@ -109,11 +109,11 @@ export default function AdjustBalanceModal({ open, onClose, debtor, onAdjust }) 
                 
               </div>
 
-              <div className="modal-actions" style={{ marginTop: 32 }}>
-                <button type="button" className="btn btn-outline" onClick={onClose} disabled={loading}>
+              <div className="modal-actions" style={{ marginTop: 32, display: 'flex', gap: 12 }}>
+                <button type="button" className="btn btn-outline" onClick={onClose} disabled={loading} style={{ flex: 1 }}>
                   Cancel
                 </button>
-                <button type="submit" className="btn btn-primary" disabled={loading || !newBalance || !reason.trim() || parseFloat(newBalance) === debtor.balance}>
+                <button type="submit" className="btn btn-primary" style={{ flex: 1 }} disabled={loading || !newBalance || !reason.trim() || parseFloat(newBalance) === debtor.balance}>
                   {loading ? 'Saving...' : 'Apply Adjustment'}
                 </button>
               </div>

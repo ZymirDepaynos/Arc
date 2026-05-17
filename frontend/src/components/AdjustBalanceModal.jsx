@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Settings2 } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 const fmt = (n) =>
   '₱' + parseFloat(n || 0).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -20,7 +21,24 @@ export default function AdjustBalanceModal({ open, onClose, debtor, onAdjust }) 
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!newBalance || !reason.trim()) return;
+    
+    if (!newBalance) {
+      toast.error('Please enter a new balance');
+      return;
+    }
+    if (parseFloat(newBalance) === debtor.balance) {
+      toast.error('New balance must be different from current balance');
+      return;
+    }
+    if (parseFloat(newBalance) < 0) {
+      toast.error('Balance cannot be negative');
+      return;
+    }
+    if (!reason.trim()) {
+      toast.error('Please enter a reason for adjustment');
+      return;
+    }
+
     setLoading(true);
     try {
       await onAdjust(debtor.id, parseFloat(newBalance), reason.trim());
@@ -123,7 +141,7 @@ export default function AdjustBalanceModal({ open, onClose, debtor, onAdjust }) 
                 <button type="button" className="btn btn-outline" onClick={onClose} disabled={loading} style={{ flex: 1 }}>
                   Cancel
                 </button>
-                <button type="submit" className="btn btn-primary" style={{ flex: 1 }} disabled={loading || !newBalance || !reason.trim() || parseFloat(newBalance) === debtor.balance}>
+                <button type="submit" className="btn btn-primary" style={{ flex: 1 }} disabled={loading}>
                   {loading ? 'Saving...' : 'Apply Adjustment'}
                 </button>
               </div>

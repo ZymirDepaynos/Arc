@@ -133,7 +133,7 @@ export default function DebtorDetail() {
           setDebtor(res.data);
           return 'Balance adjusted!';
         },
-        error: 'Failed to adjust balance',
+        error: (err) => err.response?.data?.error || 'Failed to adjust balance',
       }
     );
   };
@@ -152,7 +152,7 @@ export default function DebtorDetail() {
           setDebtor(res.data);
           return 'Payment recorded!';
         },
-        error: 'Failed to record payment',
+        error: (err) => err.response?.data?.error || 'Failed to record payment',
       }
     );
   };

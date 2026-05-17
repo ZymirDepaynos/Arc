@@ -92,6 +92,16 @@ export default function AdjustBalanceModal({ open, onClose, debtor, onAdjust }) 
                     onChange={(e) => setNewBalance(e.target.value)}
                   />
                   <label className="floating-label">New Corrected Balance (₱) *</label>
+                  {newBalance !== '' && parseFloat(newBalance) === debtor.balance && (
+                    <div style={{ fontSize: 11, color: 'var(--accent)', marginTop: 4, fontWeight: 600 }}>
+                      New balance must be different from current balance
+                    </div>
+                  )}
+                  {newBalance !== '' && parseFloat(newBalance) < 0 && (
+                    <div style={{ fontSize: 11, color: '#ef4444', marginTop: 4, fontWeight: 600 }}>
+                      Balance cannot be negative
+                    </div>
+                  )}
                 </div>
 
                 <div className="form-group full floating-group">

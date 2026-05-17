@@ -47,7 +47,7 @@ export default function CalendarView() {
   const month = currentDate.getMonth();
   const today = new Date();
 
-  const allHistoryEvents = debtors
+  const allHistoryEvents = (Array.isArray(debtors) ? debtors : [])
     .filter(d => Array.isArray(d.payment_history))
     .flatMap(d => d.payment_history.map(p => ({ ...p, name: d.name, debtorId: d.id })))
     .sort((a, b) => new Date(b.date) - new Date(a.date));
@@ -79,7 +79,7 @@ export default function CalendarView() {
     const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
     const events = [];
 
-    debtors.forEach(d => {
+    (Array.isArray(debtors) ? debtors : []).forEach(d => {
       // Purchase Event
       if (d.date_borrowed && d.date_borrowed.startsWith(dateStr)) {
         events.push({

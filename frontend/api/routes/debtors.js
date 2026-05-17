@@ -272,7 +272,7 @@ router.post('/:id/pay', async (req, res) => {
 
     const paymentEntry = {
       date: paymentDate,
-      amount: payAmt,
+      amount: payAmount,
       balance_after: newBalance,
       note: 'Advance Payment'
     };

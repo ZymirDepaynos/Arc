@@ -446,6 +446,11 @@ export default function Dashboard() {
 
   const filteredCustomers = debtors
     .filter(d => {
+      // 1. Apply status filter first
+      if (filterStatus === 'Completed' && d.status !== 'paid') return false;
+      if (filterStatus === 'Active' && d.status !== 'active') return false;
+      if (filterStatus === 'Partial' && d.status !== 'partial') return false;
+
       const rawS = search.trim();
       if (!rawS) return true;
 
@@ -490,10 +495,6 @@ export default function Dashboard() {
         matchesSearch = nameMatch || dateMatch || idMatch || receiptMatch;
       }
 
-      if (filterStatus === 'All') return matchesSearch;
-      if (filterStatus === 'Completed') return matchesSearch && d.status === 'paid';
-      if (filterStatus === 'Active') return matchesSearch && d.status === 'active';
-      if (filterStatus === 'Partial') return matchesSearch && d.status === 'partial';
       return matchesSearch;
     })
     .sort((a, b) => {

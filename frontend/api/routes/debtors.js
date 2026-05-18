@@ -372,4 +372,72 @@ router.post('/:id/adjust', async (req, res) => {
   }
 });
 
+// POST edit history item
+router.post('/:id/edit-history', async (req, res) => {
+  try {
+    const { index, newAmount } = req.body;
+    
+    const { data: current, error: fetchError } = await supabase
+      .from('debtors')
+      .select('*')
+      .eq('id', req.params.id)
+      .single();
+
+    if (fetchError) throw fetchError;
+
+    const history = [...(current.payment_history || [])];
+    if (index < 0 || index >= history.length) {
+      return res.status(400).json({ error: 'Invalid history index' });
+    }
+
+    const item = history[index];
+    if (item.type === 'edit' || item.type === 'manual_adjustment') {
+      return res.status(400).json({ error: 'Cannot edit this type of history item' });
+    }
+
+    const oldAmount = parseFloat(item.amount) || 0;
+    const diff = parseFloat(newAmount) - oldAmount;
+
+    // Update the item
+    item.amount = parseFloat(newAmount);
+    
+    // Req 3: Append [Edited] tag
+    if (!item.note) item.note = 'Advance Payment';
+    if (!item.note.includes('[Edited]')) {
+      item.note = `${item.note} [Edited]`;
+    }
+
+    // Recalculate balance_after for subsequent items
+    for (let i = index; i < history.length; i++) {
+      if (history[i].balance_after !== undefined) {
+        history[i].balance_after = parseFloat(history[i].balance_after) - diff;
+      }
+    }
+
+    // Update main debtor record
+    const newBalance = parseFloat(current.balance) - diff;
+    const newAdvance = parseFloat(current.advance_payment) + diff;
+    const newStatus = newBalance <= 0 ? 'paid' : (newAdvance > 0 ? 'partial' : 'active');
+
+    const { data, error } = await supabase
+      .from('debtors')
+      .update({
+        balance: newBalance,
+        advance_payment: newAdvance,
+        payment_history: history,
+        status: newStatus,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', req.params.id)
+      .select()
+      .single();
+
+    if (error) throw error;
+    res.json(data);
+  } catch (err) {
+    console.error('API Error [POST /:id/edit-history]:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 export default router;

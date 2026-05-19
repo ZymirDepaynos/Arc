@@ -38,8 +38,7 @@ router.post('/import-all', async (req, res) => {
             date: c.advance_payment_date || c.date_borrowed || new Date().toISOString().split('T')[0],
             amount: rawAdvance,
             balance_after: storedBalance,
-            note: 'Advance Payment',
-            created_at: new Date().toISOString()
+            note: 'Advance Payment'
           });
         }
         return {
@@ -105,13 +104,6 @@ router.get('/:id', async (req, res) => {
 // POST create debtor
 router.post('/', async (req, res) => {
   try {
-    console.log('Attempting to create debtor with data:', req.body);
-    
-    if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
-      console.error('CRITICAL: Missing Supabase environment variables!');
-      return res.status(500).json({ error: 'Server configuration error: Missing DB credentials.' });
-    }
-
     const {
       name,
       balance,
@@ -119,6 +111,7 @@ router.post('/', async (req, res) => {
       advance_payment_date,
       receipt_numbers,
       date_borrowed,
+      due_date,
       notes,
       original_debt: requestedOriginalDebt,
     } = req.body;
@@ -140,10 +133,11 @@ router.post('/', async (req, res) => {
         date: processDate(advance_payment_date || date_borrowed),
         amount: rawAdvance,
         balance_after: storedBalance,
-        note: 'Advance Payment',
-        created_at: new Date().toISOString()
+        note: 'Advance Payment'
       });
     }
+
+    console.log('[CREATE] rawBalance:', rawBalance, 'rawAdvance:', rawAdvance, 'storedBalance:', storedBalance, 'originalDebt:', originalDebt);
 
     const { data, error } = await supabase
       .from('debtors')
@@ -156,23 +150,17 @@ router.post('/', async (req, res) => {
         payment_history: history,
         receipt_numbers: receipt_numbers || [],
         date_borrowed,
+        due_date: due_date || null,
         notes: notes || '',
         status: rawAdvance > 0 && storedBalance > 0 ? 'partial' : storedBalance <= 0 ? 'paid' : 'active',
       }])
-      .select();
+      .select()
+      .single();
 
-    if (error) {
-      console.error('Supabase Insert Error:', error);
-      return res.status(500).json({ error: error.message });
-    }
-    
-    if (!data || data.length === 0) {
-      return res.status(500).json({ error: 'Failed to create record: No data returned from database.' });
-    }
-
-    res.status(201).json(data[0]);
+    if (error) throw error;
+    res.status(201).json(data);
   } catch (err) {
-    console.error('API Error [POST /]:', err);
+    console.error('[CREATE ERROR]', err.message);
     res.status(500).json({ error: err.message });
   }
 });
@@ -187,6 +175,7 @@ router.put('/:id', async (req, res) => {
       advance_payment_date,
       receipt_numbers,
       date_borrowed,
+      due_date,
       notes,
       original_debt: requestedOriginalDebt,
     } = req.body;
@@ -222,6 +211,7 @@ router.put('/:id', async (req, res) => {
         advance_payment_date: advance_payment_date || current.advance_payment_date,
         receipt_numbers: receipt_numbers || [],
         date_borrowed,
+        due_date: due_date || null,
         notes: notes || '',
         status: newStatus,
         payment_history: history,
@@ -284,8 +274,7 @@ router.post('/:id/pay', async (req, res) => {
       date: paymentDate,
       amount: payAmount,
       balance_after: newBalance,
-      note: 'Advance Payment',
-      created_at: new Date().toISOString()
+      note: 'Advance Payment'
     };
     
     const history = Array.isArray(current.payment_history) ? [...current.payment_history, paymentEntry] : [paymentEntry];
@@ -379,6 +368,141 @@ router.post('/:id/adjust', async (req, res) => {
     if (error) throw error;
     res.json(data);
   } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST edit history item
+router.post('/:id/edit-history', async (req, res) => {
+  try {
+    const { index, newAmount } = req.body;
+    
+    const { data: current, error: fetchError } = await supabase
+      .from('debtors')
+      .select('*')
+      .eq('id', req.params.id)
+      .single();
+
+    if (fetchError) throw fetchError;
+
+    const history = [...(current.payment_history || [])];
+    if (index < 0 || index >= history.length) {
+      return res.status(400).json({ error: 'Invalid history index' });
+    }
+
+    const item = history[index];
+    if (item.type === 'edit' || item.type === 'manual_adjustment') {
+      return res.status(400).json({ error: 'Cannot edit this type of history item' });
+    }
+
+    const oldAmount = parseFloat(item.amount) || 0;
+    const diff = parseFloat(newAmount) - oldAmount;
+
+    // Update the item
+    item.amount = parseFloat(newAmount);
+    
+    // Req 3: Append [Edited] tag
+    if (!item.note) item.note = 'Advance Payment';
+    if (!item.note.includes('[Edited]')) {
+      item.note = `${item.note} [Edited]`;
+    }
+
+    // Recalculate balance_after for subsequent items
+    for (let i = index; i < history.length; i++) {
+      if (history[i].balance_after !== undefined) {
+        history[i].balance_after = parseFloat(history[i].balance_after) - diff;
+      }
+    }
+
+    // Update main debtor record
+    const newBalance = parseFloat(current.balance) - diff;
+    const newAdvance = parseFloat(current.advance_payment) + diff;
+    const newStatus = newBalance <= 0 ? 'paid' : (newAdvance > 0 ? 'partial' : 'active');
+
+    const { data, error } = await supabase
+      .from('debtors')
+      .update({
+        balance: newBalance,
+        advance_payment: newAdvance,
+        payment_history: history,
+        status: newStatus,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', req.params.id)
+      .select()
+      .single();
+
+    if (error) throw error;
+    res.json(data);
+  } catch (err) {
+    console.error('API Error [POST /:id/edit-history]:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── Req 7.4–7.6: DELETE individual history entry + rollback ─────────────────
+router.delete('/:id/history/:index', async (req, res) => {
+  try {
+    const index = parseInt(req.params.index, 10);
+
+    const { data: current, error: fetchError } = await supabase
+      .from('debtors')
+      .select('*')
+      .eq('id', req.params.id)
+      .single();
+
+    if (fetchError) throw fetchError;
+
+    const history = [...(current.payment_history || [])];
+
+    if (isNaN(index) || index < 0 || index >= history.length) {
+      return res.status(400).json({ error: 'Invalid history index' });
+    }
+
+    const item = history[index];
+
+    // Guard: cannot delete profile edit entries (no financial impact)
+    if (item.type === 'edit') {
+      return res.status(400).json({ error: 'Profile edit entries cannot be deleted' });
+    }
+
+    // Req 7.5: Capture deleted amount for rollback calculation
+    const deletedAmount = parseFloat(item.amount) || 0;
+
+    // Remove the entry from the history array
+    history.splice(index, 1);
+
+    // Req 7.6: Recalculate balance_after for ALL subsequent entries
+    // Reversing a payment (credit) adds the amount back to each running balance
+    // Reversing a debit adjustment (negative amount) subtracts it back
+    for (let i = index; i < history.length; i++) {
+      if (history[i].balance_after !== undefined) {
+        history[i].balance_after = parseFloat(history[i].balance_after) + deletedAmount;
+      }
+    }
+
+    // Rollback root balance and advance_payment
+    const newBalance = parseFloat(current.balance) + deletedAmount;
+    const newAdvance = Math.max(0, parseFloat(current.advance_payment) - deletedAmount);
+    const newStatus = newBalance <= 0 ? 'paid' : (newAdvance > 0 ? 'partial' : 'active');
+
+    const { data, error } = await supabase
+      .from('debtors')
+      .update({
+        balance: newBalance,
+        advance_payment: newAdvance,
+        payment_history: history,
+        status: newStatus,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', req.params.id)
+      .select()
+      .single();
+
+    if (error) throw error;
+    res.json(data);
+  } catch (err) {
+    console.error('API Error [DELETE /:id/history/:index]:', err);
     res.status(500).json({ error: err.message });
   }
 });

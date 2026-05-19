@@ -268,13 +268,14 @@ export default function Dashboard() {
       alternateRowStyles: { fillColor: C.peachLight },
       margin: { left: margin, right: margin },
       columnStyles: {
-        0: { cellWidth: 8, halign: 'center', textColor: C.textMuted }, // #
-        1: { cellWidth: 45 },                                           // Name
-        2: { cellWidth: 28 },                                           // Date
-        3: { cellWidth: 28, halign: 'right' },                         // Advance/Total Paid
-        4: { cellWidth: 28, halign: 'right', fontStyle: 'bold' },      // Balance/Date Settled
-        5: { cellWidth: 25, halign: 'center' },                        // Status
+        0: { cellWidth: 13, halign: 'center', textColor: C.textMuted }, // # (room for 3-digit)
+        1: { cellWidth: 47 },                                            // Name
+        2: { cellWidth: 32 },                                            // Date (no wrap)
+        3: { cellWidth: 28, halign: 'right' },                          // Advance/Total Paid
+        4: { cellWidth: 30, halign: 'right', fontStyle: 'bold' },       // Balance/Date Settled
+        5: { cellWidth: 32, halign: 'center' },                         // Status
       },
+      // Total: 13+47+32+28+30+32 = 182mm
       didDrawPage: (hookData) => {
         const pageCount = doc.internal.getNumberOfPages();
         const currentPage = hookData.pageNumber;

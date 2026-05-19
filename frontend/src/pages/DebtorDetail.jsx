@@ -446,11 +446,12 @@ export default function DebtorDetail() {
       alternateRowStyles: { fillColor: C.peachLight },
       margin: { left: margin, right: margin },
       columnStyles: {
-        0: { cellWidth: 10, halign: 'center', textColor: C.textMuted }, // #
-        1: { cellWidth: 25 },                                            // Date
-        2: { cellWidth: 80, halign: 'left' },                           // Description
-        3: { cellWidth: 30, halign: 'right', fontStyle: 'bold' },       // Amount
-        4: { cellWidth: 37, halign: 'right', fontStyle: 'bold' },       // Balance After
+        0: { cellWidth: 13, halign: 'center', textColor: C.textMuted }, // # (room for 3-digit)
+        1: { cellWidth: 27 },                                            // Date
+        2: { cellWidth: 75, halign: 'left' },                           // Description
+        3: { cellWidth: 32, halign: 'right', fontStyle: 'bold' },       // Amount
+        4: { cellWidth: 35, halign: 'right', fontStyle: 'bold' },       // Balance After
+        // Total: 13+27+75+32+35 = 182mm
       },
       didDrawPage: (hookData) => {
         const pageCount = doc.internal.getNumberOfPages();

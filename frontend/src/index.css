@@ -1040,6 +1040,15 @@ body.light-mode .data-row:hover {
   display: flex;
   align-items: center;
   gap: 16px;
+  min-width: 0;
+}
+
+.table-avatar-cell span {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+  flex: 1;
 }
 
 .row-avatar {
@@ -2003,4 +2012,61 @@ body.light-mode .back-btn-static {
   background: #FFFFFF !important;
   border-color: rgba(0, 0, 0, 0.1) !important;
   color: #1F2937 !important;
+}
+
+/* ==========================================================================
+   Table Column Fixed Width Stabilizers (Desktop/Tablet)
+   ========================================================================== */
+@media (min-width: 769px) {
+  .data-table {
+    table-layout: fixed !important;
+    width: 100% !important;
+  }
+
+  .col-selection {
+    width: 48px !important;
+    min-width: 48px !important;
+    max-width: 48px !important;
+  }
+
+  .col-receipt {
+    width: 135px !important;
+    min-width: 135px !important;
+    max-width: 135px !important;
+  }
+
+  .col-name {
+    /* Fluid column that fills remaining space, with a min-width guard */
+    min-width: 180px !important;
+  }
+
+  .col-date {
+    width: 180px !important;
+    min-width: 180px !important;
+    max-width: 180px !important;
+  }
+
+  .col-init-balance {
+    width: 160px !important;
+    min-width: 160px !important;
+    max-width: 160px !important;
+  }
+
+  .col-balance {
+    width: 160px !important;
+    min-width: 160px !important;
+    max-width: 160px !important;
+  }
+
+  .col-status {
+    width: 140px !important;
+    min-width: 140px !important;
+    max-width: 140px !important;
+  }
+
+  .col-actions {
+    width: 120px !important;
+    min-width: 120px !important;
+    max-width: 120px !important;
+  }
 }

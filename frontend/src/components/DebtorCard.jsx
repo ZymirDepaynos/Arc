@@ -66,7 +66,7 @@ export default function DebtorCard({ debtor, onDelete, onPay, index, selected, o
     >
       {/* Selection Checkbox */}
       {isSelectionMode && (
-        <td>
+        <td className="col-selection">
           <div 
             className={`checkbox-custom ${selected ? 'checked' : ''}`}
             onClick={(e) => {
@@ -79,12 +79,12 @@ export default function DebtorCard({ debtor, onDelete, onPay, index, selected, o
         </td>
       )}
       {/* ID */}
-      <td className="hide-mobile" style={{ color: 'var(--text-secondary)', fontSize: 13, fontWeight: 600 }}>
+      <td className="col-receipt hide-mobile" style={{ color: 'var(--text-secondary)', fontSize: 13, fontWeight: 600 }}>
         {debtor.receipt_numbers && debtor.receipt_numbers.length > 0 ? `#${debtor.receipt_numbers[0]}` : '—'}
       </td>
 
       {/* Name */}
-      <td>
+      <td className="col-name">
         <div className="table-avatar-cell">
           <div className="row-avatar" style={{ border: '1px solid rgba(0, 245, 160, 0.2)' }}>{initials(debtor.name)}</div>
           <span style={{ fontWeight: 700, color: 'var(--text-primary)' }}>{debtor.name}</span>
@@ -92,12 +92,12 @@ export default function DebtorCard({ debtor, onDelete, onPay, index, selected, o
       </td>
 
       {/* Date of Purchase — fills the empty column slot */}
-      <td style={{ color: 'var(--text-secondary)', fontSize: 13 }}>
+      <td className="col-date" style={{ color: 'var(--text-secondary)', fontSize: 13 }}>
         {fmtDate(debtor.date_borrowed)}
       </td>
 
       {/* Initial Balance */}
-      <td className="hide-mobile">
+      <td className="col-init-balance hide-mobile">
         {debtor.original_debt > 0
           ? <span style={{ fontWeight: 700, color: 'var(--status-active-text)' }}>{fmt(debtor.original_debt)}</span>
           : <span style={{ color: 'var(--text-muted)' }}>—</span>
@@ -105,12 +105,12 @@ export default function DebtorCard({ debtor, onDelete, onPay, index, selected, o
       </td>
 
       {/* Balance */}
-      <td>
+      <td className="col-balance">
         <span style={{ fontWeight: 700, color: 'var(--text-primary)' }}>{fmt(debtor.balance)}</span>
       </td>
 
       {/* Status */}
-      <td className="hide-tablet">
+      <td className="col-status hide-tablet">
         <div className="status-dot">
           <span className={`dot ${getStatusClass()}`}></span>
           {getStatusText()}
@@ -118,7 +118,7 @@ export default function DebtorCard({ debtor, onDelete, onPay, index, selected, o
       </td>
 
       {/* Actions */}
-      <td onClick={(e) => e.stopPropagation()}>
+      <td className="col-actions" onClick={(e) => e.stopPropagation()}>
         <div className="action-cell" style={{ display: 'flex', gap: 10 }}>
           {debtor.status !== 'paid' && (
             <button

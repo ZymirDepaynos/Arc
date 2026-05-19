@@ -543,10 +543,9 @@ export default function Dashboard() {
       // --- Name matching (case + whole-word aware) ---
       let nameMatch;
       if (wholeWord) {
-        // Enforce strict boundaries on both sides (\bterm\b)
-        const escaped = s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-        const wordBoundaryRe = new RegExp(`\\b${escaped}\\b`, matchCase ? '' : 'i');
-        nameMatch = wordBoundaryRe.test(d.name);
+        // Exact match comparison
+        const nameToCompare = matchCase ? d.name : d.name.toLowerCase();
+        nameMatch = (nameToCompare === s);
       } else {
         // Partial match (substring)
         const nameToCompare = matchCase ? d.name : d.name.toLowerCase();
@@ -982,7 +981,7 @@ export default function Dashboard() {
               <thead>
                 <tr>
                   {isSelectionMode && (
-                    <th style={{ width: 40 }}>
+                    <th className="col-selection">
                       <div 
                         className={`checkbox-custom ${currentCustomers.length > 0 && currentCustomers.every(d => selectedIds.includes(d.id)) ? 'checked' : ''}`}
                         onClick={toggleAll}
@@ -991,13 +990,13 @@ export default function Dashboard() {
                       </div>
                     </th>
                   )}
-                  <th className="hide-mobile">Receipt No.</th>
-                  <th>Full Name</th>
-                  <th>Date of Purchase</th>
-                  <th className="hide-mobile">Initial Balance</th>
-                  <th>Balance</th>
-                  <th className="hide-tablet">Status</th>
-                  <th></th>
+                  <th className="col-receipt hide-mobile">Receipt No.</th>
+                  <th className="col-name">Full Name</th>
+                  <th className="col-date">Date of Purchase</th>
+                  <th className="col-init-balance hide-mobile">Initial Balance</th>
+                  <th className="col-balance">Balance</th>
+                  <th className="col-status hide-tablet">Status</th>
+                  <th className="col-actions"></th>
                 </tr>
               </thead>
               <motion.tbody initial={{ opacity: 0 }} animate={{ opacity: 1 }}>

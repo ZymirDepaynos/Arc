@@ -149,8 +149,14 @@ export default function Dashboard() {
       day: '2-digit', month: 'short', year: 'numeric'
     }).toUpperCase();
 
-    const exportBalance = exportData.reduce((acc, d) => acc + (parseFloat(d.balance) || 0), 0);
     const totalPaidCount = exportData.filter(d => d.status === 'paid').length;
+    // Overall Pay Total = sum of all payments made across all customers
+    const overallPayTotal = exportData.reduce((acc, d) => {
+      const paid = (d.payment_history || [])
+        .filter(p => p.type !== 'edit' && p.type !== 'manual_adjustment' && p.amount > 0)
+        .reduce((s, p) => s + parseFloat(p.amount || 0), 0);
+      return acc + paid;
+    }, 0);
 
     // ════════════════════════════════════════════════════════════════════
     //  1. HEADER BAND
@@ -177,16 +183,16 @@ export default function Dashboard() {
     const box1X = pageW - margin - boxW * 2 - 4;
     const box2X = pageW - margin - boxW;
 
-    // Box 1 — Total Outstanding
+    // Box 1 — Overall Pay Total
     doc.setFillColor(...C.headerDark);
     doc.roundedRect(box1X, 6, boxW, boxH, 2, 2, 'F');
     doc.setFontSize(6.5);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(255, 210, 190);
-    doc.text('TOTAL OUTSTANDING', box1X + 3, 13);
+    doc.text('OVERALL PAY TOTAL', box1X + 3, 13);
     doc.setFontSize(11);
     doc.setTextColor(...C.white);
-    doc.text('P' + exportBalance.toLocaleString(), box1X + 3, 22);
+    doc.text('P' + overallPayTotal.toLocaleString(), box1X + 3, 22);
 
     // Box 2 — Customers Settled
     doc.setFillColor(...C.headerDark);

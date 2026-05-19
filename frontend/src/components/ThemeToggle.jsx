@@ -3,7 +3,7 @@ import { Sun, Moon } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 export default function ThemeToggle() {
-  const [isLight, setIsLight] = useState(document.body.classList.contains('light-mode'));
+  const [isLight, setIsLight] = useState(() => document.body.classList.contains('light-mode'));
 
   useEffect(() => {
     // Check localStorage on mount

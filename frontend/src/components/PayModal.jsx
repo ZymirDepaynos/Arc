@@ -1,53 +1,19 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, CreditCard, Calendar } from 'lucide-react';
+import { getToday, parseNaturalDate as parseNaturalDateUtil, formatDisplayDate } from '../utils/dateUtils';
 
 const fmt = (n) =>
   '₱' + parseFloat(n || 0).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
-const getToday = () => new Date().toLocaleDateString('en-CA');
-
+// Wrap shared parseNaturalDate to add future-date validation
 const parseNaturalDate = (input) => {
-  if (!input || !input.trim()) return null;
-  const clean = input.trim();
-  let parsedIso = null;
-  
-  if (/^\d{4}-\d{2}-\d{2}$/.test(clean)) {
-    parsedIso = clean;
-  } else {
-    const direct = new Date(clean);
-    if (!isNaN(direct.getTime())) {
-      parsedIso = direct.toLocaleDateString('en-CA');
-    } else {
-      const monthNames = ['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'];
-      const m = clean.toLowerCase().replace(',', '').replace(/\s+/g, ' ').split(' ');
-      if (m.length >= 3) {
-        const monthIdx = monthNames.findIndex(mn => m[0].startsWith(mn));
-        if (monthIdx !== -1) {
-          const day = parseInt(m[1]);
-          const year = parseInt(m[2]);
-          if (!isNaN(day) && !isNaN(year)) {
-            const d = new Date(year, monthIdx, day);
-            if (!isNaN(d.getTime())) parsedIso = d.toLocaleDateString('en-CA');
-          }
-        }
-      }
-    }
-  }
-
-  if (parsedIso) {
-    if (parsedIso > getToday()) return 'future_error';
-    return parsedIso;
-  }
-  return null;
+  const parsed = parseNaturalDateUtil(input);
+  if (!parsed) return input?.trim() ? null : null;
+  if (parsed > getToday()) return 'future_error';
+  return parsed;
 };
 
-const formatDisplayDate = (isoDate) => {
-  if (!isoDate) return '';
-  const d = new Date(isoDate + 'T12:00:00');
-  if (isNaN(d.getTime())) return isoDate;
-  return d.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
-};
 
 export default function PayModal({ open, onClose, debtor, onPay }) {
   const [amount, setAmount] = useState('');

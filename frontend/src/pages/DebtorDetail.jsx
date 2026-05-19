@@ -15,7 +15,6 @@ import axios from 'axios';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import toast from 'react-hot-toast';
-import StatusBadge from '../components/StatusBadge';
 import DebtorModal from '../components/DebtorModal';
 import PayModal from '../components/PayModal';
 import ConfirmModal from '../components/ConfirmModal';
@@ -56,6 +55,7 @@ export default function DebtorDetail() {
   const [allDebtors, setAllDebtors] = useState([]);
   const [editingHistoryIndex, setEditingHistoryIndex] = useState(null);
   const [editHistoryAmount, setEditHistoryAmount] = useState('');
+  const [confirmDeleteHistoryIndex, setConfirmDeleteHistoryIndex] = useState(null);
 
   const API_URL = import.meta.env.VITE_API_URL || '';
 
@@ -164,6 +164,22 @@ export default function DebtorDetail() {
           return 'Updated and recalculated!';
         },
         error: (err) => err.response?.data?.error || 'Failed to update',
+      }
+    );
+  };
+
+  // Req 7.4–7.6: Delete a single history entry and rollback the balance
+  const handleDeleteHistory = async (index) => {
+    await toast.promise(
+      axios.delete(`${API_URL}/api/debtors/${id}/history/${index}`),
+      {
+        loading: 'Deleting entry...',
+        success: (res) => {
+          setDebtor(res.data);
+          setConfirmDeleteHistoryIndex(null);
+          return 'Entry deleted and balance restored!';
+        },
+        error: (err) => err.response?.data?.error || 'Failed to delete entry',
       }
     );
   };
@@ -736,7 +752,8 @@ export default function DebtorDetail() {
                           type: 'payment_or_edit',
                           timestamp: pDate.getTime(),
                           dateStr: pDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
-                          payment
+                          payment,
+                          index: idx  // needed for delete rollback
                         });
                       }
                     });
@@ -791,21 +808,64 @@ export default function DebtorDetail() {
                       <div className={`timeline-dot ${p.type === 'edit' ? 'status' : (p.type === 'manual_adjustment' ? 'created' : 'payment')}`}></div>
                       <div className="timeline-content">
                         <div className="timeline-time">{ev.dateStr}</div>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
                           <div className="timeline-title">{p.type === 'edit' ? 'Profile Updated' : (p.note || 'Advance Payment')}</div>
-                          
-                          {/* Req 1: Inline Editing Button */}
-                          {!p.type && !isEditing && !isSettled && (
-                            <button 
-                              className="btn btn-outline" 
-                              style={{ height: 28, padding: '0 8px', borderRadius: 6, fontSize: 12 }}
-                              onClick={() => {
-                                setEditingHistoryIndex(ev.index);
-                                setEditHistoryAmount(p.amount.toString());
-                              }}
-                            >
-                              Edit
-                            </button>
+
+                          {/* Action buttons — hidden when account is settled */}
+                          {!isSettled && !p.type && (
+                            <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexShrink: 0 }}>
+
+                              {/* Edit button (Req 7.1) */}
+                              {!isEditing && confirmDeleteHistoryIndex !== ev.index && (
+                                <button
+                                  className="btn btn-outline"
+                                  style={{ height: 28, padding: '0 10px', borderRadius: 6, fontSize: 12 }}
+                                  onClick={() => {
+                                    setEditingHistoryIndex(ev.index);
+                                    setEditHistoryAmount(p.amount.toString());
+                                    setConfirmDeleteHistoryIndex(null);
+                                  }}
+                                >
+                                  Edit
+                                </button>
+                              )}
+
+                              {/* Delete button (Req 7.4) — inline confirm/cancel */}
+                              {!isEditing && (
+                                confirmDeleteHistoryIndex === ev.index ? (
+                                  <>
+                                    <span style={{ fontSize: 12, color: '#EF4444', fontWeight: 700 }}>Delete?</span>
+                                    <button
+                                      className="btn btn-outline"
+                                      style={{ height: 28, padding: '0 10px', borderRadius: 6, fontSize: 12, color: '#EF4444', borderColor: 'rgba(239,68,68,0.4)', background: 'rgba(239,68,68,0.08)' }}
+                                      onClick={() => handleDeleteHistory(ev.index)}
+                                    >
+                                      Yes
+                                    </button>
+                                    <button
+                                      className="btn btn-outline"
+                                      style={{ height: 28, padding: '0 10px', borderRadius: 6, fontSize: 12 }}
+                                      onClick={() => setConfirmDeleteHistoryIndex(null)}
+                                    >
+                                      No
+                                    </button>
+                                  </>
+                                ) : (
+                                  <button
+                                    className="btn btn-outline"
+                                    style={{ height: 28, padding: '0 8px', borderRadius: 6, fontSize: 12, color: '#EF4444', borderColor: 'rgba(239,68,68,0.2)', background: 'rgba(239,68,68,0.05)' }}
+                                    title="Delete this entry and rollback balance"
+                                    onClick={() => {
+                                      setConfirmDeleteHistoryIndex(ev.index);
+                                      setEditingHistoryIndex(null);
+                                    }}
+                                  >
+                                    <Trash2 size={12} />
+                                  </button>
+                                )
+                              )}
+
+                            </div>
                           )}
                         </div>
                         

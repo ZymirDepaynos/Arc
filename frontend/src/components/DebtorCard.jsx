@@ -25,7 +25,7 @@ const initials = (name) =>
     .join('')
     .toUpperCase();
 
-export default function DebtorCard({ debtor, onEdit, onDelete, onPay, index, selected, onToggleSelect, isSelectionMode }) {
+export default function DebtorCard({ debtor, onDelete, onPay, index, selected, onToggleSelect, isSelectionMode }) {
   const navigate = useNavigate();
 
   const handleRowClick = () => {

@@ -27,8 +27,7 @@ export default function MobileNav({ onAddClick }) {
               className={`mobile-nav-item ${isActive(item.path) ? 'active' : ''} ${item.isCenter ? 'center-fab' : ''}`}
               onClick={() => {
                 if (item.path) navigate(item.path);
-                if (item.action === onAddClick) onAddClick();
-                if (item.action === 'export') window.dispatchEvent(new CustomEvent('trigger-export'));
+                if (typeof item.action === 'function') item.action();
                 if (item.action === 'search') window.dispatchEvent(new CustomEvent('trigger-search-focus'));
               }}
             >

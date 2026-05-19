@@ -440,4 +440,71 @@ router.post('/:id/edit-history', async (req, res) => {
   }
 });
 
+// ── Req 7.4–7.6: DELETE individual history entry + rollback ─────────────────
+router.delete('/:id/history/:index', async (req, res) => {
+  try {
+    const index = parseInt(req.params.index, 10);
+
+    const { data: current, error: fetchError } = await supabase
+      .from('debtors')
+      .select('*')
+      .eq('id', req.params.id)
+      .single();
+
+    if (fetchError) throw fetchError;
+
+    const history = [...(current.payment_history || [])];
+
+    if (isNaN(index) || index < 0 || index >= history.length) {
+      return res.status(400).json({ error: 'Invalid history index' });
+    }
+
+    const item = history[index];
+
+    // Guard: cannot delete profile edit entries (no financial impact)
+    if (item.type === 'edit') {
+      return res.status(400).json({ error: 'Profile edit entries cannot be deleted' });
+    }
+
+    // Req 7.5: Capture deleted amount for rollback calculation
+    const deletedAmount = parseFloat(item.amount) || 0;
+
+    // Remove the entry from the history array
+    history.splice(index, 1);
+
+    // Req 7.6: Recalculate balance_after for ALL subsequent entries
+    // Reversing a payment (credit) adds the amount back to each running balance
+    // Reversing a debit adjustment (negative amount) subtracts it back
+    for (let i = index; i < history.length; i++) {
+      if (history[i].balance_after !== undefined) {
+        history[i].balance_after = parseFloat(history[i].balance_after) + deletedAmount;
+      }
+    }
+
+    // Rollback root balance and advance_payment
+    const newBalance = parseFloat(current.balance) + deletedAmount;
+    const newAdvance = Math.max(0, parseFloat(current.advance_payment) - deletedAmount);
+    const newStatus = newBalance <= 0 ? 'paid' : (newAdvance > 0 ? 'partial' : 'active');
+
+    const { data, error } = await supabase
+      .from('debtors')
+      .update({
+        balance: newBalance,
+        advance_payment: newAdvance,
+        payment_history: history,
+        status: newStatus,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', req.params.id)
+      .select()
+      .single();
+
+    if (error) throw error;
+    res.json(data);
+  } catch (err) {
+    console.error('API Error [DELETE /:id/history/:index]:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 export default router;

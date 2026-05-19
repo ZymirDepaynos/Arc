@@ -190,13 +190,15 @@ router.put('/:id', async (req, res) => {
     if (fetchError) throw fetchError;
 
     const newOriginalDebt = parseFloat(requestedOriginalDebt || balance) || current.original_debt;
-    const newAdvance = parseFloat(advance_payment) || 0;
+    
+    let newAdvance = parseFloat(current.advance_payment) || 0;
+    let newBalance = parseFloat(current.balance) || 0;
 
-    if (newAdvance > newOriginalDebt) {
-      return res.status(400).json({ error: 'Total payments cannot exceed the initial balance' });
+    // If original debt changed (only allowed when there is no advance payment)
+    if (newOriginalDebt !== current.original_debt && (parseFloat(current.advance_payment) || 0) === 0) {
+      newBalance = newOriginalDebt;
+      newAdvance = 0;
     }
-
-    const newBalance = Math.max(0, newOriginalDebt - newAdvance);
 
     const history = req.body.payment_history || current.payment_history || [];
     const newStatus = newAdvance > 0 && newBalance > 0 ? 'partial' : newBalance <= 0 ? 'paid' : 'active';

@@ -413,8 +413,6 @@ export default function Dashboard() {
 
   const handleEdit = async (form) => {
     const rawBalance = parseFloat(form.balance || 0);
-    const currentBalance = parseFloat(form.current_balance || 0);
-    const advancePayment = Math.max(0, rawBalance - currentBalance);
 
     // Audit changes for history
     const old = editDebtor;
@@ -427,13 +425,14 @@ export default function Dashboard() {
     if (old.advance_payment_date !== form.advance_payment_date) {
       changes.push(`Advance Date: ${fmtD(old.advance_payment_date)} → ${fmtD(form.advance_payment_date)}`);
     }
-    if (parseFloat(old.balance) !== rawBalance) {
-      changes.push(`Initial Balance: ₱${old.balance.toLocaleString()} → ₱${rawBalance.toLocaleString()}`);
+    if (parseFloat(old.original_debt || old.balance) !== rawBalance) {
+      changes.push(`Initial Balance: ₱${parseFloat(old.original_debt || old.balance).toLocaleString()} → ₱${rawBalance.toLocaleString()}`);
     }
 
     let updatedHistory = [...(old.payment_history || [])];
     if (changes.length > 0) {
       updatedHistory.push({
+        id: Date.now().toString(),
         type: 'edit',
         date: new Date().toISOString(),
         changes: changes.join(' | '),
@@ -443,10 +442,10 @@ export default function Dashboard() {
 
     const payload = {
       ...form,
-      balance: rawBalance,
       original_debt: rawBalance,
-      advance_payment: advancePayment,
-      advance_payment_date: form.advance_payment_date,
+      balance: old.balance, // Don't modify current balance during edit
+      advance_payment: old.advance_payment, // Don't modify advance payment
+      advance_payment_date: form.advance_payment_date || old.advance_payment_date,
       payment_history: updatedHistory,
       // Strip UI-only display keys
       date_borrowed_text: undefined,

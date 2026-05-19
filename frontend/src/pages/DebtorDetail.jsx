@@ -212,34 +212,39 @@ export default function DebtorDetail() {
 
   const handleExport = () => {
     const doc = new jsPDF();
-    
-    // Helper to format currency for PDF (replaces ₱ with P due to font limitations in jsPDF)
+    const pageW = doc.internal.pageSize.getWidth();
+    const pageH = doc.internal.pageSize.getHeight();
+    const margin = 14;
+
+    // Helper — replace ₱ with P (jsPDF default font limitation)
     const fmtPDF = (n) => fmt(n).replace('₱', 'P');
-    
-    // Header
-    doc.setFontSize(22);
-    doc.setTextColor(33, 37, 41);
-    doc.text('STATEMENT OF ACCOUNT', 14, 20);
-    
-    doc.setFontSize(10);
-    doc.setTextColor(100, 116, 139);
-    doc.text(`Generated on ${new Date().toLocaleDateString('en-PH', { year: 'numeric', month: 'long', day: 'numeric' })}`, 14, 27);
-    
-    // Divider
-    doc.setDrawColor(226, 232, 240);
-    doc.line(14, 32, 196, 32);
-    
-    // Customer Info
-    doc.setFontSize(12);
-    doc.setTextColor(33, 37, 41);
-    doc.text(`Customer Name: ${debtor.name}`, 14, 42);
-    doc.text(`Current Balance: ${fmtPDF(debtor.balance)}`, 14, 49);
-    doc.text(`Purchase Date: ${fmtDate(debtor.date_borrowed)}`, 14, 56);
-    
-    const receiptText = debtor.receipt_numbers?.length ? debtor.receipt_numbers.map(r => `#${r}`).join(', ') : '—';
-    doc.text(`Receipt Number(s): ${receiptText}`, 14, 63);
-    
-    // Items
+
+    // ── Color palette (warm peach / terracotta from reference image) ──────
+    const C = {
+      header:    [214, 150, 114],  // terracotta/salmon
+      headerDark:[180, 110,  80],  // darker terracotta
+      peachLight:[252, 235, 225],  // very light peach — alt rows & box bg
+      peachMid:  [240, 200, 178],  // mid peach — table header row
+      border:    [210, 170, 150],  // peach-tan border
+      textDark:  [ 80,  45,  20],  // warm dark brown
+      textBody:  [100,  65,  40],  // warm brown body
+      textMuted: [160, 120, 100],  // muted warm
+      white:     [255, 255, 255],
+      green:     [ 34, 130,  70],
+      orange:    [200,  90,  30],
+    };
+
+    // ── Compute Overall Pay Total ─────────────────────────────────────────
+    const totalPaid = (debtor.payment_history || [])
+      .filter(p => p.type !== 'edit' && p.type !== 'manual_adjustment' && p.amount > 0)
+      .reduce((sum, p) => sum + parseFloat(p.amount || 0), 0);
+
+    const isSettled = debtor.status === 'paid';
+    const generatedDate = new Date().toLocaleDateString('en-PH', {
+      year: 'numeric', month: 'long', day: 'numeric'
+    });
+
+    // ── Items ─────────────────────────────────────────────────────────────
     let items = [];
     if (debtor.notes) {
       try {
@@ -250,42 +255,129 @@ export default function DebtorDetail() {
       }
     }
     const itemsText = items.length > 0 ? items.join(', ') : 'No items listed';
-    
-    doc.text(`Items Purchased: ${itemsText}`, 14, 70);
-    
-    // Divider
-    doc.line(14, 77, 196, 77);
-    
-    // Transaction History Title
-    doc.setFontSize(14); // Req 8.3: 14pt for section headers
-    doc.setTextColor(33, 37, 41);
-    doc.text('Transaction History', 14, 87);
-    
-    // Table
-    const headers = [['Date', 'Description', 'Amount', 'Balance After']];
-    const data = [];
-    
-    const isSettled = debtor.status === 'paid';
+    const receiptText = debtor.receipt_numbers?.length
+      ? debtor.receipt_numbers.map(r => `#${r}`).join(', ') : '—';
+
+    // ════════════════════════════════════════════════════════════════════
+    //  1. HEADER BAND — warm terracotta
+    // ════════════════════════════════════════════════════════════════════
+    doc.setFillColor(...C.header);
+    doc.rect(0, 0, pageW, 36, 'F');
+
+    doc.setTextColor(...C.white);
+    doc.setFontSize(18);
+    doc.setFont('helvetica', 'bold');
+    doc.text('STATEMENT OF ACCOUNT', margin, 16);
+
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(255, 235, 220);
+    doc.text(`Generated on ${generatedDate}`, margin, 25);
+
+    // Status badge top-right
+    const badgeLabel = isSettled ? 'FULLY SETTLED' : 'OUTSTANDING';
+    doc.setFillColor(...(isSettled ? C.green : C.orange));
+    doc.roundedRect(pageW - margin - 38, 8, 38, 10, 2, 2, 'F');
+    doc.setTextColor(...C.white);
+    doc.setFontSize(7);
+    doc.setFont('helvetica', 'bold');
+    doc.text(badgeLabel, pageW - margin - 38 + 19, 14.5, { align: 'center' });
+
+    // ════════════════════════════════════════════════════════════════════
+    //  2. CUSTOMER DETAILS (left) + SUMMARY METRICS (right)
+    // ════════════════════════════════════════════════════════════════════
+    const boxTop = 42;
+    const boxH = 48;
+    const leftW = 110;
+    const rightW = pageW - margin * 2 - leftW - 4;
+
+    // Left box — light peach
+    doc.setFillColor(...C.peachLight);
+    doc.setDrawColor(...C.border);
+    doc.roundedRect(margin, boxTop, leftW, boxH, 3, 3, 'FD');
+
+    doc.setFontSize(7);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(...C.headerDark);
+    doc.text('CUSTOMER DETAILS', margin + 5, boxTop + 8);
+
+    const lx = margin + 5;
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(...C.textDark);
+    doc.text(debtor.name, lx, boxTop + 17);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9);
+    doc.setTextColor(...C.textBody);
+    doc.text(`Purchase Date: ${fmtDate(debtor.date_borrowed)}`, lx, boxTop + 26);
+    doc.text(`Receipt No: ${receiptText}`, lx, boxTop + 34);
+    const wrappedItems = doc.splitTextToSize(`Items: ${itemsText}`, leftW - 10);
+    doc.text(wrappedItems.slice(0, 2), lx, boxTop + 42);
+
+    // Right box — dark terracotta
+    const rx = margin + leftW + 4;
+    doc.setFillColor(...C.headerDark);
+    doc.roundedRect(rx, boxTop, rightW, boxH, 3, 3, 'F');
+
+    doc.setFontSize(7);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(255, 210, 190);
+    doc.text('SUMMARY', rx + 5, boxTop + 8);
+
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(255, 210, 190);
+    doc.text('Overall Pay Total', rx + 5, boxTop + 19);
+    doc.setFontSize(13);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(...C.white);
+    doc.text(fmtPDF(totalPaid), rx + 5, boxTop + 28);
+
+    doc.setDrawColor(...C.header);
+    doc.line(rx + 5, boxTop + 32, rx + rightW - 5, boxTop + 32);
+
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(255, 210, 190);
+    doc.text('Current Balance', rx + 5, boxTop + 39);
+    doc.setFontSize(11);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(...C.white);
+    doc.text(isSettled ? 'P0.00' : fmtPDF(debtor.balance), rx + 5, boxTop + 47);
+
+    // ════════════════════════════════════════════════════════════════════
+    //  3. TRANSACTION HISTORY SECTION BAR
+    // ════════════════════════════════════════════════════════════════════
+    const tableTop = boxTop + boxH + 10;
+
+    doc.setFillColor(...C.header);
+    doc.rect(margin, tableTop, pageW - margin * 2, 8, 'F');
+    doc.setTextColor(...C.white);
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'bold');
+    doc.text('TRANSACTION HISTORY', margin + 3, tableTop + 5.5);
+
+    // ════════════════════════════════════════════════════════════════════
+    //  4. BUILD TABLE DATA (with row numbering)
+    // ════════════════════════════════════════════════════════════════════
     const events = [];
-    
+
     events.push({
-      id: 'created',
       type: 'created',
-      timestamp: debtor.date_borrowed 
+      timestamp: debtor.date_borrowed
         ? new Date(debtor.date_borrowed + 'T12:00:00').getTime()
         : new Date(debtor.created_at).getTime(),
-      dateStr: debtor.date_borrowed 
-        ? new Date(debtor.date_borrowed + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-        : new Date(debtor.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+      dateStr: (debtor.date_borrowed
+        ? new Date(debtor.date_borrowed + 'T12:00:00')
+        : new Date(debtor.created_at)
+      ).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
     });
 
     if (debtor.payment_history) {
-      debtor.payment_history.forEach((payment, idx) => {
+      debtor.payment_history.forEach((payment) => {
         const isDateOnly = payment.date && (payment.date.length === 10 || !payment.date.includes('T'));
         const pDate = isDateOnly ? new Date(payment.date + 'T12:00:00') : new Date(payment.date);
-        
         events.push({
-          id: `payment-${idx}`,
           type: 'payment_or_edit',
           timestamp: pDate.getTime(),
           dateStr: pDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
@@ -296,75 +388,86 @@ export default function DebtorDetail() {
 
     if (isSettled) {
       events.push({
-        id: 'settled',
         type: 'settled',
         timestamp: new Date(debtor.updated_at).getTime(),
-        dateStr: new Date(debtor.updated_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+        dateStr: new Date(debtor.updated_at).toLocaleDateString('en-US', {
+          month: 'short', day: 'numeric', year: 'numeric'
+        }),
       });
     }
 
     events.sort((a, b) => a.timestamp - b.timestamp);
-    
+
+    const tableData = [];
+    let rowNum = 1;
+
     events.forEach(ev => {
       if (ev.type === 'created') {
-        data.push([
-          ev.dateStr,
-          'Record Started',
-          '',
-          fmtPDF(debtor.original_debt || debtor.balance)
-        ]);
+        tableData.push([`${rowNum++}`, ev.dateStr, 'Record Started', '—', fmtPDF(debtor.original_debt || debtor.balance)]);
       } else if (ev.type === 'settled') {
-        data.push([
-          ev.dateStr,
-          'Account Settled',
-          '',
-          'P0.00'
-        ]);
+        tableData.push([`${rowNum++}`, ev.dateStr, 'Account Settled', '—', 'P0.00']);
       } else {
         const p = ev.payment;
-        
-        // Req 8.1: Exclude non-financial events (profile edits)
-        if (p.type === 'edit') return;
-        
+        if (p.type === 'edit') return; // Req 8.1 — exclude profile edits
         let desc = p.note || 'Payment';
         if (p.type === 'manual_adjustment') {
-          const reasonMatch = p.changes.match(/Reason: (.*)/);
-          const reason = reasonMatch ? reasonMatch[1] : 'Manual';
-          desc = `Manual Adjustment (${reason})`;
+          const reasonMatch = (p.changes || '').match(/Reason: (.*)/);
+          desc = `Manual Adjustment (${reasonMatch ? reasonMatch[1] : 'Manual'})`;
         }
-        
-        let amountStr = '';
-        if (p.amount) {
-          amountStr = p.amount < 0 ? `-${fmtPDF(Math.abs(p.amount))}` : fmtPDF(p.amount);
-        }
-        
-        data.push([
-          ev.dateStr,
-          desc,
-          amountStr,
-          p.balance_after ? fmtPDF(p.balance_after) : ''
-        ]);
+        const amountStr = p.amount
+          ? (p.amount < 0 ? `-${fmtPDF(Math.abs(p.amount))}` : fmtPDF(p.amount))
+          : '—';
+        tableData.push([`${rowNum++}`, ev.dateStr, desc, amountStr, p.balance_after ? fmtPDF(p.balance_after) : '—']);
       }
     });
-    
+
+    // ════════════════════════════════════════════════════════════════════
+    //  5. RENDER TABLE
+    // ════════════════════════════════════════════════════════════════════
     autoTable(doc, {
-      head: headers,
-      body: data,
-      startY: 92,
-      theme: 'grid',
-      headStyles: { fillColor: [79, 70, 229], textColor: [255, 255, 255], fontStyle: 'bold' },
-      alternateRowStyles: { fillColor: [249, 250, 251] },
-      margin: { left: 14, right: 14 },
-      styles: { fontSize: 10 }, // Req 8.3: 10pt for tabular row data
+      head: [['#', 'Date', 'Description', 'Amount', 'Balance After']],
+      body: tableData,
+      startY: tableTop + 8,
+      theme: 'plain',
+      headStyles: {
+        fillColor: C.peachMid,
+        textColor: C.textDark,
+        fontStyle: 'bold',
+        fontSize: 9,
+        cellPadding: { top: 4, bottom: 4, left: 4, right: 4 },
+      },
+      bodyStyles: {
+        fontSize: 9,
+        textColor: C.textBody,
+        cellPadding: { top: 4, bottom: 4, left: 4, right: 4 },
+        lineColor: C.border,
+        lineWidth: 0.3,
+      },
+      alternateRowStyles: { fillColor: C.peachLight },
+      margin: { left: margin, right: margin },
       columnStyles: {
-        0: { cellWidth: 25 }, // Date
-        1: { cellWidth: 80 }, // Description (Wraps automatically)
-        2: { cellWidth: 35, halign: 'right' }, // Amount
-        3: { cellWidth: 42, halign: 'right' }, // Balance After
+        0: { cellWidth: 10, halign: 'center', textColor: C.textMuted }, // #
+        1: { cellWidth: 25 },                                            // Date
+        2: { cellWidth: 80, halign: 'left' },                           // Description
+        3: { cellWidth: 30, halign: 'right', fontStyle: 'bold' },       // Amount
+        4: { cellWidth: 37, halign: 'right', fontStyle: 'bold' },       // Balance After
+      },
+      didDrawPage: (hookData) => {
+        const pageCount = doc.internal.getNumberOfPages();
+        const currentPage = hookData.pageNumber;
+        doc.setFontSize(8);
+        doc.setTextColor(...C.textMuted);
+        doc.setFont('helvetica', 'normal');
+        doc.text(
+          `Page ${currentPage} of ${pageCount}  |  This document is system-generated and is valid without a signature.`,
+          pageW / 2, pageH - 8, { align: 'center' }
+        );
+        doc.setDrawColor(...C.border);
+        doc.line(margin, pageH - 12, pageW - margin, pageH - 12);
       }
     });
-    
-    doc.save(`${debtor.name.replace(/\s+/g, '_')}_Statement.pdf`);
+
+    doc.save(`${debtor.name.replace(/\s+/g, '_')}_SOA.pdf`);
     toast.success('Statement downloaded!');
   };
 

@@ -128,44 +128,103 @@ export default function Dashboard() {
 
   const exportToPDF = (exportData = debtors) => {
     const doc = new jsPDF();
-    const pageWidth = doc.internal.pageSize.getWidth();
-    
-    // 1. ELITE BRANDED HEADER
-    doc.setFillColor(5, 7, 10);
-    doc.rect(0, 0, pageWidth, 45, 'F');
-    
-    doc.setFontSize(26);
-    doc.setTextColor(255, 255, 255);
-    doc.setFont('helvetica', 'bold');
-    doc.text('Arc Business Report', 14, 20);
-    
-    doc.setFontSize(10);
-    doc.setTextColor(180, 180, 180);
-    doc.setFont('helvetica', 'normal');
-    doc.text(`DATE GENERATED: ${new Date().toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric' }).toUpperCase()}`, 14, 28);
-    doc.text(`TOTAL CUSTOMERS: ${exportData.length}`, 14, 34);
+    const pageW = doc.internal.pageSize.getWidth();
+    const pageH = doc.internal.pageSize.getHeight();
+    const margin = 14;
 
-    // 2. QUICK SUMMARY BOXES (at the top of PDF)
-    doc.setFillColor(255, 90, 54); // Arc Orange
-    doc.rect(pageWidth - 60, 15, 46, 20, 'F');
-    doc.setTextColor(255, 255, 255);
-    doc.setFontSize(8);
-    doc.text('TOTAL OUTSTANDING', pageWidth - 57, 22);
-    doc.setFontSize(12);
+    // ── Color palette (warm peach / terracotta) ───────────────────────────
+    const C = {
+      header:    [214, 150, 114],  // terracotta/salmon
+      headerDark:[180, 110,  80],  // darker terracotta
+      peachLight:[252, 235, 225],  // very light peach — alt rows
+      peachMid:  [240, 200, 178],  // mid peach — table header row
+      border:    [210, 170, 150],  // peach-tan border
+      textDark:  [ 80,  45,  20],  // warm dark brown
+      textBody:  [100,  65,  40],  // warm brown body
+      textMuted: [160, 120, 100],  // muted warm
+      white:     [255, 255, 255],
+    };
+
+    const generatedDate = new Date().toLocaleDateString('en-US', {
+      day: '2-digit', month: 'short', year: 'numeric'
+    }).toUpperCase();
+
     const exportBalance = exportData.reduce((acc, d) => acc + (parseFloat(d.balance) || 0), 0);
-    doc.text('P' + exportBalance.toLocaleString(), pageWidth - 57, 30);
+    const totalPaidCount = exportData.filter(d => d.status === 'paid').length;
 
-    // 3. TABLE DATA PREP
+    // ════════════════════════════════════════════════════════════════════
+    //  1. HEADER BAND
+    // ════════════════════════════════════════════════════════════════════
+    doc.setFillColor(...C.header);
+    doc.rect(0, 0, pageW, 40, 'F');
+
+    doc.setTextColor(...C.white);
+    doc.setFontSize(20);
+    doc.setFont('helvetica', 'bold');
+    doc.text('ARC BUSINESS REPORT', margin, 16);
+
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(255, 235, 220);
+    doc.text(`DATE GENERATED: ${generatedDate}`, margin, 24);
+    doc.text(`TOTAL CUSTOMERS: ${exportData.length}`, margin, 30);
+
+    // ════════════════════════════════════════════════════════════════════
+    //  2. SUMMARY BOXES (top-right)
+    // ════════════════════════════════════════════════════════════════════
+    const boxW = 44;
+    const boxH = 28;
+    const box1X = pageW - margin - boxW * 2 - 4;
+    const box2X = pageW - margin - boxW;
+
+    // Box 1 — Total Outstanding
+    doc.setFillColor(...C.headerDark);
+    doc.roundedRect(box1X, 6, boxW, boxH, 2, 2, 'F');
+    doc.setFontSize(6.5);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(255, 210, 190);
+    doc.text('TOTAL OUTSTANDING', box1X + 3, 13);
+    doc.setFontSize(11);
+    doc.setTextColor(...C.white);
+    doc.text('P' + exportBalance.toLocaleString(), box1X + 3, 22);
+
+    // Box 2 — Customers Settled
+    doc.setFillColor(...C.headerDark);
+    doc.roundedRect(box2X, 6, boxW, boxH, 2, 2, 'F');
+    doc.setFontSize(6.5);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(255, 210, 190);
+    doc.text('CUSTOMERS SETTLED', box2X + 3, 13);
+    doc.setFontSize(11);
+    doc.setTextColor(...C.white);
+    doc.text(`${totalPaidCount} / ${exportData.length}`, box2X + 3, 22);
+
+    // ════════════════════════════════════════════════════════════════════
+    //  3. TABLE SECTION HEADER BAR
+    // ════════════════════════════════════════════════════════════════════
+    const tableBarY = 46;
+    doc.setFillColor(...C.header);
+    doc.rect(margin, tableBarY, pageW - margin * 2, 8, 'F');
+    doc.setTextColor(...C.white);
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'bold');
+    doc.text('CUSTOMER RECORDS', margin + 3, tableBarY + 5.5);
+
+    // ════════════════════════════════════════════════════════════════════
+    //  4. TABLE DATA WITH ROW NUMBERS
+    // ════════════════════════════════════════════════════════════════════
     const isCompletedExport = exportData.length > 0 && exportData.every(d => d.status === 'paid');
 
-    const headers = isCompletedExport 
-      ? ['CUSTOMER NAME', 'PURCHASE DATE', 'TOTAL PAID', 'DATE SETTLED', 'STATUS']
-      : ['CUSTOMER NAME', 'PURCHASE DATE', 'ADVANCE', 'BALANCE', 'STATUS'];
+    const tableHeaders = isCompletedExport
+      ? ['#', 'CUSTOMER NAME', 'PURCHASE DATE', 'TOTAL PAID', 'DATE SETTLED', 'STATUS']
+      : ['#', 'CUSTOMER NAME', 'PURCHASE DATE', 'ADVANCE', 'BALANCE', 'STATUS'];
 
-    const tableData = exportData.map(d => {
+    const tableData = exportData.map((d, idx) => {
       const displayStatus = d.status === 'active' ? 'OUTSTANDING' : d.status.toUpperCase();
+      const rowNum = String(idx + 1);
       if (isCompletedExport) {
         return [
+          rowNum,
           d.name,
           d.date_borrowed ? new Date(d.date_borrowed).toLocaleDateString('en-PH') : '—',
           'P' + parseFloat(d.original_debt || 0).toLocaleString(),
@@ -174,6 +233,7 @@ export default function Dashboard() {
         ];
       } else {
         return [
+          rowNum,
           d.name,
           d.date_borrowed ? new Date(d.date_borrowed).toLocaleDateString('en-PH') : '—',
           'P' + parseFloat(d.advance_payment || 0).toLocaleString(),
@@ -183,34 +243,50 @@ export default function Dashboard() {
       }
     });
 
-    // 4. ELITE TABLE GENERATION
+    // ════════════════════════════════════════════════════════════════════
+    //  5. RENDER TABLE
+    // ════════════════════════════════════════════════════════════════════
     autoTable(doc, {
-      startY: 55,
-      head: [headers],
+      startY: tableBarY + 8,
+      head: [tableHeaders],
       body: tableData,
-      theme: 'striped',
-      headStyles: { 
-        fillColor: [5, 7, 10], 
-        textColor: [255, 255, 255], 
-        fontSize: 9, 
+      theme: 'plain',
+      headStyles: {
+        fillColor: C.peachMid,
+        textColor: C.textDark,
         fontStyle: 'bold',
-        cellPadding: 4
+        fontSize: 8,
+        cellPadding: { top: 3, bottom: 3, left: 3, right: 3 },
       },
+      bodyStyles: {
+        fontSize: 8,
+        textColor: C.textBody,
+        cellPadding: { top: 3, bottom: 3, left: 3, right: 3 },
+        lineColor: C.border,
+        lineWidth: 0.25,
+      },
+      alternateRowStyles: { fillColor: C.peachLight },
+      margin: { left: margin, right: margin },
       columnStyles: {
-        0: { cellWidth: 50 },
-        1: { cellWidth: 35 },
-        2: { cellWidth: 35 },
-        3: { cellWidth: 35 },
-        4: { halign: 'center' }
+        0: { cellWidth: 8, halign: 'center', textColor: C.textMuted }, // #
+        1: { cellWidth: 45 },                                           // Name
+        2: { cellWidth: 28 },                                           // Date
+        3: { cellWidth: 28, halign: 'right' },                         // Advance/Total Paid
+        4: { cellWidth: 28, halign: 'right', fontStyle: 'bold' },      // Balance/Date Settled
+        5: { cellWidth: 25, halign: 'center' },                        // Status
       },
-      styles: { 
-        fontSize: 8, 
-        cellPadding: 3, 
-        valign: 'middle',
-        font: 'helvetica'
-      },
-      alternateRowStyles: { 
-        fillColor: [250, 250, 250] 
+      didDrawPage: (hookData) => {
+        const pageCount = doc.internal.getNumberOfPages();
+        const currentPage = hookData.pageNumber;
+        doc.setFontSize(8);
+        doc.setTextColor(...C.textMuted);
+        doc.setFont('helvetica', 'normal');
+        doc.text(
+          `Page ${currentPage} of ${pageCount}  |  This document is system-generated and is valid without a signature.`,
+          pageW / 2, pageH - 8, { align: 'center' }
+        );
+        doc.setDrawColor(...C.border);
+        doc.line(margin, pageH - 12, pageW - margin, pageH - 12);
       }
     });
 

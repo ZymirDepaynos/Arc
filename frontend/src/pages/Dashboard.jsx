@@ -80,7 +80,7 @@ export default function Dashboard() {
       setIsSelectionMode(false);
       toast.success(`Deleted ${selectedIds.length} records`);
     } catch (err) {
-      toast.error('Bulk delete failed');
+      toast.error(err.response?.data?.error || 'Bulk delete failed');
     }
   };
 
@@ -94,7 +94,7 @@ export default function Dashboard() {
       setIsSelectionMode(false);
       toast.success('Selected customers marked as paid');
     } catch (err) {
-      toast.error('Bulk update failed');
+      toast.error(err.response?.data?.error || 'Bulk update failed');
     }
   };
 
@@ -465,7 +465,7 @@ export default function Dashboard() {
     await toast.promise(deleteDebtor(id), {
       loading: 'Deleting...',
       success: 'Debtor removed.',
-      error: 'Failed to delete',
+      error: (err) => err.response?.data?.error || 'Failed to delete',
     });
     if (debtor) {
       const logs = JSON.parse(localStorage.getItem('arc_deleted_logs') || '[]');
@@ -484,7 +484,7 @@ export default function Dashboard() {
     await toast.promise(recordPayment(id, amount, date), {
       loading: 'Recording payment...',
       success: 'Payment recorded!',
-      error: 'Failed to record payment',
+      error: (err) => err.response?.data?.error || 'Failed to record payment',
     });
   };
 

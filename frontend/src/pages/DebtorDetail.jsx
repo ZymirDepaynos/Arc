@@ -535,9 +535,7 @@ export default function DebtorDetail() {
             <h1 style={{ fontSize: 32, fontWeight: 900, color: 'var(--text-primary)', margin: '0 0 4px 0', letterSpacing: '-0.5px' }}>
               {debtor.name}
             </h1>
-            <div style={{ fontSize: 14, color: 'var(--text-muted)', fontWeight: 600 }}>
-              Customer since {fmtDate(debtor.created_at)}
-            </div>
+
           </div>
         </div>
 

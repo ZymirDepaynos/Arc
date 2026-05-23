@@ -46,7 +46,7 @@ export default function Dashboard() {
   const [wholeWord, setWholeWord] = useState(false);
   const itemsPerPage = 10;
 
-  const SEARCH_PLACEHOLDER = 'Search by name or date (e.g. May, May 4)…';
+  const SEARCH_PLACEHOLDER = 'Search by name or date (e.g. May, May 4, 2026, May 2026).';
 
   useEffect(() => {
     const handleSearchTrigger = () => setSearchOpen(true);
@@ -487,7 +487,8 @@ export default function Dashboard() {
     });
   };
 
-  // Partial date matching: 'may' → all May, 'may 4' → all May 4th any year, 'may 4 2026' → exact
+  // Partial date matching: 'may' → all May, 'may 4' → all May 4th any year,
+  // 'may 4 2026' → exact, 'may 2026' → all May in 2026, '2026' → all in 2026
   const matchesDate = (dateBorrowed, rawInput) => {
     if (!dateBorrowed || !rawInput) return false;
     const storedDate = dateBorrowed.substring(0, 10); // YYYY-MM-DD
@@ -496,6 +497,12 @@ export default function Dashboard() {
     const MONTH_NAMES = ['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'];
     const clean = rawInput.toLowerCase().replace(/,/g, '').trim();
     const parts = clean.split(/\s+/);
+
+    // --- Year-only search: '2026' → match any record in that year ---
+    if (parts.length === 1 && /^\d{4}$/.test(parts[0])) {
+      const yearNum = parseInt(parts[0]);
+      if (yearNum > 1900 && yearNum < 3000) return syear === yearNum;
+    }
 
     const monthIdx = MONTH_NAMES.findIndex(mn => parts[0].startsWith(mn) && parts[0].length >= 3);
 
@@ -507,6 +514,11 @@ export default function Dashboard() {
       }
       const secondNum = parseInt(parts[1]);
       if (!isNaN(secondNum)) {
+        // Check if the second part is a year (> 1900) or a day
+        if (secondNum > 1900 && secondNum < 3000 && parts.length === 2) {
+          // 'may 2026' → match month + year, any day
+          return smonth === monthNum && syear === secondNum;
+        }
         if (parts.length === 2) {
           // 'may 4' → match month + day, any year
           return smonth === monthNum && sday === secondNum;

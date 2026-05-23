@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { 
@@ -227,9 +227,9 @@ export default function DebtorDetail() {
   };
 
   const handleExport = () => {
-    const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
-    const pageW = doc.internal.pageSize.getWidth();  // 297mm landscape
-    const pageH = doc.internal.pageSize.getHeight(); // 210mm landscape
+    const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+    const pageW = doc.internal.pageSize.getWidth();  // 210mm portrait
+    const pageH = doc.internal.pageSize.getHeight(); // 297mm portrait
     const margin = 14;
     const contentW = pageW - margin * 2;
 
@@ -286,37 +286,11 @@ export default function DebtorDetail() {
     doc.setFillColor(...C.navyLight);
     doc.triangle(0, 0, 52, 0, 0, headerH, 'F');
 
-    // Arc brand logo circle
-    const logoX = 10;
-    const logoY = headerH / 2;
-    doc.setFillColor(...C.white);
-    doc.circle(logoX + 7, logoY, 7, 'F');
-    doc.setFillColor(...C.navyBand);
-    doc.circle(logoX + 7, logoY, 5.5, 'F');
-    doc.setFillColor(...C.gold);
-    doc.circle(logoX + 7, logoY, 3.5, 'F');
-
-    // "Arc" text inside logo
-    doc.setTextColor(...C.navyBand);
-    doc.setFontSize(5);
-    doc.setFont('helvetica', 'bold');
-    doc.text('ARC', logoX + 7, logoY + 1.5, { align: 'center' });
-
     // Report title — bold, centered, white
     doc.setTextColor(...C.white);
     doc.setFontSize(18);
     doc.setFont('helvetica', 'bold');
     doc.text('INDIVIDUAL TRANSACTION REPORT', pageW / 2, headerH / 2 + 3.5, { align: 'center' });
-
-    // Status badge — top right
-    const badgeLabel = isSettled ? 'FULLY SETTLED' : 'OUTSTANDING';
-    const badgeColor = isSettled ? C.green : C.orange;
-    doc.setFillColor(...badgeColor);
-    doc.roundedRect(pageW - margin - 36, 6, 36, 10, 2, 2, 'F');
-    doc.setTextColor(...C.white);
-    doc.setFontSize(7);
-    doc.setFont('helvetica', 'bold');
-    doc.text(badgeLabel, pageW - margin - 36 + 18, 12.5, { align: 'center' });
 
     // ════════════════════════════════════════════════════════════
     //  2. CUSTOMER DETAILS — below header, left-aligned
@@ -346,12 +320,13 @@ export default function DebtorDetail() {
     doc.setTextColor(...C.textBody);
     doc.text(fmtDate(debtor.date_borrowed), margin + 36, y);
 
+    y += 6;
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(...C.textDark);
-    doc.text('Receipt No:', margin + 100, y);
+    doc.text('Receipt No:', margin, y);
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(...C.textBody);
-    doc.text(receiptText, margin + 122, y);
+    doc.text(receiptText, margin + 36, y);
 
     y += 6;
     doc.setFont('helvetica', 'bold');
@@ -373,11 +348,11 @@ export default function DebtorDetail() {
     doc.setLineWidth(0.6);
     doc.rect(margin, y, contentW, boxH);
 
-    // Centered title in box
+    // Left-aligned title in box
     doc.setFontSize(10);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(...C.navy);
-    doc.text('TRANSACTION SUMMARY', pageW / 2, y + 7, { align: 'center' });
+    doc.text('TRANSACTION SUMMARY', margin + 10, y + 7);
 
     // Left metrics (Amount + Initial Balance)
     const lCol = margin + 10;
@@ -396,21 +371,14 @@ export default function DebtorDetail() {
     doc.setTextColor(isSettled ? C.green[0] : C.orange[0], isSettled ? C.green[1] : C.orange[1], isSettled ? C.green[2] : C.orange[2]);
     doc.text(isSettled ? 'P0.00 (Settled)' : fmtPDF(debtor.balance), lCol + 32, y + 21);
 
-    // Right metrics (Total Paid + Items Count)
-    const rCol = pageW / 2 + 30;
+    // Right metrics (Total Paid only)
+    const rCol = pageW / 2 + 10;
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(...C.textBody);
     doc.text('Total Paid:', rCol, y + 14);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(...C.navy);
     doc.text(fmtPDF(totalPaid), rCol + 24, y + 14);
-
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(...C.textBody);
-    doc.text('Items Purchased:', rCol, y + 21);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(...C.textDark);
-    doc.text(`${items.length} item${items.length !== 1 ? 's' : ''}`, rCol + 34, y + 21);
 
     // ════════════════════════════════════════════════════════════
     //  4. BUILD TABLE DATA

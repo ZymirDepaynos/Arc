@@ -775,14 +775,8 @@ export default function DebtorDetail() {
                   }
                 }
 
-                // Sort events dynamically (Condition A / B applies to BOTH tabs)
-                events.sort((a, b) => {
-                  if (isSettled) {
-                    return a.timestamp - b.timestamp;
-                  } else {
-                    return b.timestamp - a.timestamp;
-                  }
-                });
+                // Sort events consistently: most recent at the top (descending)
+                events.sort((a, b) => b.timestamp - a.timestamp);
 
                 if (events.length === 0) {
                   return <div style={{ fontSize: 14, color: 'var(--text-muted)', fontStyle: 'italic', marginLeft: -32, marginTop: 16 }}>No records found.</div>;

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { 
@@ -227,30 +227,32 @@ export default function DebtorDetail() {
   };
 
   const handleExport = () => {
-    const doc = new jsPDF();
-    const pageW = doc.internal.pageSize.getWidth();
-    const pageH = doc.internal.pageSize.getHeight();
+    const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+    const pageW = doc.internal.pageSize.getWidth();  // 297mm landscape
+    const pageH = doc.internal.pageSize.getHeight(); // 210mm landscape
     const margin = 14;
+    const contentW = pageW - margin * 2;
 
     // Helper — replace ₱ with P (jsPDF default font limitation)
     const fmtPDF = (n) => fmt(n).replace('₱', 'P');
 
-    // ── Color palette (warm peach / terracotta from reference image) ──────
+    // ── Color palette (matching reference: navy blue + white) ──
     const C = {
-      header:    [214, 150, 114],  // terracotta/salmon
-      headerDark:[180, 110,  80],  // darker terracotta
-      peachLight:[252, 235, 225],  // very light peach — alt rows & box bg
-      peachMid:  [240, 200, 178],  // mid peach — table header row
-      border:    [210, 170, 150],  // peach-tan border
-      textDark:  [ 80,  45,  20],  // warm dark brown
-      textBody:  [100,  65,  40],  // warm brown body
-      textMuted: [160, 120, 100],  // muted warm
-      white:     [255, 255, 255],
-      green:     [ 34, 130,  70],
-      orange:    [200,  90,  30],
+      navy:       [13,  71, 161],   // dark navy blue — header & table head
+      navyLight:  [25,  90, 180],   // slightly lighter navy for accents
+      navyBand:   [10,  55, 130],   // deeper navy for header bg
+      skyBlue:    [227, 242, 253],  // very light blue — alt rows
+      borderBlue: [100, 149, 237],  // cornflower blue — box borders
+      textDark:   [ 15,  30,  60],  // near-black navy text
+      textBody:   [ 33,  33,  33],  // standard dark body
+      textMuted:  [120, 120, 120],  // grey muted
+      white:      [255, 255, 255],
+      green:      [ 27, 128,  60],
+      orange:     [200,  90,  20],
+      gold:       [255, 193,   7],
     };
 
-    // ── Compute Overall Pay Total ─────────────────────────────────────────
+    // ── Compute data ──────────────────────────────────────────
     const totalPaid = (debtor.payment_history || [])
       .filter(p => p.type !== 'edit' && p.type !== 'manual_adjustment' && p.amount > 0)
       .reduce((sum, p) => sum + parseFloat(p.amount || 0), 0);
@@ -260,7 +262,6 @@ export default function DebtorDetail() {
       year: 'numeric', month: 'long', day: 'numeric'
     });
 
-    // ── Items ─────────────────────────────────────────────────────────────
     let items = [];
     if (debtor.notes) {
       try {
@@ -274,108 +275,147 @@ export default function DebtorDetail() {
     const receiptText = debtor.receipt_numbers?.length
       ? debtor.receipt_numbers.map(r => `#${r}`).join(', ') : '—';
 
-    // ════════════════════════════════════════════════════════════════════
-    //  1. HEADER BAND — warm terracotta
-    // ════════════════════════════════════════════════════════════════════
-    doc.setFillColor(...C.header);
-    doc.rect(0, 0, pageW, 36, 'F');
+    // ════════════════════════════════════════════════════════════
+    //  1. HEADER BAND — deep navy, full width
+    // ════════════════════════════════════════════════════════════
+    const headerH = 28;
+    doc.setFillColor(...C.navyBand);
+    doc.rect(0, 0, pageW, headerH, 'F');
 
+    // Left chevron/banner accent shape
+    doc.setFillColor(...C.navyLight);
+    doc.triangle(0, 0, 52, 0, 0, headerH, 'F');
+
+    // Arc brand logo circle
+    const logoX = 10;
+    const logoY = headerH / 2;
+    doc.setFillColor(...C.white);
+    doc.circle(logoX + 7, logoY, 7, 'F');
+    doc.setFillColor(...C.navyBand);
+    doc.circle(logoX + 7, logoY, 5.5, 'F');
+    doc.setFillColor(...C.gold);
+    doc.circle(logoX + 7, logoY, 3.5, 'F');
+
+    // "Arc" text inside logo
+    doc.setTextColor(...C.navyBand);
+    doc.setFontSize(5);
+    doc.setFont('helvetica', 'bold');
+    doc.text('ARC', logoX + 7, logoY + 1.5, { align: 'center' });
+
+    // Report title — bold, centered, white
     doc.setTextColor(...C.white);
     doc.setFontSize(18);
     doc.setFont('helvetica', 'bold');
-    doc.text('STATEMENT OF ACCOUNT', margin, 16);
+    doc.text('INDIVIDUAL TRANSACTION REPORT', pageW / 2, headerH / 2 + 3.5, { align: 'center' });
 
-    doc.setFontSize(9);
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(255, 235, 220);
-    doc.text(`Generated on ${generatedDate}`, margin, 25);
-
-    // Status badge top-right
+    // Status badge — top right
     const badgeLabel = isSettled ? 'FULLY SETTLED' : 'OUTSTANDING';
-    doc.setFillColor(...(isSettled ? C.green : C.orange));
-    doc.roundedRect(pageW - margin - 38, 8, 38, 10, 2, 2, 'F');
+    const badgeColor = isSettled ? C.green : C.orange;
+    doc.setFillColor(...badgeColor);
+    doc.roundedRect(pageW - margin - 36, 6, 36, 10, 2, 2, 'F');
     doc.setTextColor(...C.white);
     doc.setFontSize(7);
     doc.setFont('helvetica', 'bold');
-    doc.text(badgeLabel, pageW - margin - 38 + 19, 14.5, { align: 'center' });
+    doc.text(badgeLabel, pageW - margin - 36 + 18, 12.5, { align: 'center' });
 
-    // ════════════════════════════════════════════════════════════════════
-    //  2. CUSTOMER DETAILS (left) + SUMMARY METRICS (right)
-    // ════════════════════════════════════════════════════════════════════
-    const boxTop = 42;
-    const boxH = 48;
-    const leftW = 110;
-    const rightW = pageW - margin * 2 - leftW - 4;
+    // ════════════════════════════════════════════════════════════
+    //  2. CUSTOMER DETAILS — below header, left-aligned
+    // ════════════════════════════════════════════════════════════
+    let y = headerH + 9;
 
-    // Left box — light peach
-    doc.setFillColor(...C.peachLight);
-    doc.setDrawColor(...C.border);
-    doc.roundedRect(margin, boxTop, leftW, boxH, 3, 3, 'FD');
-
-    doc.setFontSize(7);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(...C.headerDark);
-    doc.text('CUSTOMER DETAILS', margin + 5, boxTop + 8);
-
-    const lx = margin + 5;
-    doc.setFontSize(10);
+    doc.setFontSize(9);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(...C.textDark);
-    doc.text(debtor.name, lx, boxTop + 17);
+    doc.text('CUSTOMER DETAILS', margin, y);
+
+    y += 6;
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(...C.navy);
+    doc.text('Customer Name:', margin, y);
     doc.setFont('helvetica', 'normal');
-    doc.setFontSize(9);
     doc.setTextColor(...C.textBody);
-    doc.text(`Purchase Date: ${fmtDate(debtor.date_borrowed)}`, lx, boxTop + 26);
-    doc.text(`Receipt No: ${receiptText}`, lx, boxTop + 34);
-    const wrappedItems = doc.splitTextToSize(`Items: ${itemsText}`, leftW - 10);
-    doc.text(wrappedItems.slice(0, 2), lx, boxTop + 42);
+    doc.text(debtor.name, margin + 36, y);
 
-    // Right box — dark terracotta
-    const rx = margin + leftW + 4;
-    doc.setFillColor(...C.headerDark);
-    doc.roundedRect(rx, boxTop, rightW, boxH, 3, 3, 'F');
-
-    doc.setFontSize(7);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(255, 210, 190);
-    doc.text('SUMMARY', rx + 5, boxTop + 8);
-
-    doc.setFontSize(8);
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(255, 210, 190);
-    doc.text('Overall Pay Total', rx + 5, boxTop + 19);
-    doc.setFontSize(13);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(...C.white);
-    doc.text(fmtPDF(totalPaid), rx + 5, boxTop + 28);
-
-    doc.setDrawColor(...C.header);
-    doc.line(rx + 5, boxTop + 32, rx + rightW - 5, boxTop + 32);
-
-    doc.setFontSize(8);
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(255, 210, 190);
-    doc.text('Current Balance', rx + 5, boxTop + 39);
-    doc.setFontSize(11);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(...C.white);
-    doc.text(isSettled ? 'P0.00' : fmtPDF(debtor.balance), rx + 5, boxTop + 47);
-
-    // ════════════════════════════════════════════════════════════════════
-    //  3. TRANSACTION HISTORY SECTION BAR
-    // ════════════════════════════════════════════════════════════════════
-    const tableTop = boxTop + boxH + 10;
-
-    doc.setFillColor(...C.header);
-    doc.rect(margin, tableTop, pageW - margin * 2, 8, 'F');
-    doc.setTextColor(...C.white);
+    y += 6;
     doc.setFontSize(9);
     doc.setFont('helvetica', 'bold');
-    doc.text('TRANSACTION HISTORY', margin + 3, tableTop + 5.5);
+    doc.setTextColor(...C.textDark);
+    doc.text('Purchase Date:', margin, y);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(...C.textBody);
+    doc.text(fmtDate(debtor.date_borrowed), margin + 36, y);
 
-    // ════════════════════════════════════════════════════════════════════
-    //  4. BUILD TABLE DATA (with row numbering)
-    // ════════════════════════════════════════════════════════════════════
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(...C.textDark);
+    doc.text('Receipt No:', margin + 100, y);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(...C.textBody);
+    doc.text(receiptText, margin + 122, y);
+
+    y += 6;
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(...C.textDark);
+    doc.text('Items:', margin, y);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(...C.textBody);
+    const wrappedItems = doc.splitTextToSize(itemsText, contentW - 20);
+    doc.text(wrappedItems.slice(0, 2), margin + 36, y);
+
+    // ════════════════════════════════════════════════════════════
+    //  3. TRANSACTION SUMMARY BOX — bordered, centered title
+    // ════════════════════════════════════════════════════════════
+    y += 10;
+    const boxH = 26;
+
+    // Border box
+    doc.setDrawColor(...C.borderBlue);
+    doc.setLineWidth(0.6);
+    doc.rect(margin, y, contentW, boxH);
+
+    // Centered title in box
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(...C.navy);
+    doc.text('TRANSACTION SUMMARY', pageW / 2, y + 7, { align: 'center' });
+
+    // Left metrics (Amount + Initial Balance)
+    const lCol = margin + 10;
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(...C.textBody);
+    doc.text('Initial Balance:', lCol, y + 14);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(...C.textDark);
+    doc.text(fmtPDF(debtor.original_debt || debtor.balance), lCol + 32, y + 14);
+
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(...C.textBody);
+    doc.text('Current Balance:', lCol, y + 21);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(isSettled ? C.green[0] : C.orange[0], isSettled ? C.green[1] : C.orange[1], isSettled ? C.green[2] : C.orange[2]);
+    doc.text(isSettled ? 'P0.00 (Settled)' : fmtPDF(debtor.balance), lCol + 32, y + 21);
+
+    // Right metrics (Total Paid + Items Count)
+    const rCol = pageW / 2 + 30;
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(...C.textBody);
+    doc.text('Total Paid:', rCol, y + 14);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(...C.navy);
+    doc.text(fmtPDF(totalPaid), rCol + 24, y + 14);
+
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(...C.textBody);
+    doc.text('Items Purchased:', rCol, y + 21);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(...C.textDark);
+    doc.text(`${items.length} item${items.length !== 1 ? 's' : ''}`, rCol + 34, y + 21);
+
+    // ════════════════════════════════════════════════════════════
+    //  4. BUILD TABLE DATA
+    // ════════════════════════════════════════════════════════════
+    const tableTop = y + boxH + 6;
     const events = [];
 
     events.push({
@@ -424,11 +464,11 @@ export default function DebtorDetail() {
         tableData.push([`${rowNum++}`, ev.dateStr, 'Account Settled', '—', 'P0.00']);
       } else {
         const p = ev.payment;
-        if (p.type === 'edit') return; // Req 8.1 — exclude profile edits
-        let desc = p.note || 'Payment';
+        if (p.type === 'edit') return;
+        let desc = p.note || 'Payment Received';
         if (p.type === 'manual_adjustment') {
           const reasonMatch = (p.changes || '').match(/Reason: (.*)/);
-          desc = `Manual Adjustment (${reasonMatch ? reasonMatch[1] : 'Manual'})`;
+          desc = `Balance Adjustment (${reasonMatch ? reasonMatch[1] : 'Manual'})`;
         }
         const amountStr = p.amount
           ? (p.amount < 0 ? `-${fmtPDF(Math.abs(p.amount))}` : fmtPDF(p.amount))
@@ -437,56 +477,65 @@ export default function DebtorDetail() {
       }
     });
 
-    // ════════════════════════════════════════════════════════════════════
-    //  5. RENDER TABLE
-    // ════════════════════════════════════════════════════════════════════
+    // ════════════════════════════════════════════════════════════
+    //  5. RENDER TABLE — navy header, alternating blue-white rows
+    // ════════════════════════════════════════════════════════════
     autoTable(doc, {
-      head: [['#', 'Date', 'Description', 'Amount', 'Balance After']],
+      head: [['#', 'Date', 'Description', 'Amount', 'Balance']],
       body: tableData,
-      startY: tableTop + 8,
+      startY: tableTop,
       theme: 'plain',
       headStyles: {
-        fillColor: C.peachMid,
-        textColor: C.textDark,
+        fillColor: C.navy,
+        textColor: C.white,
         fontStyle: 'bold',
         fontSize: 9,
-        cellPadding: { top: 4, bottom: 4, left: 4, right: 4 },
+        halign: 'center',
+        cellPadding: { top: 5, bottom: 5, left: 4, right: 4 },
       },
       bodyStyles: {
         fontSize: 9,
         textColor: C.textBody,
         cellPadding: { top: 4, bottom: 4, left: 4, right: 4 },
-        lineColor: C.border,
-        lineWidth: 0.3,
+        lineColor: [200, 220, 240],
+        lineWidth: 0.25,
       },
-      alternateRowStyles: { fillColor: C.peachLight },
+      alternateRowStyles: {
+        fillColor: C.skyBlue,
+      },
       margin: { left: margin, right: margin },
       columnStyles: {
-        0: { cellWidth: 13, halign: 'center', textColor: C.textMuted }, // # (room for 3-digit)
-        1: { cellWidth: 27 },                                            // Date
-        2: { cellWidth: 75, halign: 'left' },                           // Description
-        3: { cellWidth: 32, halign: 'right', fontStyle: 'bold' },       // Amount
-        4: { cellWidth: 35, halign: 'right', fontStyle: 'bold' },       // Balance After
-        // Total: 13+27+75+32+35 = 182mm
+        0: { cellWidth: 12, halign: 'center', textColor: C.textMuted },
+        1: { cellWidth: 34, halign: 'center' },
+        2: { cellWidth: 'auto', halign: 'left' },
+        3: { cellWidth: 36, halign: 'right', fontStyle: 'bold' },
+        4: { cellWidth: 38, halign: 'right', fontStyle: 'bold' },
       },
       didDrawPage: (hookData) => {
         const pageCount = doc.internal.getNumberOfPages();
         const currentPage = hookData.pageNumber;
+
+        // Footer separator line
+        doc.setDrawColor(...C.borderBlue);
+        doc.setLineWidth(0.4);
+        doc.line(margin, pageH - 11, pageW - margin, pageH - 11);
+
+        // Page X of X — centered
         doc.setFontSize(8);
-        doc.setTextColor(...C.textMuted);
         doc.setFont('helvetica', 'normal');
-        doc.text(
-          `Page ${currentPage} of ${pageCount}  |  This document is system-generated and is valid without a signature.`,
-          pageW / 2, pageH - 8, { align: 'center' }
-        );
-        doc.setDrawColor(...C.border);
-        doc.line(margin, pageH - 12, pageW - margin, pageH - 12);
+        doc.setTextColor(...C.textMuted);
+        doc.text(`Page ${currentPage} of ${pageCount}`, pageW / 2, pageH - 5.5, { align: 'center' });
+
+        // Generated on — right-aligned
+        doc.text(`Generated on ${generatedDate}`, pageW - margin, pageH - 5.5, { align: 'right' });
       }
     });
 
-    doc.save(`${debtor.name.replace(/\s+/g, '_')}_SOA.pdf`);
-    toast.success('Statement downloaded!');
+    doc.save(`${debtor.name.replace(/\s+/g, '_')}_Transaction_Report.pdf`);
+    toast.success('Transaction report downloaded!');
   };
+
+
 
   if (loading) {
     return (

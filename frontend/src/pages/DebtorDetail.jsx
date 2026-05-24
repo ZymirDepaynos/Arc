@@ -613,16 +613,9 @@ export default function DebtorDetail() {
           <div className="stat-box" style={{ padding: 24, borderRadius: 24, background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
             {/* Section 1: Dates */}
             <div style={{ marginBottom: 24, paddingBottom: 24, borderBottom: '1px solid var(--border)' }}>
-              <h3 style={{ fontSize: 15, fontWeight: 800, color: 'var(--text-primary)', marginBottom: 16, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Key Dates</h3>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ fontSize: 13, color: 'var(--text-muted)', fontWeight: 600 }}>Purchase Date</span>
-                  <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-secondary)' }}>{fmtDate(debtor.date_borrowed)}</span>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ fontSize: 13, color: 'var(--text-muted)', fontWeight: 600 }}>Advance Payment Date</span>
-                  <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-secondary)' }}>{fmtDate(debtor.advance_payment_date)}</span>
-                </div>
+              <h3 style={{ fontSize: 15, fontWeight: 800, color: 'var(--text-primary)', marginBottom: 12, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Purchase Date</h3>
+              <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-secondary)' }}>
+                {fmtDate(debtor.date_borrowed)}
               </div>
             </div>
 

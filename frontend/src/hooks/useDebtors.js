@@ -1,13 +1,14 @@
 import { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 
+// Resolved once at module load — never re-evaluated per render
+const API_URL = import.meta.env.VITE_API_URL || '';
+
 export function useDebtors() {
   const [debtors, setDebtors] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [search, setSearch] = useState('');
-
-  const API_URL = import.meta.env.VITE_API_URL || '';
 
   const fetchDebtors = useCallback(async () => {
     try {

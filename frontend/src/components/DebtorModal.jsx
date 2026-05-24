@@ -142,7 +142,6 @@ export default function DebtorModal({ open, onClose, onSubmit, initial = null })
       });
       onClose();
     } catch (err) {
-      console.error('Submission Error:', err);
       setError(err.response?.data?.error || err.message || 'Something went wrong');
     } finally {
       setLoading(false);

@@ -32,7 +32,6 @@ export default function App() {
             <Route path="/" element={<Dashboard />} />
             <Route path="/debtor/:id" element={<DebtorDetail />} />
             <Route path="/calendar" element={<CalendarView />} />
-
           </Routes>
         </main>
       </div>

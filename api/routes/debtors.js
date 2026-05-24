@@ -137,8 +137,6 @@ router.post('/', async (req, res) => {
       });
     }
 
-    console.log('[CREATE] rawBalance:', rawBalance, 'rawAdvance:', rawAdvance, 'storedBalance:', storedBalance, 'originalDebt:', originalDebt);
-
     const { data, error } = await supabase
       .from('debtors')
       .insert([{

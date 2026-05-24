@@ -1,3 +1,8 @@
+/**
+ * LOCAL DEV BACKEND — backend/routes/debtors.js
+ * Used only by `npm run server` (server.js) for local development.
+ * The production API is in /api/routes/debtors.js (ESM, deployed to Vercel).
+ */
 const express = require('express');
 const router = express.Router();
 const { createClient } = require('@supabase/supabase-js');

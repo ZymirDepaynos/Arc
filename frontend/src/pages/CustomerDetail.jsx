@@ -532,7 +532,7 @@ export default function CustomerDetail() {
           <button className="btn btn-outline" onClick={() => setEditOpen(true)} style={{ height: 48, padding: '0 24px', borderRadius: 24 }}>
             <Edit2 size={16} style={{ marginRight: 8 }} /> Edit Profile
           </button>
-          <button className="btn btn-outline" onClick={() => setConfirmDelete(true)} style={{ height: 48, padding: '0 24px', borderRadius: 24, color: '#EF4444', borderColor: 'rgba(239, 68, 68, 0.2)', background: 'rgba(239, 68, 68, 0.05)' }}>
+          <button className="btn" onClick={() => setConfirmDelete(true)} style={{ height: 48, padding: '0 24px', borderRadius: 24, color: '#FFFFFF', border: 'none', background: '#EF4444', display: 'flex', alignItems: 'center' }}>
             <Trash2 size={16} style={{ marginRight: 8 }} /> Delete
           </button>
         </div>

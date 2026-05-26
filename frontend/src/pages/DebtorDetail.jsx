@@ -8,7 +8,6 @@ import {
   CreditCard, 
   History, 
   Search as SearchIcon,
-  Settings2,
   Download
 } from 'lucide-react';
 import axios from 'axios';
@@ -20,7 +19,7 @@ import PayModal from '../components/PayModal';
 import ConfirmModal from '../components/ConfirmModal';
 import MobileNav from '../components/MobileNav';
 import SearchOverlay from '../components/SearchOverlay';
-import AdjustBalanceModal from '../components/AdjustBalanceModal';
+
 
 const fmt = (n) =>
   '₱' + parseFloat(n || 0).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -47,7 +46,7 @@ export default function DebtorDetail() {
   const [loading, setLoading] = useState(true);
   const [editOpen, setEditOpen] = useState(false);
   const [payOpen, setPayOpen] = useState(false);
-  const [adjustOpen, setAdjustOpen] = useState(false);
+
   const [activeTab, setActiveTab] = useState('transactions');
   const [confirmSettle, setConfirmSettle] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -139,19 +138,6 @@ export default function DebtorDetail() {
     });
   };
 
-  const handleAdjustBalance = async (idToAdjust, newBalance, reason) => {
-    await toast.promise(
-      axios.post(`${API_URL}/api/debtors/${idToAdjust}/adjust`, { newBalance, reason }),
-      {
-        loading: 'Applying Adjustment...',
-        success: (res) => {
-          setDebtor(res.data);
-          return 'Balance adjusted!';
-        },
-        error: (err) => err.response?.data?.error || 'Failed to adjust balance',
-      }
-    );
-  };
 
   const handleEditHistory = async (index, newAmount) => {
     await toast.promise(
@@ -578,9 +564,7 @@ export default function DebtorDetail() {
                   Settle Full
                 </button>
               </div>
-              <button className="btn btn-outline" onClick={() => setAdjustOpen(true)} style={{ width: '100%', height: 44, borderRadius: 12, fontSize: 14, color: 'var(--text-muted)' }}>
-                <Settings2 size={16} style={{ marginRight: 8 }} /> Adjust Balance
-              </button>
+
             </div>
           )}
         </div>
@@ -918,7 +902,7 @@ export default function DebtorDetail() {
       {/* Modals */}
       <DebtorModal open={editOpen} onClose={() => setEditOpen(false)} onSubmit={handleEdit} initial={debtor} />
       <PayModal open={payOpen} onClose={() => setPayOpen(false)} debtor={debtor} onPay={handlePay} />
-      <AdjustBalanceModal open={adjustOpen} onClose={() => setAdjustOpen(false)} debtor={debtor} onAdjust={handleAdjustBalance} />
+
       
       <ConfirmModal
         open={confirmSettle}

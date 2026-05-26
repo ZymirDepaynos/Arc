@@ -1,7 +1,7 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import Dashboard from './pages/Dashboard';
-import DebtorDetail from './pages/DebtorDetail';
+import CustomerDetail from './pages/CustomerDetail';
 import CalendarView from './pages/CalendarView';
 
 
@@ -30,7 +30,7 @@ export default function App() {
         <main className="main-content">
           <Routes>
             <Route path="/" element={<Dashboard />} />
-            <Route path="/debtor/:id" element={<DebtorDetail />} />
+            <Route path="/debtor/:id" element={<CustomerDetail />} />
             <Route path="/calendar" element={<CalendarView />} />
           </Routes>
         </main>

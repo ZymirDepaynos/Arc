@@ -214,34 +214,38 @@ export default function CustomerDetail() {
 
   const handleExport = () => {
     const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-    const pageW = doc.internal.pageSize.getWidth();  // 210mm portrait
-    const pageH = doc.internal.pageSize.getHeight(); // 297mm portrait
-    const margin = 14;
+    const pageW = doc.internal.pageSize.getWidth();
+    const pageH = doc.internal.pageSize.getHeight();
+    const margin = 16;
     const contentW = pageW - margin * 2;
 
-    // Helper — replace ₱ with P (jsPDF default font limitation)
-    const fmtPDF = (n) => fmt(n).replace('₱', 'P');
+    // Currency formatter — replaces ₱ with P for PDF font compatibility
+    const fmtPDF = (n) => 'P' + parseFloat(n || 0).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
-    // ── Color palette (matching reference: navy blue + white) ──
+    // ── Color palette ──────────────────────────────────────────
     const C = {
-      navy:       [13,  71, 161],   // dark navy blue — header & table head
-      navyLight:  [25,  90, 180],   // slightly lighter navy for accents
-      navyBand:   [10,  55, 130],   // deeper navy for header bg
-      skyBlue:    [227, 242, 253],  // very light blue — alt rows
-      borderBlue: [100, 149, 237],  // cornflower blue — box borders
-      textDark:   [ 15,  30,  60],  // near-black navy text
-      textBody:   [ 33,  33,  33],  // standard dark body
-      textMuted:  [120, 120, 120],  // grey muted
-      white:      [255, 255, 255],
-      green:      [ 27, 128,  60],
-      orange:     [200,  90,  20],
-      gold:       [255, 193,   7],
+      // Brand accent — slate blue
+      accent:      [58,  90, 148],   // slate blue — header bg & table head
+      accentLight: [235, 241, 252],  // very light blue — alt table rows
+      accentMid:   [80, 112, 175],   // mid-tone for summary box border
+      // Text
+      textPrimary: [51,  51,  51],   // #333333 charcoal — main body text (avoids harsh black)
+      textLabel:   [80,  80,  80],   // medium gray — labels
+      textMuted:   [130, 130, 130],  // light gray — secondary info
+      // Highlights
+      green:       [27,  128,  60],  // settled / positive
+      red:         [180,  40,  40],  // outstanding
+      highlightBg: [235, 245, 235],  // soft green tint for balance highlight
+      // Structure
+      border:      [224, 224, 224],  // #E0E0E0 — subtle grid lines
+      white:       [255, 255, 255],
+      summaryBg:   [248, 249, 252],  // near-white with blue tint for summary box
     };
 
-    // ── Compute data ──────────────────────────────────────────
-    const totalPaid = (debtor.payment_history || [])
-      .filter(p => p.type !== 'edit' && p.type !== 'manual_adjustment' && p.amount > 0)
-      .reduce((sum, p) => sum + parseFloat(p.amount || 0), 0);
+    // ── Compute data ───────────────────────────────────────────
+    const payments = (debtor.payment_history || [])
+      .filter(p => p.type !== 'edit' && p.type !== 'manual_adjustment' && p.amount > 0);
+    const totalPaid = payments.reduce((s, p) => s + parseFloat(p.amount || 0), 0);
 
     const isSettled = debtor.status === 'paid';
     const generatedDate = new Date().toLocaleDateString('en-PH', {
@@ -259,117 +263,137 @@ export default function CustomerDetail() {
     }
     const itemsText = items.length > 0 ? items.join(', ') : 'No items listed';
     const receiptText = debtor.receipt_numbers?.length
-      ? debtor.receipt_numbers.map(r => `#${r}`).join(', ') : '—';
+      ? debtor.receipt_numbers.map(r => `#${r}`).join(', ')
+      : 'N/A (Pending)';
 
     // ════════════════════════════════════════════════════════════
-    //  1. HEADER BAND — deep navy, full width
+    //  1. HEADER BAND — slate blue, full width
     // ════════════════════════════════════════════════════════════
-    const headerH = 28;
-    doc.setFillColor(...C.navyBand);
+    const headerH = 26;
+    doc.setFillColor(...C.accent);
     doc.rect(0, 0, pageW, headerH, 'F');
 
-    // Left chevron/banner accent shape
-    doc.setFillColor(...C.navyLight);
-    doc.triangle(0, 0, 52, 0, 0, headerH, 'F');
-
-    // Report title — bold, centered, white
     doc.setTextColor(...C.white);
-    doc.setFontSize(18);
+    doc.setFontSize(15);
     doc.setFont('helvetica', 'bold');
-    doc.text('INDIVIDUAL TRANSACTION REPORT', pageW / 2, headerH / 2 + 3.5, { align: 'center' });
+    doc.text('INDIVIDUAL TRANSACTION REPORT', pageW / 2, headerH / 2 + 3, { align: 'center' });
 
     // ════════════════════════════════════════════════════════════
-    //  2. CUSTOMER DETAILS — below header, left-aligned
+    //  2. CUSTOMER DETAILS — clean grid layout, no pipe separators
     // ════════════════════════════════════════════════════════════
-    let y = headerH + 9;
+    let y = headerH + 10;
 
-    doc.setFontSize(9);
+    // Section title
+    doc.setFontSize(7.5);
     doc.setFont('helvetica', 'bold');
-    doc.setTextColor(...C.textDark);
+    doc.setTextColor(...C.accent);
     doc.text('CUSTOMER DETAILS', margin, y);
+    y += 5;
 
-    y += 6;
+    // Thin divider under section title
+    doc.setDrawColor(...C.accentMid);
+    doc.setLineWidth(0.4);
+    doc.line(margin, y, margin + contentW, y);
+    y += 5;
+
+    // Invisible grid: labels at col 1, values at col 2
+    const labelX = margin;
+    const valueX = margin + 38; // fixed indent — creates the "invisible grid"
+    const rowGap = 6;
+
+    const detailRows = [
+      ['Customer Name', debtor.name],
+      ['Purchase Date',  fmtDate(debtor.date_borrowed)],
+      ['Receipt No',     receiptText],
+      ['Items Purchased', itemsText],
+    ];
+
+    detailRows.forEach(([label, value], i) => {
+      // Label — bold, gray
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(...C.textLabel);
+      doc.text(`${label}:`, labelX, y);
+
+      // Value — normal weight, dark charcoal
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(...C.textPrimary);
+      if (label === 'Items Purchased') {
+        const wrapped = doc.splitTextToSize(value, contentW - 40);
+        doc.text(wrapped.slice(0, 2), valueX, y);
+        if (wrapped.length > 1) y += (wrapped.slice(0, 2).length - 1) * 4.5;
+      } else {
+        doc.text(value, valueX, y);
+      }
+      y += rowGap;
+    });
+
+    // ════════════════════════════════════════════════════════════
+    //  3. TRANSACTION SUMMARY — all metrics grouped, tinted box
+    // ════════════════════════════════════════════════════════════
+    y += 4;
+    const summaryPad = 8;
+    const summaryH = 26;
+
+    // Soft tinted box
+    doc.setFillColor(...C.summaryBg);
+    doc.setDrawColor(...C.accentMid);
+    doc.setLineWidth(0.5);
+    doc.roundedRect(margin, y, contentW, summaryH, 3, 3, 'FD');
+
+    // Section title
+    doc.setFontSize(7.5);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(...C.accent);
+    doc.text('TRANSACTION SUMMARY', margin + summaryPad, y + summaryPad + 1);
+
+    // Thin divider inside the box
+    doc.setDrawColor(...C.border);
+    doc.setLineWidth(0.3);
+    doc.line(margin + summaryPad, y + summaryPad + 4, margin + contentW - summaryPad, y + summaryPad + 4);
+
+    // Three metrics in one row — Initial Balance | Total Paid | Current Balance
+    const colW = contentW / 3;
+    const metricsY = y + summaryPad + 11;
+
+    const summaryMetrics = [
+      { label: 'Initial Balance', value: fmtPDF(debtor.original_debt || debtor.balance), color: C.textPrimary },
+      { label: 'Total Paid',      value: fmtPDF(totalPaid),                               color: C.textPrimary },
+      { label: 'Current Balance', value: isSettled ? 'P0.00 (Settled)' : fmtPDF(debtor.balance),
+        color: isSettled ? C.green : C.red },
+    ];
+
+    summaryMetrics.forEach(({ label, value, color }, i) => {
+      const cx = margin + summaryPad + i * colW;
+      doc.setFontSize(8);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(...C.textLabel);
+      doc.text(label, cx, metricsY);
+
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(...color);
+      doc.text(value, cx, metricsY + 6);
+    });
+
+    // Highlight box around Current Balance (the bottom-line figure)
+    const balX = margin + summaryPad + 2 * colW - 3;
+    const balW = colW + 2;
+    doc.setFillColor(...(isSettled ? [235, 248, 238] : [252, 235, 235]));
+    doc.setDrawColor(...(isSettled ? C.green : C.red));
+    doc.setLineWidth(0.4);
+    doc.roundedRect(balX, metricsY - 4, balW, 14, 2, 2, 'FD');
+
+    // Re-draw the balance text on top of the highlight box
     doc.setFontSize(10);
     doc.setFont('helvetica', 'bold');
-    doc.setTextColor(...C.navy);
-    doc.text('Customer Name:', margin, y);
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(...C.textBody);
-    doc.text(debtor.name, margin + 36, y);
-
-    y += 6;
-    doc.setFontSize(9);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(...C.textDark);
-    doc.text('Purchase Date:', margin, y);
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(...C.textBody);
-    doc.text(fmtDate(debtor.date_borrowed), margin + 36, y);
-
-    y += 6;
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(...C.textDark);
-    doc.text('Receipt No:', margin, y);
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(...C.textBody);
-    doc.text(receiptText, margin + 36, y);
-
-    y += 6;
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(...C.textDark);
-    doc.text('Items:', margin, y);
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(...C.textBody);
-    const wrappedItems = doc.splitTextToSize(itemsText, contentW - 20);
-    doc.text(wrappedItems.slice(0, 2), margin + 36, y);
+    doc.setTextColor(...(isSettled ? C.green : C.red));
+    doc.text(summaryMetrics[2].value, margin + summaryPad + 2 * colW, metricsY + 6);
 
     // ════════════════════════════════════════════════════════════
-    //  3. TRANSACTION SUMMARY BOX — bordered, centered title
+    //  4. BUILD TABLE DATA — with running balance & negative signs
     // ════════════════════════════════════════════════════════════
-    y += 10;
-    const boxH = 26;
-
-    // Border box
-    doc.setDrawColor(...C.borderBlue);
-    doc.setLineWidth(0.6);
-    doc.rect(margin, y, contentW, boxH);
-
-    // Left-aligned title in box
-    doc.setFontSize(10);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(...C.navy);
-    doc.text('TRANSACTION SUMMARY', margin + 10, y + 7);
-
-    // Left metrics (Amount + Initial Balance)
-    const lCol = margin + 10;
-    doc.setFontSize(9);
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(...C.textBody);
-    doc.text('Initial Balance:', lCol, y + 14);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(...C.textDark);
-    doc.text(fmtPDF(debtor.original_debt || debtor.balance), lCol + 32, y + 14);
-
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(...C.textBody);
-    doc.text('Current Balance:', lCol, y + 21);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(isSettled ? C.green[0] : C.orange[0], isSettled ? C.green[1] : C.orange[1], isSettled ? C.green[2] : C.orange[2]);
-    doc.text(isSettled ? 'P0.00 (Settled)' : fmtPDF(debtor.balance), lCol + 32, y + 21);
-
-    // Right metrics (Total Paid only)
-    const rCol = pageW / 2 + 10;
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(...C.textBody);
-    doc.text('Total Paid:', rCol, y + 14);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(...C.navy);
-    doc.text(fmtPDF(totalPaid), rCol + 24, y + 14);
-
-    // ════════════════════════════════════════════════════════════
-    //  4. BUILD TABLE DATA
-    // ════════════════════════════════════════════════════════════
-    const tableTop = y + boxH + 6;
+    const tableTop = y + summaryH + 8;
     const events = [];
 
     events.push({
@@ -385,13 +409,14 @@ export default function CustomerDetail() {
 
     if (debtor.payment_history) {
       debtor.payment_history.forEach((payment) => {
+        if (payment.type === 'edit') return; // skip profile edits from ledger
         const isDateOnly = payment.date && (payment.date.length === 10 || !payment.date.includes('T'));
         const pDate = isDateOnly ? new Date(payment.date + 'T12:00:00') : new Date(payment.date);
         events.push({
-          type: 'payment_or_edit',
+          type: 'payment_or_adjustment',
           timestamp: pDate.getTime(),
           dateStr: pDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
-          payment
+          payment,
         });
       });
     }
@@ -406,83 +431,93 @@ export default function CustomerDetail() {
       });
     }
 
-    events.sort((a, b) => a.timestamp - b.timestamp);
+    events.sort((a, b) => a.timestamp - b.timestamp); // oldest first for ledger
 
     const tableData = [];
     let rowNum = 1;
 
     events.forEach(ev => {
       if (ev.type === 'created') {
-        tableData.push([`${rowNum++}`, ev.dateStr, 'Record Started', '—', fmtPDF(debtor.original_debt || debtor.balance)]);
+        tableData.push([
+          `${rowNum++}`,
+          ev.dateStr,
+          'Record Started',
+          '—',
+          fmtPDF(debtor.original_debt || debtor.balance),
+        ]);
       } else if (ev.type === 'settled') {
         tableData.push([`${rowNum++}`, ev.dateStr, 'Account Settled', '—', 'P0.00']);
       } else {
         const p = ev.payment;
-        if (p.type === 'edit') return;
         let desc = p.note || 'Payment Received';
         if (p.type === 'manual_adjustment') {
           const reasonMatch = (p.changes || '').match(/Reason: (.*)/);
           desc = `Balance Adjustment (${reasonMatch ? reasonMatch[1] : 'Manual'})`;
         }
-        const amountStr = p.amount
-          ? (p.amount < 0 ? `-${fmtPDF(Math.abs(p.amount))}` : fmtPDF(p.amount))
+        // Negative sign on payments/deductions to show math clearly
+        const amtNum = parseFloat(p.amount || 0);
+        const amountStr = amtNum !== 0
+          ? (amtNum < 0 ? `+${fmtPDF(Math.abs(amtNum))}` : `-${fmtPDF(amtNum)}`)
           : '—';
-        tableData.push([`${rowNum++}`, ev.dateStr, desc, amountStr, p.balance_after ? fmtPDF(p.balance_after) : '—']);
+        const balStr = p.balance_after !== undefined ? fmtPDF(p.balance_after) : '—';
+        tableData.push([`${rowNum++}`, ev.dateStr, desc, amountStr, balStr]);
       }
     });
 
     // ════════════════════════════════════════════════════════════
-    //  5. RENDER TABLE — navy header, alternating blue-white rows
+    //  5. RENDER TABLE — slate header, generous padding, subtle zebra
     // ════════════════════════════════════════════════════════════
     autoTable(doc, {
-      head: [['#', 'Date', 'Description', 'Amount', 'Balance']],
+      head: [['#', 'Date', 'Description', 'Amount', 'Running Balance']],
       body: tableData,
       startY: tableTop,
       theme: 'plain',
+      styles: {
+        font: 'helvetica',
+        fontSize: 9,
+        textColor: C.textPrimary,
+      },
       headStyles: {
-        fillColor: C.navy,
+        fillColor: C.accent,
         textColor: C.white,
         fontStyle: 'bold',
-        fontSize: 9,
+        fontSize: 8.5,
         halign: 'center',
-        cellPadding: { top: 5, bottom: 5, left: 4, right: 4 },
+        cellPadding: { top: 5, bottom: 5, left: 5, right: 5 },
       },
       bodyStyles: {
         fontSize: 9,
-        textColor: C.textBody,
-        cellPadding: { top: 4, bottom: 4, left: 4, right: 4 },
-        lineColor: [200, 220, 240],
-        lineWidth: 0.25,
+        fontStyle: 'normal',
+        textColor: C.textPrimary,
+        cellPadding: { top: 5, bottom: 5, left: 5, right: 5 },  // generous vertical padding
+        lineColor: C.border,
+        lineWidth: 1,
       },
       alternateRowStyles: {
-        fillColor: C.skyBlue,
+        fillColor: C.accentLight,
       },
       margin: { left: margin, right: margin },
       columnStyles: {
-        0: { cellWidth: 12, halign: 'center', textColor: C.textMuted },
-        1: { cellWidth: 34, halign: 'center' },
-        2: { cellWidth: 'auto', halign: 'left' },
-        3: { cellWidth: 36, halign: 'right', fontStyle: 'bold' },
-        4: { cellWidth: 38, halign: 'right', fontStyle: 'bold' },
+        0: { cellWidth: 10, halign: 'center', textColor: C.textMuted, fontStyle: 'normal' },
+        1: { cellWidth: 30, halign: 'left' },
+        2: { cellWidth: 'auto', halign: 'left', fontStyle: 'normal' },
+        3: { cellWidth: 32, halign: 'right', fontStyle: 'bold' },
+        4: { cellWidth: 36, halign: 'right', fontStyle: 'bold' },
       },
       didDrawPage: (hookData) => {
         const pageCount = doc.internal.getNumberOfPages();
         const currentPage = hookData.pageNumber;
 
-        // Footer separator line
-        doc.setDrawColor(...C.borderBlue);
+        doc.setDrawColor(...C.border);
         doc.setLineWidth(0.4);
         doc.line(margin, pageH - 11, pageW - margin, pageH - 11);
 
-        // Page X of X — centered
-        doc.setFontSize(8);
+        doc.setFontSize(7.5);
         doc.setFont('helvetica', 'normal');
         doc.setTextColor(...C.textMuted);
         doc.text(`Page ${currentPage} of ${pageCount}`, pageW / 2, pageH - 5.5, { align: 'center' });
-
-        // Generated on — right-aligned
         doc.text(`Generated on ${generatedDate}`, pageW - margin, pageH - 5.5, { align: 'right' });
-      }
+      },
     });
 
     doc.save(`${debtor.name.replace(/\s+/g, '_')}_Transaction_Report.pdf`);

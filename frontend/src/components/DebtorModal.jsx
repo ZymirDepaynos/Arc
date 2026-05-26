@@ -133,12 +133,14 @@ export default function DebtorModal({ open, onClose, onSubmit, initial = null })
     setLoading(true);
     setError(null);
     try {
+      // Flush any pending item that was typed but not yet confirmed with Enter
+      const finalItems = itemInput.trim() ? [...items, itemInput.trim()] : items;
       await onSubmit({
         ...form,
         date_borrowed: pDate,
         advance_payment_date: aDate,
         receipt_numbers: form.receipt_numbers ? [form.receipt_numbers] : [],
-        notes: JSON.stringify(items),
+        notes: JSON.stringify(finalItems),
       });
       onClose();
     } catch (err) {
@@ -431,6 +433,13 @@ export default function DebtorModal({ open, onClose, onSubmit, initial = null })
                     value={itemInput}
                     onChange={(e) => setItemInput(e.target.value)}
                     onKeyDown={handleItemKeyDown}
+                    onBlur={() => {
+                      const trimmed = itemInput.trim();
+                      if (trimmed) {
+                        setItems(prev => [...prev, trimmed]);
+                        setItemInput('');
+                      }
+                    }}
                     autoComplete="off"
                   />
 

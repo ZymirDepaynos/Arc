@@ -546,7 +546,7 @@ export default function CustomerDetail() {
           <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>
             Current Balance
           </div>
-          <div style={{ fontSize: 40, fontWeight: 900, color: 'var(--text-primary)', letterSpacing: '-1px', lineHeight: 1, marginBottom: 20 }}>
+          <div style={{ fontSize: 40, fontWeight: 900, color: 'var(--accent)', letterSpacing: '-1px', lineHeight: 1, marginBottom: 20 }}>
             {fmt(debtor.balance)}
           </div>
 
@@ -574,7 +574,7 @@ export default function CustomerDetail() {
           <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>
             Initial Balance
           </div>
-          <div style={{ fontSize: 32, fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.5px' }}>
+          <div style={{ fontSize: 32, fontWeight: 800, color: 'var(--accent)', letterSpacing: '-0.5px' }}>
             {fmt(debtor.original_debt || debtor.balance)}
           </div>
         </div>
@@ -620,7 +620,7 @@ export default function CustomerDetail() {
                 return items.length > 0 ? (
                   <ul style={{ margin: 0, paddingLeft: 20, listStyleType: 'disc', display: 'flex', flexDirection: 'column', gap: 6 }}>
                     {items.map((item, idx) => (
-                      <li key={idx} style={{ fontSize: 14, color: 'var(--text-secondary)', fontWeight: 500, lineHeight: 1.5 }}>
+                      <li key={idx} style={{ fontSize: 16, color: 'var(--accent)', fontWeight: 600, lineHeight: 1.5 }}>
                         {item}
                       </li>
                     ))}

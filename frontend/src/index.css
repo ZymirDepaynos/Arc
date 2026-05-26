@@ -423,7 +423,7 @@ h1,
   border: none;
   border-radius: 6px;
   background: transparent;
-  color: var(--text-muted);
+  color: var(--text-primary);
   cursor: pointer;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
@@ -445,7 +445,7 @@ body.light-mode .search-mode-tabs {
 }
 
 body.light-mode .search-mode-tab {
-  color: var(--text-muted);
+  color: var(--text-primary);
 }
 
 /* Input inside enhanced wrap — rounded bottom only */

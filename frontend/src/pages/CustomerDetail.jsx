@@ -214,37 +214,31 @@ export default function CustomerDetail() {
 
   const handleExport = () => {
     const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-    const pageW = doc.internal.pageSize.getWidth();  // 210mm portrait
-    const pageH = doc.internal.pageSize.getHeight(); // 297mm portrait
+    const pageW = doc.internal.pageSize.getWidth();
+    const pageH = doc.internal.pageSize.getHeight();
     const margin = 14;
     const contentW = pageW - margin * 2;
 
-    // Helper — replace ₱ with P (jsPDF default font limitation)
-    const fmtPDF = (n) => fmt(n).replace('₱', 'P');
+    const fmtPDF = (n) => 'P' + parseFloat(n || 0).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
-    // ── Color palette (matching reference: navy blue + white) ──
     const C = {
-      navy:       [13,  71, 161],   // dark navy blue — header & table head
-      navyLight:  [25,  90, 180],   // slightly lighter navy for accents
-      navyBand:   [10,  55, 130],   // deeper navy for header bg
-      skyBlue:    [227, 242, 253],  // very light blue — alt rows
-      borderBlue: [100, 149, 237],  // cornflower blue — box borders
-      textDark:   [ 15,  30,  60],  // near-black navy text
-      textBody:   [ 33,  33,  33],  // standard dark body
-      textMuted:  [120, 120, 120],  // grey muted
-      white:      [255, 255, 255],
-      green:      [ 27, 128,  60],
-      orange:     [200,  90,  20],
-      gold:       [255, 193,   7],
+      primaryBlue: [51,  92, 154],  // Header & section titles
+      boxBorder:   [100, 149, 237], // Summary box border
+      textDark:    [ 15,  30,  60],
+      textBody:    [ 33,  33,  33], // general black text
+      textMuted:   [120, 120, 120],
+      white:       [255, 255, 255],
+      green:       [ 46, 125,  50], // Settled / Paid amounts
+      skyBlue:     [240, 246, 252], // faint zebra striping
+      lineBorder:  [220, 225, 230], // thin table borders
     };
 
-    // ── Compute data ──────────────────────────────────────────
     const totalPaid = (debtor.payment_history || [])
       .filter(p => p.type !== 'edit' && p.type !== 'manual_adjustment' && p.amount > 0)
       .reduce((sum, p) => sum + parseFloat(p.amount || 0), 0);
 
     const isSettled = debtor.status === 'paid';
-    const generatedDate = new Date().toLocaleDateString('en-PH', {
+    const generatedDate = new Date().toLocaleDateString('en-US', {
       year: 'numeric', month: 'long', day: 'numeric'
     });
 
@@ -257,119 +251,124 @@ export default function CustomerDetail() {
         items = debtor.notes.split('\n').map(l => l.replace(/^\d+\.\s*/, '').trim()).filter(Boolean);
       }
     }
-    const itemsText = items.length > 0 ? items.join(', ') : 'No items listed';
     const receiptText = debtor.receipt_numbers?.length
-      ? debtor.receipt_numbers.map(r => `#${r}`).join(', ') : 'N/A (Pending)';
+      ? debtor.receipt_numbers.map(r => `# ${r}`).join(', ') : 'N/A (Pending)';
 
     // ════════════════════════════════════════════════════════════
-    //  1. HEADER BAND — deep navy, full width
+    //  1. HEADER BAND
     // ════════════════════════════════════════════════════════════
-    const headerH = 28;
-    doc.setFillColor(...C.navyBand);
+    const headerH = 26;
+    doc.setFillColor(...C.primaryBlue);
     doc.rect(0, 0, pageW, headerH, 'F');
 
-    // Left chevron/banner accent shape
-    doc.setFillColor(...C.navyLight);
-    doc.triangle(0, 0, 52, 0, 0, headerH, 'F');
-
-    // Report title — bold, centered, white
     doc.setTextColor(...C.white);
-    doc.setFontSize(18);
+    doc.setFontSize(16);
     doc.setFont('helvetica', 'bold');
-    doc.text('INDIVIDUAL TRANSACTION REPORT', pageW / 2, headerH / 2 + 3.5, { align: 'center' });
+    doc.text('INDIVIDUAL TRANSACTION REPORT', pageW / 2, headerH / 2 + 3, { align: 'center' });
 
     // ════════════════════════════════════════════════════════════
-    //  2. CUSTOMER DETAILS — below header, left-aligned
+    //  2. CUSTOMER DETAILS
     // ════════════════════════════════════════════════════════════
-    let y = headerH + 9;
+    let y = headerH + 12;
 
-    doc.setFontSize(9);
+    doc.setFontSize(14);
     doc.setFont('helvetica', 'bold');
-    doc.setTextColor(...C.textDark);
+    doc.setTextColor(...C.primaryBlue);
     doc.text('CUSTOMER DETAILS', margin, y);
 
-    y += 6;
+    y += 10;
+    
+    // Row 1: Name and Date
     doc.setFontSize(10);
     doc.setFont('helvetica', 'bold');
-    doc.setTextColor(...C.navy);
-    doc.text('Customer Name:', margin, y);
+    doc.setTextColor(...C.primaryBlue);
+    doc.text('Customer Name', margin, y);
+    doc.text('Purchase Date', margin + 100, y);
+
+    y += 5;
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(...C.textBody);
-    doc.text(debtor.name, margin + 36, y);
+    doc.text(debtor.name, margin, y);
+    doc.text(fmtDate(debtor.date_borrowed), margin + 100, y);
 
-    y += 6;
-    doc.setFontSize(9);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(...C.textDark);
-    doc.text('Purchase Date:', margin, y);
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(...C.textBody);
-    doc.text(fmtDate(debtor.date_borrowed), margin + 36, y);
-
-    y += 6;
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(...C.textDark);
-    doc.text('Receipt No:', margin, y);
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(...C.textBody);
-    doc.text(receiptText, margin + 36, y);
-
-    y += 6;
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(...C.textDark);
-    doc.text('Items:', margin, y);
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(...C.textBody);
-    const wrappedItems = doc.splitTextToSize(itemsText, contentW - 20);
-    doc.text(wrappedItems.slice(0, 2), margin + 36, y);
-
-    // ════════════════════════════════════════════════════════════
-    //  3. TRANSACTION SUMMARY BOX — bordered, centered title
-    // ════════════════════════════════════════════════════════════
+    // Row 2: Receipt No
     y += 10;
-    const boxH = 26;
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(...C.primaryBlue);
+    doc.text('Receipt No', margin, y);
 
-    // Border box
-    doc.setDrawColor(...C.borderBlue);
-    doc.setLineWidth(0.6);
+    y += 5;
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(...C.textBody);
+    doc.text(receiptText, margin, y);
+
+    // Row 3: Items
+    y += 10;
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(...C.primaryBlue);
+    doc.text('Items', margin, y);
+
+    y += 5;
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(...C.textBody);
+    if (items.length > 0) {
+      items.forEach((item) => {
+        doc.text(`•   ${item}`, margin + 5, y);
+        y += 5;
+      });
+    } else {
+      doc.text('No items listed', margin + 5, y);
+      y += 5;
+    }
+
+    // ════════════════════════════════════════════════════════════
+    //  3. TRANSACTION SUMMARY BOX
+    // ════════════════════════════════════════════════════════════
+    y += 6;
+    const boxH = 30;
+
+    // Border box (no fill)
+    doc.setDrawColor(...C.boxBorder);
+    doc.setLineWidth(0.5);
     doc.rect(margin, y, contentW, boxH);
 
-    // Left-aligned title in box
-    doc.setFontSize(10);
+    // Title
+    doc.setFontSize(12);
     doc.setFont('helvetica', 'bold');
-    doc.setTextColor(...C.navy);
-    doc.text('TRANSACTION SUMMARY', margin + 10, y + 7);
+    doc.setTextColor(...C.primaryBlue);
+    doc.text('TRANSACTION SUMMARY', margin + 10, y + 8);
 
-    // Left metrics (Amount + Initial Balance)
-    const lCol = margin + 10;
+    // Metrics
     doc.setFontSize(9);
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(...C.textBody);
-    doc.text('Initial Balance:', lCol, y + 14);
+    
+    // Row 1 inside box
+    const mY1 = y + 16;
+    doc.text('Initial Balance:', margin + 10, mY1);
     doc.setFont('helvetica', 'bold');
-    doc.setTextColor(...C.textDark);
-    doc.text(fmtPDF(debtor.original_debt || debtor.balance), lCol + 32, y + 14);
+    doc.text(fmtPDF(debtor.original_debt || debtor.balance), margin + 38, mY1);
 
     doc.setFont('helvetica', 'normal');
-    doc.setTextColor(...C.textBody);
-    doc.text('Current Balance:', lCol, y + 21);
+    doc.text('Total Paid:', margin + 100, mY1);
     doc.setFont('helvetica', 'bold');
-    doc.setTextColor(isSettled ? C.green[0] : C.orange[0], isSettled ? C.green[1] : C.orange[1], isSettled ? C.green[2] : C.orange[2]);
-    doc.text(isSettled ? 'P0.00 (Settled)' : fmtPDF(debtor.balance), lCol + 32, y + 21);
+    doc.setTextColor(...C.green);
+    doc.text(fmtPDF(totalPaid), margin + 120, mY1);
 
-    // Right metrics (Total Paid only)
-    const rCol = pageW / 2 + 10;
+    // Row 2 inside box
+    const mY2 = y + 24;
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(...C.textBody);
-    doc.text('Total Paid:', rCol, y + 14);
+    doc.text('Current Balance:', margin + 10, mY2);
+    
     doc.setFont('helvetica', 'bold');
-    doc.setTextColor(...C.navy);
-    doc.text(fmtPDF(totalPaid), rCol + 24, y + 14);
+    doc.setTextColor(isSettled ? C.green[0] : C.textBody[0], isSettled ? C.green[1] : C.textBody[1], isSettled ? C.green[2] : C.textBody[2]);
+    doc.text(isSettled ? 'P0.00 (Settled)' : fmtPDF(debtor.balance), margin + 38, mY2);
 
     // ════════════════════════════════════════════════════════════
-    //  4. BUILD TABLE DATA
+    //  4. TABLE DATA
     // ════════════════════════════════════════════════════════════
-    const tableTop = y + boxH + 6;
+    const tableTop = y + boxH + 8;
     const events = [];
 
     events.push({
@@ -385,6 +384,7 @@ export default function CustomerDetail() {
 
     if (debtor.payment_history) {
       debtor.payment_history.forEach((payment) => {
+        if (payment.type === 'edit') return;
         const isDateOnly = payment.date && (payment.date.length === 10 || !payment.date.includes('T'));
         const pDate = isDateOnly ? new Date(payment.date + 'T12:00:00') : new Date(payment.date);
         events.push({
@@ -413,77 +413,75 @@ export default function CustomerDetail() {
 
     events.forEach(ev => {
       if (ev.type === 'created') {
-        tableData.push([`${rowNum++}`, ev.dateStr, 'Record Started', '—', fmtPDF(debtor.original_debt || debtor.balance)]);
+        tableData.push([`${rowNum++}`, ev.dateStr, 'Record Started', '', fmtPDF(debtor.original_debt || debtor.balance)]);
       } else if (ev.type === 'settled') {
-        tableData.push([`${rowNum++}`, ev.dateStr, 'Account Settled', '—', 'P0.00']);
+        tableData.push([`${rowNum++}`, ev.dateStr, 'Account Settled', '', '']);
       } else {
         const p = ev.payment;
-        if (p.type === 'edit') return;
         let desc = p.note || 'Payment Received';
         if (p.type === 'manual_adjustment') {
           const reasonMatch = (p.changes || '').match(/Reason: (.*)/);
           desc = `Balance Adjustment (${reasonMatch ? reasonMatch[1] : 'Manual'})`;
         }
-        // Negative sign on payments/deductions to show math clearly
+        
         const amtNum = parseFloat(p.amount || 0);
         const amountStr = amtNum !== 0
-          ? (amtNum < 0 ? `+${fmtPDF(Math.abs(amtNum))}` : `-${fmtPDF(amtNum)}`)
-          : '—';
-        tableData.push([`${rowNum++}`, ev.dateStr, desc, amountStr, p.balance_after ? fmtPDF(p.balance_after) : '—']);
+          ? (amtNum < 0 ? `P + ${parseFloat(Math.abs(amtNum)).toLocaleString('en-PH', {minimumFractionDigits: 2})}` : `P - ${parseFloat(amtNum).toLocaleString('en-PH', {minimumFractionDigits: 2})}`)
+          : '';
+          
+        const balStr = p.balance_after !== undefined ? (p.balance_after <= 0 ? 'P0.00(Settled)' : fmtPDF(p.balance_after)) : '';
+        tableData.push([`${rowNum++}`, ev.dateStr, desc, amountStr, balStr]);
       }
     });
 
-    // ════════════════════════════════════════════════════════════
-    //  5. RENDER TABLE — navy header, alternating blue-white rows
-    // ════════════════════════════════════════════════════════════
     autoTable(doc, {
       head: [['#', 'Date', 'Description', 'Amount', 'Running Balance']],
       body: tableData,
       startY: tableTop,
-      theme: 'plain',
+      theme: 'grid',
+      styles: {
+        font: 'helvetica',
+        fontSize: 9,
+        textColor: C.textBody,
+        lineColor: C.lineBorder,
+        lineWidth: 0.2,
+      },
       headStyles: {
-        fillColor: C.navy,
+        fillColor: C.primaryBlue,
         textColor: C.white,
         fontStyle: 'bold',
         fontSize: 9,
         halign: 'center',
-        cellPadding: { top: 5, bottom: 5, left: 4, right: 4 },
+        cellPadding: { top: 6, bottom: 6, left: 4, right: 4 },
       },
       bodyStyles: {
-        fontSize: 9,
-        textColor: C.textBody,
-        cellPadding: { top: 4, bottom: 4, left: 4, right: 4 },
-        lineColor: [200, 220, 240],
-        lineWidth: 0.25,
+        cellPadding: { top: 5, bottom: 5, left: 4, right: 4 },
       },
       alternateRowStyles: {
         fillColor: C.skyBlue,
       },
       margin: { left: margin, right: margin },
       columnStyles: {
-        0: { cellWidth: 12, halign: 'center', textColor: C.textMuted },
-        1: { cellWidth: 34, halign: 'center' },
+        0: { cellWidth: 10, halign: 'center', textColor: C.textMuted },
+        1: { cellWidth: 32, halign: 'center' },
         2: { cellWidth: 'auto', halign: 'left' },
-        3: { cellWidth: 36, halign: 'right', fontStyle: 'bold' },
-        4: { cellWidth: 38, halign: 'right', fontStyle: 'bold' },
+        3: { cellWidth: 38, halign: 'center', fontStyle: 'bold' },
+        4: { cellWidth: 40, halign: 'center', fontStyle: 'bold' },
+      },
+      didParseCell: function(data) {
+        if (data.section === 'body' && data.row.raw[2] === 'Account Settled') {
+          data.cell.styles.fontStyle = 'bold';
+        }
       },
       didDrawPage: (hookData) => {
         const pageCount = doc.internal.getNumberOfPages();
         const currentPage = hookData.pageNumber;
 
-        // Footer separator line
-        doc.setDrawColor(...C.borderBlue);
-        doc.setLineWidth(0.4);
-        doc.line(margin, pageH - 11, pageW - margin, pageH - 11);
-
-        // Page X of X — centered
         doc.setFontSize(8);
         doc.setFont('helvetica', 'normal');
         doc.setTextColor(...C.textMuted);
-        doc.text(`Page ${currentPage} of ${pageCount}`, pageW / 2, pageH - 5.5, { align: 'center' });
-
-        // Generated on — right-aligned
-        doc.text(`Generated on ${generatedDate}`, pageW - margin, pageH - 5.5, { align: 'right' });
+        doc.text(`Page ${currentPage} of ${pageCount}`, pageW / 2, pageH - 8, { align: 'center' });
+        doc.text(`Generated on ${generatedDate}`, pageW - margin, pageH - 8, { align: 'right' });
       }
     });
 

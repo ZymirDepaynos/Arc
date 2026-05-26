@@ -81,26 +81,36 @@ export default function CalendarView() {
 
     (Array.isArray(debtors) ? debtors : []).forEach(d => {
       // Purchase Event
-      if (d.date_borrowed && d.date_borrowed.startsWith(dateStr)) {
-        events.push({
-          type: 'borrowed',
-          debtor: d,
-          name: d.name,
-          amount: d.balance + d.advance_payment,
-          label: 'PURCHASED'
-        });
+      if (d.date_borrowed) {
+        // Handle both "YYYY-MM-DD" and ISO strings safely
+        const isMatch = d.date_borrowed.includes('T') 
+          ? new Date(d.date_borrowed).getFullYear() === year && new Date(d.date_borrowed).getMonth() === month && new Date(d.date_borrowed).getDate() === day
+          : d.date_borrowed.startsWith(dateStr);
+          
+        if (isMatch) {
+          events.push({
+            type: 'borrowed',
+            debtor: d,
+            name: d.name,
+            amount: d.balance + (d.advance_payment || 0),
+            label: 'PURCHASED'
+          });
+        }
       }
       // Payment Events
       if (Array.isArray(d.payment_history)) {
         d.payment_history.forEach(p => {
-          if (p.date && p.date.startsWith(dateStr)) {
-            events.push({
-              type: 'paid',
-              debtor: d,
-              name: d.name,
-              amount: p.amount,
-              balance_after: p.balance_after
-            });
+          if (p.date) {
+            const pDate = new Date(p.date);
+            if (pDate.getFullYear() === year && pDate.getMonth() === month && pDate.getDate() === day) {
+              events.push({
+                type: 'paid',
+                debtor: d,
+                name: d.name,
+                amount: p.amount,
+                balance_after: p.balance_after
+              });
+            }
           }
         });
       }

@@ -620,7 +620,7 @@ export default function CustomerDetail() {
                 return items.length > 0 ? (
                   <ul style={{ margin: 0, paddingLeft: 20, listStyleType: 'disc', display: 'flex', flexDirection: 'column', gap: 6 }}>
                     {items.map((item, idx) => (
-                      <li key={idx} style={{ fontSize: 16, color: 'var(--accent)', fontWeight: 600, lineHeight: 1.5 }}>
+                      <li key={idx} style={{ fontSize: 16, color: 'var(--text-primary)', fontWeight: 600, lineHeight: 1.5 }}>
                         {item}
                       </li>
                     ))}

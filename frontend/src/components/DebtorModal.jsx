@@ -234,20 +234,21 @@ export default function DebtorModal({ open, onClose, onSubmit, initial = null })
                     className="form-input"
                     type="number"
                     min="0"
-                    step="0.01"
+                    step="1"
                     placeholder=" "
                     onWheel={(e) => e.target.blur()}
+                    onKeyDown={(e) => ['e','E','+','-','.'].includes(e.key) && e.preventDefault()}
                     value={form.balance}
                     onChange={(e) => {
-                      const val = e.target.value;
+                      const val = e.target.value.replace(/[^0-9]/g, '');
                       setError(null);
                       setForm((f) => ({
                         ...f,
                         balance: val,
-                        current_balance: Math.max(0, parseFloat(val || 0) - parseFloat(f.advance_payment || 0)).toFixed(2)
+                        current_balance: Math.max(0, parseInt(val || 0) - parseInt(f.advance_payment || 0))
                       }));
                     }}
-                    onBlur={(e) => { if (e.target.value) set('balance', parseFloat(e.target.value).toFixed(2)); }}
+                    onBlur={(e) => { if (e.target.value) set('balance', parseInt(e.target.value)); }}
                     required
                     readOnly={initial && parseFloat(initial.advance_payment || 0) > 0}
                     style={initial && parseFloat(initial.advance_payment || 0) > 0 ? { background: 'rgba(0,0,0,0.03)', color: 'var(--text-muted)' } : {}}
@@ -316,20 +317,21 @@ export default function DebtorModal({ open, onClose, onSubmit, initial = null })
                       className="form-input"
                       type="number"
                       min="0"
-                      step="0.01"
+                      step="1"
                       placeholder=" "
                       onWheel={(e) => e.target.blur()}
+                      onKeyDown={(e) => ['e','E','+','-','.'].includes(e.key) && e.preventDefault()}
                       value={form.advance_payment}
                       onChange={(e) => {
-                        const val = e.target.value;
+                        const val = e.target.value.replace(/[^0-9]/g, '');
                         setError(null);
                         setForm((f) => ({
                           ...f,
                           advance_payment: val,
-                          current_balance: Math.max(0, parseFloat(f.balance || 0) - parseFloat(val || 0)).toFixed(2)
+                          current_balance: Math.max(0, parseInt(f.balance || 0) - parseInt(val || 0))
                         }));
                       }}
-                      onBlur={(e) => { if (e.target.value) set('advance_payment', parseFloat(e.target.value).toFixed(2)); }}
+                      onBlur={(e) => { if (e.target.value) set('advance_payment', parseInt(e.target.value)); }}
                     />
                     <label className="floating-label">Advance Payment (₱)</label>
                     {parseFloat(form.advance_payment || 0) > 0 && (

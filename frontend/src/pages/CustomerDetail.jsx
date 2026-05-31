@@ -866,7 +866,8 @@ export default function CustomerDetail() {
                                     <input 
                                       type="number" 
                                       value={editHistoryAmount} 
-                                      onChange={(e) => setEditHistoryAmount(e.target.value)}
+                                      onChange={(e) => setEditHistoryAmount(e.target.value.replace(/[^0-9]/g, ''))}
+                                      onKeyDown={(e) => ['e','E','+','-','.'].includes(e.key) && e.preventDefault()}
                                       style={{ width: 100, height: 32, padding: '0 8px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--bg-page)', color: 'var(--text-primary)' }}
                                     />
                                     <button 

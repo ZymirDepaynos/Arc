@@ -133,15 +133,16 @@ export default function PayModal({ open, onClose, debtor, onPay }) {
               <input
                 className="form-input"
                 type="number"
-                min="0.01"
+                min="1"
                 max={debtor.balance}
-                step="0.01"
-                placeholder="0.00"
+                step="1"
+                placeholder="0"
                 onWheel={(e) => e.target.blur()}
+                onKeyDown={(e) => ['e','E','+','-','.'].includes(e.key) && e.preventDefault()}
                 value={amount}
-                onChange={(e) => setAmount(e.target.value)}
+                onChange={(e) => setAmount(e.target.value.replace(/[^0-9]/g, ''))}
                 onBlur={(e) => {
-                  if (e.target.value) setAmount(parseFloat(e.target.value).toFixed(2));
+                  if (e.target.value) setAmount(parseInt(e.target.value));
                 }}
                 autoFocus
               />

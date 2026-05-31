@@ -102,12 +102,13 @@ export default function AdjustBalanceModal({ open, onClose, debtor, onAdjust }) 
                     className="form-input"
                     type="number"
                     min="0"
-                    step="0.01"
+                    step="1"
                     placeholder=" "
                     required
                     onWheel={(e) => e.target.blur()}
+                    onKeyDown={(e) => ['e','E','+','-','.'].includes(e.key) && e.preventDefault()}
                     value={newBalance}
-                    onChange={(e) => setNewBalance(e.target.value)}
+                    onChange={(e) => setNewBalance(e.target.value.replace(/[^0-9]/g, ''))}
                   />
                   <label className="floating-label">New Corrected Balance (₱) *</label>
                   {newBalance !== '' && parseFloat(newBalance) === debtor.balance && (

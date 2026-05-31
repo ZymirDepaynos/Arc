@@ -302,14 +302,13 @@ export default function Dashboard() {
   };
 
   const exportToCSV = (exportData = debtors) => {
-    const headers = ['ID', 'Name', 'Initial Balance', 'Date of Purchase', 'Advance Payment', 'Advance Payment Date', 'Balance', 'Status'];
+    const headers = ['ID', 'Name', 'Initial Balance', 'Date of Purchase', 'Advance Payment', 'Balance', 'Status'];
     const rows = exportData.map(d => [
       d.id,
       `"${d.name.replace(/"/g, '""')}"`, // Escape quotes for CSV
       d.original_debt || 0,
       d.date_borrowed,
       d.advance_payment,
-      d.advance_payment_date || '',
       d.balance,
       d.status
     ]);
@@ -330,10 +329,10 @@ export default function Dashboard() {
   };
 
   const downloadTemplate = () => {
-    const headers = ['Name', 'Balance', 'Advance Payment', 'Advance Payment Date', 'Date of Purchase'];
+    const headers = ['Name', 'Balance', 'Advance Payment', 'Date of Purchase'];
     const sampleData = [
-      ['Juan Dela Cruz', '1000', '200', new Date().toISOString().split('T')[0], new Date().toISOString().split('T')[0]],
-      ['Maria Clara', '500', '0', '', new Date().toISOString().split('T')[0]]
+      ['Juan Dela Cruz', '1000', '200', new Date().toISOString().split('T')[0]],
+      ['Maria Clara', '500', '0', new Date().toISOString().split('T')[0]]
     ];
     const csvContent = headers.join(",") + "\n" + sampleData.map(e => e.join(",")).join("\n");
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -368,7 +367,6 @@ export default function Dashboard() {
             if (header.includes('name')) obj.name = values[index];
             if (header.includes('balance')) obj.balance = values[index];
             if (header.includes('advance') && !header.includes('date')) obj.advance_payment = values[index];
-            if (header.includes('advance') && header.includes('date')) obj.advance_payment_date = values[index];
             if (header.includes('date') && !header.includes('advance')) obj.date_borrowed = values[index];
             if (header.includes('id')) obj.id = values[index];
           });
@@ -400,7 +398,6 @@ export default function Dashboard() {
       original_debt: rawBalance,
       // Strip UI-only display keys
       date_borrowed_text: undefined,
-      advance_payment_date_text: undefined,
       adjustment_date_text: undefined,
       current_balance: undefined,
     };
@@ -422,9 +419,6 @@ export default function Dashboard() {
     if (old.date_borrowed !== form.date_borrowed) {
       changes.push(`Purchase Date: ${fmtD(old.date_borrowed)} → ${fmtD(form.date_borrowed)}`);
     }
-    if (old.advance_payment_date !== form.advance_payment_date) {
-      changes.push(`Advance Date: ${fmtD(old.advance_payment_date)} → ${fmtD(form.advance_payment_date)}`);
-    }
     if (parseFloat(old.original_debt || old.balance) !== rawBalance) {
       changes.push(`Initial Balance: ₱${parseFloat(old.original_debt || old.balance).toLocaleString()} → ₱${rawBalance.toLocaleString()}`);
     }
@@ -445,11 +439,9 @@ export default function Dashboard() {
       original_debt: rawBalance,
       balance: old.balance, // Don't modify current balance during edit
       advance_payment: old.advance_payment, // Don't modify advance payment
-      advance_payment_date: form.advance_payment_date || old.advance_payment_date,
       payment_history: updatedHistory,
       // Strip UI-only display keys
       date_borrowed_text: undefined,
-      advance_payment_date_text: undefined,
       current_balance: undefined,
     };
     await toast.promise(updateDebtor(editDebtor.id, payload), {

@@ -9,8 +9,6 @@ const EMPTY_FORM = {
   name: '',
   balance: '',
   advance_payment: '',
-  advance_payment_date: '',
-  advance_payment_date_text: '',
   current_balance: '',
   receipt_numbers: '',
   date_borrowed: getToday(),
@@ -42,15 +40,12 @@ export default function DebtorModal({ open, onClose, onSubmit, initial = null })
     if (open) {
       setError(null);
       setDateParsed(null);
-      setAdvDateParsed(null);
       setItemInput('');
       if (initial) {
         setForm({
           name: initial.name || '',
           balance: initial.original_debt || initial.balance || '',
           advance_payment: initial.advance_payment || '',
-          advance_payment_date: initial.advance_payment_date || '',
-          advance_payment_date_text: initial.advance_payment_date ? formatDisplayDate(initial.advance_payment_date) : '',
           current_balance: initial.balance || '',
           receipt_numbers: (initial.receipt_numbers && initial.receipt_numbers[0]) || '',
           date_borrowed: initial.date_borrowed || '',
@@ -79,16 +74,8 @@ export default function DebtorModal({ open, onClose, onSubmit, initial = null })
       setParsedState(null);
       set(fieldIso, '');
     } else if (parsed) {
-      if (fieldIso === 'advance_payment_date' && form.date_borrowed && parsed < form.date_borrowed) {
-        setParsedState('past_error');
-        set(fieldIso, '');
-      } else if (fieldIso === 'date_borrowed' && form.advance_payment_date && parsed > form.advance_payment_date) {
-        setParsedState('limit_error');
-        set(fieldIso, '');
-      } else {
-        setParsedState('ok');
-        set(fieldIso, parsed);
-      }
+      setParsedState('ok');
+      set(fieldIso, parsed);
     } else {
       setParsedState('error');
       set(fieldIso, '');
@@ -121,14 +108,8 @@ export default function DebtorModal({ open, onClose, onSubmit, initial = null })
     }
 
     const pDate = parseNaturalDate(form.date_borrowed_text);
-    const aDate = parseNaturalDate(form.advance_payment_date_text);
 
     if (!pDate) { toast.error('Invalid Date of Purchase'); return; }
-
-    if (rawAdvance > 0) {
-      if (!aDate) { toast.error('Invalid Advance Payment Date'); return; }
-      if (aDate < pDate) { toast.error('Advance payment date cannot be earlier than the purchase date'); return; }
-    }
 
     setLoading(true);
     setError(null);
@@ -138,7 +119,6 @@ export default function DebtorModal({ open, onClose, onSubmit, initial = null })
       await onSubmit({
         ...form,
         date_borrowed: pDate,
-        advance_payment_date: aDate,
         receipt_numbers: form.receipt_numbers ? [form.receipt_numbers] : [],
         notes: JSON.stringify(finalItems),
       });
@@ -165,8 +145,6 @@ export default function DebtorModal({ open, onClose, onSubmit, initial = null })
       return <div style={{ ...baseStyle, color: 'var(--accent)' }}>✓ {formatDisplayDate(isoVal)}</div>;
     if (parsedState === 'past_error')
       return <div style={{ ...baseStyle, color: '#ef4444' }}>Cannot be earlier than purchase date</div>;
-    if (parsedState === 'limit_error')
-      return <div style={{ ...baseStyle, color: '#ef4444' }}>Cannot be later than advance payment date</div>;
     if (parsedState === 'error')
       return <div style={{ ...baseStyle, color: '#ef4444' }}>Could not detect date. Try "May 3, 2026"</div>;
     return null;
@@ -347,56 +325,6 @@ export default function DebtorModal({ open, onClose, onSubmit, initial = null })
                         Balance: ₱{Math.max(0, parseFloat(form.balance || 0) - parseFloat(form.advance_payment || 0)).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </div>
                     )}
-                  </div>
-                )}
-
-                {/* Advance Date (ADD mode) */}
-                {!initial && (
-                  <div className="form-group floating-group">
-                    <div style={{ position: 'relative' }}>
-                      <input
-                        className="form-input"
-                        type="text"
-                        placeholder=" "
-                        value={form.advance_payment_date_text || ''}
-                        onChange={handleDateText('advance_payment_date_text', 'advance_payment_date', setAdvDateParsed)}
-                        style={{ paddingRight: 40 }}
-                      />
-                      <label className="floating-label">Advance Date</label>
-                      <input
-                        type="date"
-                        value={form.advance_payment_date || ''}
-                        onChange={(e) => {
-                          const val = e.target.value;
-                          set('advance_payment_date', val);
-                          set('advance_payment_date_text', formatDisplayDate(val));
-                          setAdvDateParsed('ok');
-                        }}
-                        style={{
-                          position: 'absolute',
-                          right: 12,
-                          top: '50%',
-                          transform: 'translateY(-50%)',
-                          opacity: 0,
-                          width: 24,
-                          height: 24,
-                          cursor: 'pointer',
-                          zIndex: 10
-                        }}
-                      />
-                      <CalendarIcon 
-                        size={18} 
-                        color="var(--text-muted)" 
-                        style={{
-                          position: 'absolute',
-                          right: 15,
-                          top: '50%',
-                          transform: 'translateY(-50%)',
-                          pointerEvents: 'none'
-                        }}
-                      />
-                    </div>
-                    {dateHint(advDateParsed, form.advance_payment_date)}
                   </div>
                 )}
 

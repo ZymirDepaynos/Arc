@@ -134,6 +134,8 @@ export default function Dashboard() {
   };
 
   const exportToPDF = (exportData = debtors) => {
+    const sortedData = [...exportData].sort((a, b) => a.name.localeCompare(b.name));
+    exportData = sortedData;
     const doc = new jsPDF();
     const pageW = doc.internal.pageSize.getWidth();
     const pageH = doc.internal.pageSize.getHeight();

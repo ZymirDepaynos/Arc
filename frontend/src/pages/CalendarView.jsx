@@ -50,7 +50,19 @@ export default function CalendarView() {
   const allHistoryEvents = (Array.isArray(debtors) ? debtors : [])
     .filter(d => Array.isArray(d.payment_history))
     .flatMap(d => d.payment_history.map(p => ({ ...p, name: d.name, debtorId: d.id })))
-    .sort((a, b) => new Date(b.date) - new Date(a.date));
+    .filter(ev => {
+      // Filter out edits/adjustments if any
+      if (ev.type === 'edit' || ev.type === 'manual_adjustment') return false;
+      // Calculate days since entry
+      const entryDate = new Date(ev.created_at || ev.date);
+      const now = new Date();
+      // Reset hours to compare pure days
+      entryDate.setHours(0,0,0,0);
+      now.setHours(0,0,0,0);
+      const daysAgo = (now - entryDate) / (1000 * 60 * 60 * 24);
+      return daysAgo >= -1 && daysAgo <= 7;
+    })
+    .sort((a, b) => new Date(b.created_at || b.date) - new Date(a.created_at || a.date));
 
   const monthNames = [
     "January", "February", "March", "April", "May", "June",

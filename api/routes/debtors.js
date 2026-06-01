@@ -38,7 +38,8 @@ router.post('/import-all', async (req, res) => {
             date: c.advance_payment_date || c.date_borrowed || new Date().toISOString().split('T')[0],
             amount: rawAdvance,
             balance_after: storedBalance,
-            note: 'Advance Payment'
+            note: 'Advance Payment',
+            created_at: new Date().toISOString()
           });
         }
         return {
@@ -133,7 +134,8 @@ router.post('/', async (req, res) => {
         date: processDate(advance_payment_date || date_borrowed),
         amount: rawAdvance,
         balance_after: storedBalance,
-        note: 'Advance Payment'
+        note: 'Advance Payment',
+        created_at: new Date().toISOString()
       });
     }
 
@@ -274,7 +276,8 @@ router.post('/:id/pay', async (req, res) => {
       date: paymentDate,
       amount: payAmount,
       balance_after: newBalance,
-      note: 'Advance Payment'
+      note: 'Advance Payment',
+      created_at: new Date().toISOString()
     };
     
     const history = Array.isArray(current.payment_history) ? [...current.payment_history, paymentEntry] : [paymentEntry];

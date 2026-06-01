@@ -172,7 +172,8 @@ router.post('/:id/pay', async (req, res) => {
     const newPaymentEntry = {
       amount: payAmount,
       date: paymentDate,
-      balance_after: newBalance
+      balance_after: newBalance,
+      created_at: new Date().toISOString()
     };
 
     const updatedHistory = [...(current.payment_history || []), newPaymentEntry];

@@ -1,11 +1,14 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
+import { useEffect } from 'react';
 import Dashboard from './pages/Dashboard';
 import CustomerDetail from './pages/CustomerDetail';
 import CalendarView from './pages/CalendarView';
+import { initPassword } from './utils/auth';
 
 
 export default function App() {
+  useEffect(() => { initPassword(); }, []);
   return (
     <BrowserRouter>
       <Toaster

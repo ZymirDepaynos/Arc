@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, UserX, Search, Download, Bell, Calendar as CalendarIcon, ArrowUpDown, Check, CheckSquare, Square, FileText, FileSpreadsheet, X } from 'lucide-react';
+import { Plus, UserX, Search, Download, Bell, Calendar as CalendarIcon, ArrowUpDown, Check, CheckSquare, Square, FileText, FileSpreadsheet, X, Settings } from 'lucide-react';
 import MobileNav from '../components/MobileNav';
 import SearchOverlay from '../components/SearchOverlay';
 import toast from 'react-hot-toast';
@@ -14,6 +14,8 @@ import DebtorModal from '../components/DebtorModal';
 import PayModal from '../components/PayModal';
 import ConfirmModal from '../components/ConfirmModal';
 import ThemeToggle from '../components/ThemeToggle';
+import PasswordModal from '../components/PasswordModal';
+import SettingsModal from '../components/SettingsModal';
 import { parseNaturalDate } from '../utils/dateUtils';
 
 export default function Dashboard() {
@@ -45,6 +47,11 @@ export default function Dashboard() {
   const [matchCase, setMatchCase] = useState(false);
   const [wholeWord, setWholeWord] = useState(false);
   const itemsPerPage = 10;
+
+  // Password gate
+  const [pwOpen, setPwOpen]       = useState(false);
+  const [pwAction, setPwAction]   = useState(null); // { type: 'edit'|'delete', data }
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   const SEARCH_PLACEHOLDER = 'Search by name or date (e.g. May, May 4, 2026, May 2026).';
 
@@ -411,6 +418,16 @@ export default function Dashboard() {
   const handleEdit = async (form) => {
     const rawBalance = parseFloat(form.balance || 0);
 
+    // Auto-settle: editing Initial Balance to 0 fully settles the account
+    if (rawBalance === 0 && editDebtor && editDebtor.status !== 'paid' && editDebtor.balance > 0) {
+      await toast.promise(recordPayment(editDebtor.id, editDebtor.balance), {
+        loading: 'Settling account…',
+        success: `${editDebtor.name} has been fully settled!`,
+        error: 'Failed to settle',
+      });
+      return;
+    }
+
     // Audit changes for history
     const old = editDebtor;
     const changes = [];
@@ -765,6 +782,14 @@ export default function Dashboard() {
               <span>Calendar</span>
             </button>
             <ThemeToggle />
+            <button
+              className="btn btn-outline"
+              onClick={() => setSettingsOpen(true)}
+              title="Settings"
+              style={{ width: 44, height: 44, padding: 0, borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+            >
+              <Settings size={18} />
+            </button>
             <button className="btn btn-primary" onClick={() => setAddOpen(true)}>
               <Plus size={18} />
               <span>Add New Customer</span>
@@ -1011,8 +1036,8 @@ export default function Dashboard() {
                     index={i}
                     selected={selectedIds.includes(debtor.id)}
                     onToggleSelect={() => toggleSelect(debtor.id)}
-                    onEdit={() => setEditDebtor(debtor)}
-                    onDelete={() => setDeleteData(debtor)}
+                    onEdit={() => { setPwAction({ type: 'edit', data: debtor }); setPwOpen(true); }}
+                    onDelete={() => { setPwAction({ type: 'delete', data: debtor }); setPwOpen(true); }}
                     onPay={() => setPayDebtor(debtor)}
                     onSettle={() => setConfirmData(debtor)}
                     isSelectionMode={isSelectionMode}
@@ -1145,6 +1170,21 @@ export default function Dashboard() {
         title="Delete Record?"
         message={`Are you sure you want to permanently delete the record for ${deleteData?.name}? This cannot be undone.`}
       />
+
+      {/* Password Gate */}
+      <PasswordModal
+        open={pwOpen}
+        onClose={() => { setPwOpen(false); setPwAction(null); }}
+        action={pwAction?.type === 'edit' ? `edit ${pwAction?.data?.name}'s profile` : `delete ${pwAction?.data?.name}'s record`}
+        onSuccess={() => {
+          if (pwAction?.type === 'edit')   setEditDebtor(pwAction.data);
+          if (pwAction?.type === 'delete') setDeleteData(pwAction.data);
+          setPwAction(null);
+        }}
+      />
+
+      {/* Settings Modal */}
+      <SettingsModal open={settingsOpen} onClose={() => setSettingsOpen(false)} />
       <MobileNav onAddClick={() => setAddOpen(true)} />
 
       <SearchOverlay 

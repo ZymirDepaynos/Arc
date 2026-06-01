@@ -19,6 +19,7 @@ import PayModal from '../components/PayModal';
 import ConfirmModal from '../components/ConfirmModal';
 import MobileNav from '../components/MobileNav';
 import SearchOverlay from '../components/SearchOverlay';
+import PasswordModal from '../components/PasswordModal';
 
 
 const fmt = (n) =>
@@ -56,6 +57,10 @@ export default function CustomerDetail() {
   const [editHistoryAmount, setEditHistoryAmount] = useState('');
   const [confirmDeleteHistoryIndex, setConfirmDeleteHistoryIndex] = useState(null);
 
+  // Password gate
+  const [pwOpen, setPwOpen]     = useState(false);
+  const [pwAction, setPwAction] = useState(null); // 'edit' | 'delete'
+
   const API_URL = import.meta.env.VITE_API_URL || '';
 
   const fetchDebtor = async () => {
@@ -83,6 +88,18 @@ export default function CustomerDetail() {
 
   const handleEdit = async (form) => {
     const rawBalance = parseFloat(form.balance || 0);
+
+    // Auto-settle: editing Initial Balance to 0 fully settles the account
+    if (rawBalance === 0 && debtor.status !== 'paid' && debtor.balance > 0) {
+      await toast.promise(
+        axios.post(`${API_URL}/api/debtors/${id}/pay`, {
+          amount: debtor.balance,
+          date: new Date().toLocaleDateString('en-CA'),
+        }).then((r) => setDebtor(r.data)),
+        { loading: 'Settling account…', success: 'Account fully settled!', error: 'Failed to settle' }
+      );
+      return;
+    }
 
     // Audit changes for history
     const old = debtor;
@@ -529,10 +546,10 @@ export default function CustomerDetail() {
           <button className="btn btn-outline" onClick={handleExport} style={{ height: 48, padding: '0 24px', borderRadius: 24 }}>
             <Download size={16} style={{ marginRight: 8 }} /> Export
           </button>
-          <button className="btn btn-outline" onClick={() => setEditOpen(true)} style={{ height: 48, padding: '0 24px', borderRadius: 24 }}>
+          <button className="btn btn-outline" onClick={() => { setPwAction('edit'); setPwOpen(true); }} style={{ height: 48, padding: '0 24px', borderRadius: 24 }}>
             <Edit2 size={16} style={{ marginRight: 8 }} /> Edit Profile
           </button>
-          <button className="btn" onClick={() => setConfirmDelete(true)} style={{ height: 48, padding: '0 24px', borderRadius: 24, color: '#FFFFFF', border: 'none', background: '#EF4444', display: 'flex', alignItems: 'center' }}>
+          <button className="btn" onClick={() => { setPwAction('delete'); setPwOpen(true); }} style={{ height: 48, padding: '0 24px', borderRadius: 24, color: '#FFFFFF', border: 'none', background: '#EF4444', display: 'flex', alignItems: 'center' }}>
             <Trash2 size={16} style={{ marginRight: 8 }} /> Delete
           </button>
         </div>
@@ -919,6 +936,18 @@ export default function CustomerDetail() {
         onConfirm={handleDelete}
         title="Delete Record?"
         message={`Are you sure you want to permanently delete the record for ${debtor.name}? This cannot be undone.`}
+      />
+
+      {/* Password Gate */}
+      <PasswordModal
+        open={pwOpen}
+        onClose={() => { setPwOpen(false); setPwAction(null); }}
+        action={pwAction === 'edit' ? `edit ${debtor.name}'s profile` : `delete ${debtor.name}'s record`}
+        onSuccess={() => {
+          if (pwAction === 'edit')   setEditOpen(true);
+          if (pwAction === 'delete') setConfirmDelete(true);
+          setPwAction(null);
+        }}
       />
 
       <div className="hide-desktop" style={{ position: 'fixed', bottom: 100, left: 24, right: 24, zIndex: 900 }}>

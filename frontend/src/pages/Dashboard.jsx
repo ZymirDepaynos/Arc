@@ -310,7 +310,8 @@ export default function Dashboard() {
 
   const exportToCSV = (exportData = debtors) => {
     const headers = ['ID', 'Name', 'Initial Balance', 'Date of Purchase', 'Advance Payment', 'Balance', 'Status'];
-    const rows = exportData.map(d => [
+    const sortedData = [...exportData].sort((a, b) => a.name.localeCompare(b.name));
+    const rows = sortedData.map(d => [
       d.id,
       `"${d.name.replace(/"/g, '""')}"`, // Escape quotes for CSV
       d.original_debt || 0,

@@ -4,15 +4,49 @@ import { X, Settings, Eye, EyeOff, KeyRound } from 'lucide-react';
 import { changePassword } from '../utils/auth';
 import toast from 'react-hot-toast';
 
+// ── Defined OUTSIDE the component so React never recreates it on re-render ──
+function PwField({ label, value, onChange, show, onToggle, onClearError }) {
+  return (
+    <div className="form-group floating-group" style={{ position: 'relative' }}>
+      <input
+        className="form-input"
+        type={show ? 'text' : 'password'}
+        placeholder=" "
+        value={value}
+        onChange={e => { onChange(e.target.value); onClearError(); }}
+        style={{ paddingRight: 44 }}
+        required
+        autoComplete="off"
+      />
+      <label className="floating-label">{label}</label>
+      <button
+        type="button"
+        tabIndex={-1}
+        onClick={onToggle}
+        style={{
+          position: 'absolute', right: 12, top: '50%',
+          transform: 'translateY(-50%)',
+          background: 'none', border: 'none',
+          cursor: 'pointer', color: 'var(--text-muted)', padding: 4
+        }}
+      >
+        {show ? <EyeOff size={16} /> : <Eye size={16} />}
+      </button>
+    </div>
+  );
+}
+
 export default function SettingsModal({ open, onClose }) {
-  const [currentPw,  setCurrentPw]  = useState('');
-  const [newPw,      setNewPw]      = useState('');
-  const [confirmPw,  setConfirmPw]  = useState('');
-  const [showCur,    setShowCur]    = useState(false);
-  const [showNew,    setShowNew]    = useState(false);
-  const [showConf,   setShowConf]   = useState(false);
-  const [error,      setError]      = useState('');
-  const [loading,    setLoading]    = useState(false);
+  const [currentPw, setCurrentPw] = useState('');
+  const [newPw,     setNewPw]     = useState('');
+  const [confirmPw, setConfirmPw] = useState('');
+  const [showCur,   setShowCur]   = useState(false);
+  const [showNew,   setShowNew]   = useState(false);
+  const [showConf,  setShowConf]  = useState(false);
+  const [error,     setError]     = useState('');
+  const [loading,   setLoading]   = useState(false);
+
+  const clearError = () => setError('');
 
   const reset = () => {
     setCurrentPw(''); setNewPw(''); setConfirmPw('');
@@ -50,36 +84,6 @@ export default function SettingsModal({ open, onClose }) {
       setError('Current password is incorrect.');
     }
   };
-
-  // Helper for togglable password field
-  const PwField = ({ label, value, onChange, show, onToggle }) => (
-    <div className="form-group floating-group" style={{ position: 'relative' }}>
-      <input
-        className="form-input"
-        type={show ? 'text' : 'password'}
-        placeholder=" "
-        value={value}
-        onChange={e => { onChange(e.target.value); setError(''); }}
-        style={{ paddingRight: 44 }}
-        required
-        autoComplete="off"
-      />
-      <label className="floating-label">{label}</label>
-      <button
-        type="button"
-        tabIndex={-1}
-        onClick={onToggle}
-        style={{
-          position: 'absolute', right: 12, top: '50%',
-          transform: 'translateY(-50%)',
-          background: 'none', border: 'none',
-          cursor: 'pointer', color: 'var(--text-muted)', padding: 4
-        }}
-      >
-        {show ? <EyeOff size={16} /> : <Eye size={16} />}
-      </button>
-    </div>
-  );
 
   return (
     <AnimatePresence>
@@ -135,6 +139,7 @@ export default function SettingsModal({ open, onClose }) {
                 onChange={setCurrentPw}
                 show={showCur}
                 onToggle={() => setShowCur(v => !v)}
+                onClearError={clearError}
               />
               <PwField
                 label="New Password (min. 6 characters)"
@@ -142,6 +147,7 @@ export default function SettingsModal({ open, onClose }) {
                 onChange={setNewPw}
                 show={showNew}
                 onToggle={() => setShowNew(v => !v)}
+                onClearError={clearError}
               />
               <PwField
                 label="Confirm New Password"
@@ -149,6 +155,7 @@ export default function SettingsModal({ open, onClose }) {
                 onChange={setConfirmPw}
                 show={showConf}
                 onToggle={() => setShowConf(v => !v)}
+                onClearError={clearError}
               />
 
               <AnimatePresence>

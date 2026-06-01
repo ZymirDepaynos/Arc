@@ -102,19 +102,20 @@ export default function PasswordModal({ open, onClose, onSuccess, action = 'cont
                 <div style={{
                   width: 36, height: 36, borderRadius: 10,
                   background: 'var(--accent-light)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center'
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  flexShrink: 0
                 }}>
                   {isLocked
                     ? <ShieldAlert size={18} color="#ef4444" />
                     : <Lock size={18} color="var(--accent)" />}
                 </div>
-                <h2 className="modal-title">Password Required</h2>
+                <h2 className="modal-title" style={{ whiteSpace: 'nowrap', fontSize: 18 }}>Password Required</h2>
               </div>
               <button className="btn-icon" onClick={onClose}><X size={18} /></button>
             </div>
 
             <p style={{ fontSize: 14, color: 'var(--text-muted)', margin: '4px 0 20px' }}>
-              Enter your password to <strong style={{ color: 'var(--text-primary)' }}>{action}</strong>.
+              Enter your password.
             </p>
 
             <form onSubmit={handleSubmit}>

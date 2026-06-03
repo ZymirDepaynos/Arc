@@ -619,6 +619,7 @@ body.light-mode .search-toggle-btn {
   color: var(--text-primary);
   cursor: pointer;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  flex-shrink: 0;
 }
 
 .btn-icon-sm:hover {
@@ -1109,6 +1110,7 @@ body.light-mode .row-avatar {
   align-items: center;
   justify-content: flex-end;
   gap: 12px;
+  flex-shrink: 0;
 }
 
 /* ========================

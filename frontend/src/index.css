@@ -655,7 +655,7 @@ body.light-mode .btn-menu-item:hover {
   display: none;
 }
 
-@media (max-width: 1200px) {
+@media (max-width: 1300px) {
   .desktop-actions {
     display: none !important;
   }

@@ -629,6 +629,41 @@ body.light-mode .search-toggle-btn {
   box-shadow: var(--shadow-sm);
 }
 
+.btn-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: transparent;
+  border: none;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: background 0.2s;
+  width: 100%;
+}
+.btn-menu-item:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+body.light-mode .btn-menu-item:hover {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.mobile-actions {
+  display: none;
+}
+
+@media (max-width: 1200px) {
+  .desktop-actions {
+    display: none !important;
+  }
+  .mobile-actions {
+    display: block !important;
+  }
+}
+
 body.light-mode .btn-icon-sm {
   background: #FFFFFF;
   border-color: rgba(0, 0, 0, 0.08);
@@ -2062,8 +2097,8 @@ body.light-mode .back-btn-static {
   }
 
   .col-status {
-    width: 12% !important;
-    min-width: 110px !important;
+    width: 13% !important;
+    min-width: 130px !important;
   }
 
   .col-actions {

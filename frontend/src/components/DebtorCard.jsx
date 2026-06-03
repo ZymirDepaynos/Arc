@@ -1,6 +1,7 @@
-import { motion } from 'framer-motion';
+import { useState, useRef, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { Trash2, CreditCard, Check } from 'lucide-react';
+import { Trash2, CreditCard, Check, MoreVertical } from 'lucide-react';
 
 const fmt = (n) =>
   '₱' + parseFloat(n || 0).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -27,6 +28,18 @@ const initials = (name) =>
 
 export default function DebtorCard({ debtor, onDelete, onPay, index, selected, onToggleSelect, isSelectionMode }) {
   const navigate = useNavigate();
+  const [showMenu, setShowMenu] = useState(false);
+  const menuRef = useRef();
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (menuRef.current && !menuRef.current.contains(e.target)) {
+        setShowMenu(false);
+      }
+    };
+    if (showMenu) document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showMenu]);
 
   const handleRowClick = () => {
     if (isSelectionMode) {
@@ -119,53 +132,90 @@ export default function DebtorCard({ debtor, onDelete, onPay, index, selected, o
 
       {/* Actions */}
       <td className="col-actions" onClick={(e) => e.stopPropagation()}>
-        <div className="action-cell" style={{ display: 'flex', gap: 10 }}>
-          {debtor.status !== 'paid' && (
+        <div className="action-cell">
+          {/* Desktop buttons: hidden on small screens */}
+          <div className="desktop-actions" style={{ display: 'flex', gap: 10 }}>
+            {debtor.status !== 'paid' && (
+              <button
+                className="btn-icon-sm"
+                onClick={(e) => { e.stopPropagation(); onPay(debtor); }}
+                title="Record Payment"
+                style={{
+                  background: 'var(--status-active-bg)',
+                  color: 'var(--status-active-text)',
+                  border: '1px solid var(--status-active-bg)'
+                }}
+              >
+                <CreditCard size={18} />
+              </button>
+            )}
             <button
               className="btn-icon-sm"
-              onClick={(e) => {
-                e.stopPropagation();
-                onPay(debtor);
-              }}
-              title="Record Payment"
+              onClick={(e) => { e.stopPropagation(); onDelete(debtor); }}
+              title="Delete Record"
               style={{
-                background: 'var(--status-active-bg)',
-                color: 'var(--status-active-text)',
-                width: 38,
-                height: 38,
-                borderRadius: 12,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                border: '1px solid var(--status-active-bg)',
-                transition: 'all 0.2s ease'
+                background: 'rgba(255, 77, 77, 0.08)',
+                color: '#FF4D4D',
+                border: '1px solid rgba(255, 77, 77, 0.1)'
               }}
             >
-              <CreditCard size={18} />
+              <Trash2 size={18} />
             </button>
-          )}
-          <button
-            className="btn-icon-sm"
-            onClick={(e) => {
-              e.stopPropagation();
-              onDelete(debtor);
-            }}
-            title="Delete Record"
-            style={{
-              background: 'rgba(255, 77, 77, 0.08)',
-              color: '#FF4D4D',
-              width: 38,
-              height: 38,
-              borderRadius: 12,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              border: '1px solid rgba(255, 77, 77, 0.1)',
-              transition: 'all 0.2s ease'
-            }}
-          >
-            <Trash2 size={18} />
-          </button>
+          </div>
+
+          {/* Mobile 3-dot menu */}
+          <div className="mobile-actions" ref={menuRef} style={{ position: 'relative' }}>
+            <button 
+              className="btn-icon-sm" 
+              onClick={(e) => { e.stopPropagation(); setShowMenu(!showMenu); }}
+              style={{ background: 'transparent', border: '1px solid transparent' }}
+            >
+              <MoreVertical size={20} />
+            </button>
+            
+            <AnimatePresence>
+              {showMenu && (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.95, y: -10 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.95, y: -10 }}
+                  transition={{ duration: 0.15 }}
+                  style={{
+                    position: 'absolute',
+                    top: '100%',
+                    right: 0,
+                    marginTop: 4,
+                    background: 'var(--bg-card)',
+                    border: '1px solid var(--border)',
+                    borderRadius: 12,
+                    boxShadow: 'var(--shadow-md)',
+                    padding: 8,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 6,
+                    zIndex: 100,
+                    minWidth: 140
+                  }}
+                >
+                  {debtor.status !== 'paid' && (
+                    <button
+                      className="btn-menu-item"
+                      onClick={(e) => { e.stopPropagation(); setShowMenu(false); onPay(debtor); }}
+                    >
+                      <CreditCard size={16} /> Record Payment
+                    </button>
+                  )}
+                  <button
+                    className="btn-menu-item"
+                    onClick={(e) => { e.stopPropagation(); setShowMenu(false); onDelete(debtor); }}
+                    style={{ color: '#FF4D4D' }}
+                  >
+                    <Trash2 size={16} /> Delete Record
+                  </button>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
         </div>
       </td>
     </motion.tr>

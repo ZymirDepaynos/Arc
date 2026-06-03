@@ -895,6 +895,10 @@ export default function CustomerDetail() {
                                       style={{ height: 32, padding: '0 12px', borderRadius: 6, fontSize: 12 }}
                                       onClick={() => {
                                         const raw = parseFloat(editHistoryAmount) || 0;
+                                        if (raw === parseFloat(p.amount)) {
+                                          toast.error('No changes made to the payment amount');
+                                          return;
+                                        }
                                         if (raw <= 0) {
                                           toast.error('Amount must be greater than ₱0');
                                           return;

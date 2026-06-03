@@ -110,9 +110,10 @@ export default function DebtorCard({ debtor, onDelete, onPay, index, selected, o
       </td>
 
       {/* Status */}
-      <td className="col-status hide-tablet" style={{ textAlign: 'center' }}>
-        <div className="status-dot" style={{ display: 'inline-flex', justifyContent: 'center', width: '100%' }}>
+      <td className="col-status hide-tablet">
+        <div className="status-dot">
           <span className={`dot ${getStatusClass()}`}></span>
+          {getStatusText()}
         </div>
       </td>
 

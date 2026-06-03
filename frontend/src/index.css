@@ -973,8 +973,6 @@ body.light-mode .filter-chip:hover {
   text-transform: uppercase;
   letter-spacing: 0.12em;
   opacity: 0.4;
-  overflow: hidden;
-  text-overflow: ellipsis;
   white-space: nowrap;
 }
 
@@ -1016,8 +1014,6 @@ body.light-mode .data-row:hover {
   font-weight: 500;
   color: var(--text-primary);
   border-bottom: 1px solid var(--border);
-  overflow: hidden;
-  text-overflow: ellipsis;
   white-space: nowrap;
 }
 

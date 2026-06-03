@@ -23,6 +23,8 @@ export default function CalendarView() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [viewType, setViewType] = useState('Month'); // Year, Month, Week
   const [dropdownOpen, setDropdownOpen] = useState(null); // 'month' or 'year' or null
+
+  const fmt = (n) => '₱' + parseFloat(n || 0).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   const [selectedDayEvents, setSelectedDayEvents] = useState(null); // { date: '...', events: [] }
   const [loading, setLoading] = useState(true);
 
@@ -160,7 +162,7 @@ export default function CalendarView() {
                   <span className="history-name">{ev.name}</span>
                   <span className="history-date">{new Date(ev.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
                 </div>
-                <div className="history-amount">₱{(ev.amount ?? 0).toLocaleString()}</div>
+                <div className="history-amount">{fmt(ev.amount)}</div>
               </div>
             ))}
           </div>
@@ -313,11 +315,11 @@ export default function CalendarView() {
                     <div className="event-money">
                       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 2 }}>
                         {ev.amount !== undefined && (
-                          <span className="amount">₱{(ev.amount ?? 0).toLocaleString()}</span>
+                          <span className="amount">{fmt(ev.amount)}</span>
                         )}
                         {ev.balance_after !== undefined && (
                           <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-muted)' }}>
-                            Bal: ₱{(ev.balance_after ?? 0).toLocaleString()}
+                            Bal: {fmt(ev.balance_after)}
                           </span>
                         )}
                       </div>

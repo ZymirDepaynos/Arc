@@ -50,7 +50,7 @@ export default function DebtorCard({ debtor, onDelete, onPay, index, selected, o
     switch (debtor.status) {
       case 'active': return 'Outstanding';
       case 'partial': return 'Partial';
-      case 'paid': return 'Fully Paid';
+      case 'paid': return 'Paid';
       default: return debtor.status;
     }
   };

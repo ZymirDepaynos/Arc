@@ -202,7 +202,7 @@ export default function Dashboard() {
     doc.text('OVERALL PAY TOTAL', box1X + 3, 13);
     doc.setFontSize(11);
     doc.setTextColor(...C.white);
-    doc.text('P' + overallPayTotal.toLocaleString(), box1X + 3, 22);
+    doc.text('₱' + overallPayTotal.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 }), box1X + 3, 22);
 
     // Box 2 — Customers Settled
     doc.setFillColor(...C.headerDark);
@@ -243,7 +243,7 @@ export default function Dashboard() {
           rowNum,
           d.name,
           d.date_borrowed ? new Date(d.date_borrowed).toLocaleDateString('en-PH') : '—',
-          'P' + parseFloat(d.original_debt || 0).toLocaleString(),
+          '₱' + parseFloat(d.original_debt || 0).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
           d.updated_at ? new Date(d.updated_at).toLocaleDateString('en-PH') : '—',
           displayStatus
         ];
@@ -252,8 +252,8 @@ export default function Dashboard() {
           rowNum,
           d.name,
           d.date_borrowed ? new Date(d.date_borrowed).toLocaleDateString('en-PH') : '—',
-          'P' + parseFloat(d.advance_payment || 0).toLocaleString(),
-          'P' + parseFloat(d.balance || 0).toLocaleString(),
+          '₱' + parseFloat(d.advance_payment || 0).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+          '₱' + parseFloat(d.balance || 0).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
           displayStatus
         ];
       }
@@ -441,7 +441,7 @@ export default function Dashboard() {
       changes.push(`Purchase Date: ${fmtD(old.date_borrowed)} → ${fmtD(form.date_borrowed)}`);
     }
     if (parseFloat(old.original_debt || old.balance) !== rawBalance) {
-      changes.push(`Initial Balance: ₱${parseFloat(old.original_debt || old.balance).toLocaleString()} → ₱${rawBalance.toLocaleString()}`);
+      changes.push(`Initial Balance: ₱${parseFloat(old.original_debt || old.balance).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} → ₱${rawBalance.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`);
     }
 
     let updatedHistory = [...(old.payment_history || [])];
@@ -552,7 +552,7 @@ export default function Dashboard() {
   const filteredCustomers = debtors
     .filter(d => {
       // 1. Apply status filter first
-      if (filterStatus === 'Completed' && d.status !== 'paid') return false;
+      if (filterStatus === 'Paid' && d.status !== 'paid') return false;
       if (filterStatus === 'Active' && d.status !== 'active') return false;
       if (filterStatus === 'Partial' && d.status !== 'partial') return false;
 
@@ -914,7 +914,7 @@ export default function Dashboard() {
           </div>
           <div className="table-filters">
             <div className="filter-chips hide-mobile">
-              {['All', 'Outstanding', 'Partial', 'Completed'].map(status => (
+              {['All', 'Outstanding', 'Partial', 'Paid'].map(status => (
                 <button 
                   key={status} 
                   className={`filter-chip ${filterStatus === (status === 'Outstanding' ? 'Active' : status) ? 'active' : ''}`}
@@ -941,7 +941,7 @@ export default function Dashboard() {
               <option value="All">All Status</option>
               <option value="Active">Outstanding</option>
               <option value="Partial">Partial</option>
-              <option value="Completed">Completed</option>
+              <option value="Paid">Paid</option>
             </select>
 
             <div style={{ position: 'relative' }}>
@@ -1164,7 +1164,7 @@ export default function Dashboard() {
         onClose={() => setConfirmData(null)}
         onConfirm={() => handlePay(confirmData.id, confirmData.balance)}
         title="Settle Full Debt?"
-        message={`This will pay the full balance of ₱${confirmData?.balance?.toLocaleString()} and mark ${confirmData?.name} as fully settled in the records. Continue?`}
+        message={`This will pay the full balance of ₱${(confirmData?.balance || 0).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} and mark ${confirmData?.name} as fully settled in the records. Continue?`}
       />
 
       <ConfirmModal
@@ -1271,7 +1271,7 @@ export default function Dashboard() {
                   { label: 'All Records', value: 'all', desc: `${debtors.length} records` },
                   { label: 'Outstanding Only', value: 'active', desc: `${debtors.filter(d => d.status === 'active').length} records` },
                   { label: 'Partial Only', value: 'partial', desc: `${debtors.filter(d => d.status === 'partial').length} records` },
-                  { label: 'Paid / Completed', value: 'paid', desc: `${debtors.filter(d => d.status === 'paid').length} records` },
+                  { label: 'Paid', value: 'paid', desc: `${debtors.filter(d => d.status === 'paid').length} records` },
                 ].map(opt => (
                   <button
                     key={opt.value}

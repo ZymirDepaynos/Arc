@@ -32,7 +32,7 @@ const fmtDate = (d) => {
     const isDateOnly = d.length === 10 || !d.includes('T');
     const date = isDateOnly ? new Date(d + 'T12:00:00') : new Date(d);
     if (isNaN(date.getTime())) return '—';
-    return date.toLocaleDateString('en-PH', { year: 'numeric', month: 'long', day: 'numeric' });
+    return date.toLocaleDateString('en-PH', { year: 'numeric', month: 'short', day: 'numeric' });
   } catch {
     return '—';
   }
@@ -115,7 +115,7 @@ export default function CustomerDetail() {
       changes.push(`Purchase Date: ${fmtD(old.date_borrowed)} → ${fmtD(form.date_borrowed)}`);
     }
     if (parseFloat(old.original_debt || old.balance) !== rawBalance) {
-      changes.push(`Initial Balance: ₱${parseFloat(old.original_debt || old.balance).toLocaleString()} → ₱${rawBalance.toLocaleString()}`);
+      changes.push(`Initial Balance: ${fmt(old.original_debt || old.balance)} → ${fmt(rawBalance)}`);
     }
     
     // Track receipt numbers and items
@@ -236,7 +236,7 @@ export default function CustomerDetail() {
     const margin = 14;
     const contentW = pageW - margin * 2;
 
-    const fmtPDF = (n) => 'P' + parseFloat(n || 0).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const fmtPDF = (n) => '₱' + parseFloat(n || 0).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
     const C = {
       primaryBlue: [51,  92, 154],  // Header & section titles
@@ -256,7 +256,7 @@ export default function CustomerDetail() {
 
     const isSettled = debtor.status === 'paid';
     const generatedDate = new Date().toLocaleDateString('en-US', {
-      year: 'numeric', month: 'long', day: 'numeric'
+      year: 'numeric', month: 'short', day: 'numeric'
     });
 
     let items = [];
@@ -380,7 +380,7 @@ export default function CustomerDetail() {
     
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(isSettled ? C.green[0] : C.textBody[0], isSettled ? C.green[1] : C.textBody[1], isSettled ? C.green[2] : C.textBody[2]);
-    doc.text(isSettled ? 'P0.00 (Settled)' : fmtPDF(debtor.balance), margin + 38, mY2);
+    doc.text(isSettled ? '₱0.00 (Paid)' : fmtPDF(debtor.balance), margin + 38, mY2);
 
     // ════════════════════════════════════════════════════════════
     //  4. TABLE DATA
@@ -432,7 +432,7 @@ export default function CustomerDetail() {
       if (ev.type === 'created') {
         tableData.push([`${rowNum++}`, ev.dateStr, 'Record Started', '', fmtPDF(debtor.original_debt || debtor.balance)]);
       } else if (ev.type === 'settled') {
-        tableData.push([`${rowNum++}`, ev.dateStr, 'Account Settled', '', '']);
+        tableData.push([`${rowNum++}`, ev.dateStr, 'Account Paid', '', '']);
       } else {
         const p = ev.payment;
         let desc = p.note || 'Payment Received';
@@ -443,10 +443,10 @@ export default function CustomerDetail() {
         
         const amtNum = parseFloat(p.amount || 0);
         const amountStr = amtNum !== 0
-          ? (amtNum < 0 ? `P + ${parseFloat(Math.abs(amtNum)).toLocaleString('en-PH', {minimumFractionDigits: 2})}` : `P - ${parseFloat(amtNum).toLocaleString('en-PH', {minimumFractionDigits: 2})}`)
+          ? (amtNum < 0 ? `₱ + ${parseFloat(Math.abs(amtNum)).toLocaleString('en-PH', {minimumFractionDigits: 2})}` : `₱ - ${parseFloat(amtNum).toLocaleString('en-PH', {minimumFractionDigits: 2})}`)
           : '';
           
-        const balStr = p.balance_after !== undefined ? (p.balance_after <= 0 ? 'P0.00(Settled)' : fmtPDF(p.balance_after)) : '';
+        const balStr = p.balance_after !== undefined ? (p.balance_after <= 0 ? '₱0.00 (Paid)' : fmtPDF(p.balance_after)) : '';
         tableData.push([`${rowNum++}`, ev.dateStr, desc, amountStr, balStr]);
       }
     });
@@ -486,7 +486,7 @@ export default function CustomerDetail() {
         4: { cellWidth: 40, halign: 'center', fontStyle: 'bold' },
       },
       didParseCell: function(data) {
-        if (data.section === 'body' && data.row.raw[2] === 'Account Settled') {
+        if (data.section === 'body' && data.row.raw[2] === 'Account Paid') {
           data.cell.styles.fontStyle = 'bold';
         }
       },
@@ -569,7 +569,7 @@ export default function CustomerDetail() {
 
           {debtor.status === 'paid' ? (
             <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'var(--status-paid-bg)', color: 'var(--status-paid-text)', padding: '6px 12px', borderRadius: 10, fontSize: 14, fontWeight: 800 }}>
-              Fully Settled
+              Paid
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -796,7 +796,7 @@ export default function CustomerDetail() {
                         <div className="timeline-dot status"></div>
                         <div className="timeline-content">
                           <div className="timeline-time">{ev.dateStr}</div>
-                          <div className="timeline-title">Account Settled</div>
+                          <div className="timeline-title">Account Paid</div>
                           <div className="timeline-desc">Has been fully paid and closed.</div>
                         </div>
                       </div>
@@ -942,7 +942,7 @@ export default function CustomerDetail() {
         onClose={() => setConfirmSettle(false)}
         onConfirm={() => handlePay(debtor.id, debtor.balance)}
         title="Settle Full?"
-        message={`This will pay the remaining ₱${debtor.balance.toLocaleString()} and mark this record as fully settled. Continue?`}
+        message={`This will pay the remaining ${fmt(debtor.balance)} and mark this record as fully paid. Continue?`}
       />
 
       <ConfirmModal

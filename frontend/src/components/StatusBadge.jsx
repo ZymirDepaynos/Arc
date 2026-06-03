@@ -1,7 +1,7 @@
 const CONFIG = {
   active: { label: 'Outstanding', color: 'var(--status-active-text)' },
   partial: { label: 'Partial', color: 'var(--accent)' },
-  paid: { label: 'Completed', color: 'var(--status-paid-text)' },
+  paid: { label: 'Paid', color: 'var(--status-paid-text)' },
 };
 
 export default function StatusBadge({ status }) {

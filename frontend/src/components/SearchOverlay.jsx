@@ -92,7 +92,7 @@ export default function SearchOverlay({ open, onClose, debtors }) {
                       <div className="result-name">{debtor.name}</div>
                       <div className="result-status">
                         {debtor.status === 'active' ? 'Outstanding' : 
-                         debtor.status === 'paid' ? 'Fully Paid' : 
+                        debtor.status === 'paid' ? 'Paid' : 
                          debtor.status.charAt(0).toUpperCase() + debtor.status.slice(1)}
                       </div>
                     </div>

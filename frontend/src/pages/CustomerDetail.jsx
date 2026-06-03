@@ -20,6 +20,7 @@ import ConfirmModal from '../components/ConfirmModal';
 import MobileNav from '../components/MobileNav';
 import SearchOverlay from '../components/SearchOverlay';
 import PasswordModal from '../components/PasswordModal';
+import { addAuditLog } from '../utils/auth';
 
 
 const fmt = (n) =>
@@ -216,15 +217,13 @@ export default function CustomerDetail() {
     });
 
     // Log to history
-    const logs = JSON.parse(localStorage.getItem('arc_deleted_logs') || '[]');
-    logs.push({
+    await addAuditLog({
       id: `deleted-${debtorId}-${Date.now()}`,
       date: new Date().toISOString(),
       customerName: debtorName,
       type: 'deleted',
       amount: debtorBalance
     });
-    localStorage.setItem('arc_deleted_logs', JSON.stringify(logs));
 
     navigate('/');
   };

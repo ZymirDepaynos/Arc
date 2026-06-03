@@ -17,6 +17,7 @@ import ThemeToggle from '../components/ThemeToggle';
 import PasswordModal from '../components/PasswordModal';
 import SettingsModal from '../components/SettingsModal';
 import { parseNaturalDate } from '../utils/dateUtils';
+import { addAuditLog } from '../utils/auth';
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -68,11 +69,11 @@ export default function Dashboard() {
 
   const handleBulkDelete = async () => {
     try {
-      const logs = JSON.parse(localStorage.getItem('arc_deleted_logs') || '[]');
+      const newLogs = [];
       selectedIds.forEach(id => {
         const debtor = debtors.find(d => d.id === id);
         if (debtor) {
-           logs.push({
+           newLogs.push({
              id: `deleted-${id}-${Date.now()}`,
              date: new Date().toISOString(),
              customerName: debtor.name,
@@ -81,8 +82,8 @@ export default function Dashboard() {
            });
         }
       });
+      await addAuditLog(newLogs);
       await Promise.all(selectedIds.map(id => deleteDebtor(id)));
-      localStorage.setItem('arc_deleted_logs', JSON.stringify(logs));
       setSelectedIds([]);
       setIsSelectionMode(false);
       toast.success(`Deleted ${selectedIds.length} records`);
@@ -479,15 +480,13 @@ export default function Dashboard() {
       error: (err) => err.response?.data?.error || 'Failed to delete',
     });
     if (debtor) {
-      const logs = JSON.parse(localStorage.getItem('arc_deleted_logs') || '[]');
-      logs.push({
+      await addAuditLog({
         id: `deleted-${id}-${Date.now()}`,
         date: new Date().toISOString(),
         customerName: debtor.name,
         type: 'deleted',
         amount: debtor.balance
       });
-      localStorage.setItem('arc_deleted_logs', JSON.stringify(logs));
     }
   };
 

@@ -1,3 +1,5 @@
+import axios from 'axios';
+
 const ARC_PW_KEY      = 'arc_pw_hash';
 const ARC_ATTEMPTS_KEY = 'arc_pw_attempts';
 const ARC_LOCKOUT_KEY  = 'arc_pw_lockout';
@@ -5,19 +7,17 @@ const DEFAULT_PASSWORD = 'arc2026';
 const MAX_ATTEMPTS     = 5;
 const LOCKOUT_MS       = 60_000; // 60 seconds
 
-async function sha256(str) {
+const API_URL = import.meta.env.VITE_API_URL || '';
+
+export async function sha256(str) {
   const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
   return Array.from(new Uint8Array(buf))
     .map(b => b.toString(16).padStart(2, '0'))
     .join('');
 }
 
-/** Call once on app startup to seed the default password if none exists. */
-export async function initPassword() {
-  if (!localStorage.getItem(ARC_PW_KEY)) {
-    localStorage.setItem(ARC_PW_KEY, await sha256(DEFAULT_PASSWORD));
-  }
-}
+/** Legacy: No longer used since backend seeds password, kept for safety. */
+export async function initPassword() {}
 
 /** Returns seconds remaining in lockout (0 = not locked). */
 function lockoutRemaining() {
@@ -37,7 +37,19 @@ export async function verifyPassword(password) {
   if (remaining > 0) return { success: false, locked: true, remaining };
 
   const hash   = await sha256(password);
-  const stored = localStorage.getItem(ARC_PW_KEY);
+  
+  let stored;
+  try {
+    const res = await axios.get(`${API_URL}/api/settings/${ARC_PW_KEY}`);
+    stored = res.data.value;
+  } catch (err) {
+    if (err.response?.status === 404) {
+      stored = await sha256(DEFAULT_PASSWORD);
+    } else {
+      console.error('Failed to fetch password from backend', err);
+      return { success: false, error: 'Database connection failed' };
+    }
+  }
 
   if (hash === stored) {
     localStorage.removeItem(ARC_ATTEMPTS_KEY);
@@ -65,6 +77,30 @@ export async function verifyPassword(password) {
 export async function changePassword(currentPassword, newPassword) {
   const result = await verifyPassword(currentPassword);
   if (!result.success) return result;
-  localStorage.setItem(ARC_PW_KEY, await sha256(newPassword));
+  
+  const newHash = await sha256(newPassword);
+  await axios.put(`${API_URL}/api/settings/${ARC_PW_KEY}`, { value: newHash });
+  
   return { success: true };
+}
+
+export async function getAuditLogs() {
+  try {
+    const res = await axios.get(`${API_URL}/api/settings/arc_deleted_logs`);
+    return Array.isArray(res.data.value) ? res.data.value : [];
+  } catch (err) {
+    if (err.response?.status === 404) return [];
+    console.error('Failed to fetch audit logs', err);
+    return [];
+  }
+}
+
+export async function addAuditLog(newLogs) {
+  try {
+    const existing = await getAuditLogs();
+    const updated = [...existing, ...(Array.isArray(newLogs) ? newLogs : [newLogs])];
+    await axios.put(`${API_URL}/api/settings/arc_deleted_logs`, { value: updated });
+  } catch (err) {
+    console.error('Failed to save audit logs', err);
+  }
 }

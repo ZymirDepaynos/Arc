@@ -824,9 +824,9 @@ export default function CustomerDetail() {
                                   className="btn btn-outline"
                                   style={{ height: 28, padding: '0 10px', borderRadius: 6, fontSize: 12 }}
                                   onClick={() => {
-                                    setHistoryPwPending({ type: 'open-edit', index: ev.index, amount: p.amount });
-                                    setPwAction('history-edit');
-                                    setPwOpen(true);
+                                    setEditingHistoryIndex(ev.index);
+                                    setEditHistoryAmount(p.amount.toString());
+                                    setConfirmDeleteHistoryIndex(null);
                                   }}
                                 >
                                   Edit

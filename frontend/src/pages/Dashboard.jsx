@@ -793,7 +793,7 @@ export default function Dashboard() {
             >
               <Settings size={18} />
             </button>
-            <button className="btn btn-primary" onClick={() => setAddOpen(true)}>
+            <button className="btn btn-primary" onClick={() => { setPwAction({ type: 'add' }); setPwOpen(true); }}>
               <Plus size={18} />
               <span>Add New Customer</span>
             </button>
@@ -1042,7 +1042,7 @@ export default function Dashboard() {
                     onEdit={() => { setPwAction({ type: 'edit', data: debtor }); setPwOpen(true); }}
                     onDelete={() => { setPwAction({ type: 'delete', data: debtor }); setPwOpen(true); }}
                     onPay={() => setPayDebtor(debtor)}
-                    onSettle={() => setConfirmData(debtor)}
+                    onSettle={() => { setPwAction({ type: 'settle', data: debtor }); setPwOpen(true); }}
                     isSelectionMode={isSelectionMode}
                   />
                 ))}
@@ -1178,17 +1178,24 @@ export default function Dashboard() {
       <PasswordModal
         open={pwOpen}
         onClose={() => { setPwOpen(false); setPwAction(null); }}
-        action={pwAction?.type === 'edit' ? `edit ${pwAction?.data?.name}'s profile` : `delete ${pwAction?.data?.name}'s record`}
+        action={
+          pwAction?.type === 'add' ? 'add a new customer' :
+          pwAction?.type === 'edit' ? `edit ${pwAction?.data?.name}'s profile` :
+          pwAction?.type === 'settle' ? `fully settle ${pwAction?.data?.name}'s debt` :
+          `delete ${pwAction?.data?.name}'s record`
+        }
         onSuccess={() => {
+          if (pwAction?.type === 'add')    setAddOpen(true);
           if (pwAction?.type === 'edit')   setEditDebtor(pwAction.data);
           if (pwAction?.type === 'delete') setDeleteData(pwAction.data);
+          if (pwAction?.type === 'settle') setConfirmData(pwAction.data);
           setPwAction(null);
         }}
       />
 
       {/* Settings Modal */}
       <SettingsModal open={settingsOpen} onClose={() => setSettingsOpen(false)} />
-      <MobileNav onAddClick={() => setAddOpen(true)} />
+      <MobileNav onAddClick={() => { setPwAction({ type: 'add' }); setPwOpen(true); }} />
 
       <SearchOverlay 
         open={searchOpen} 

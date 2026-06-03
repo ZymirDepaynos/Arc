@@ -59,7 +59,7 @@ export default function CustomerDetail() {
 
   // Password gate
   const [pwOpen, setPwOpen]     = useState(false);
-  const [pwAction, setPwAction] = useState(null); // 'edit' | 'delete'
+  const [pwAction, setPwAction] = useState(null); // 'edit' | 'delete' | 'settle'
 
   const API_URL = import.meta.env.VITE_API_URL || '';
 
@@ -577,7 +577,7 @@ export default function CustomerDetail() {
                 <button className="btn btn-primary" onClick={() => setPayOpen(true)} style={{ flex: 1, height: 44, borderRadius: 12, fontSize: 14 }}>
                   Add Payment
                 </button>
-                <button className="btn btn-outline" onClick={() => setConfirmSettle(true)} style={{ flex: 1, height: 44, borderRadius: 12, fontSize: 14, background: 'var(--bg-page)' }}>
+                <button className="btn btn-outline" onClick={() => { setPwAction('settle'); setPwOpen(true); }} style={{ flex: 1, height: 44, borderRadius: 12, fontSize: 14, background: 'var(--bg-page)' }}>
                   Settle Full
                 </button>
               </div>
@@ -942,10 +942,15 @@ export default function CustomerDetail() {
       <PasswordModal
         open={pwOpen}
         onClose={() => { setPwOpen(false); setPwAction(null); }}
-        action={pwAction === 'edit' ? `edit ${debtor.name}'s profile` : `delete ${debtor.name}'s record`}
+        action={
+          pwAction === 'edit' ? `edit ${debtor.name}'s profile` :
+          pwAction === 'settle' ? `fully settle ${debtor.name}'s debt` :
+          `delete ${debtor.name}'s record`
+        }
         onSuccess={() => {
           if (pwAction === 'edit')   setEditOpen(true);
           if (pwAction === 'delete') setConfirmDelete(true);
+          if (pwAction === 'settle') setConfirmSettle(true);
           setPwAction(null);
         }}
       />
@@ -954,7 +959,7 @@ export default function CustomerDetail() {
         <button 
           className="btn btn-primary" 
           style={{ width: '100%', height: 56, borderRadius: 16, fontSize: 16, fontWeight: 700 }}
-          onClick={() => setConfirmSettle(true)}
+          onClick={() => { setPwAction('settle'); setPwOpen(true); }}
         >
           Settle Full
         </button>

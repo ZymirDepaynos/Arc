@@ -899,9 +899,13 @@ export default function CustomerDetail() {
                                           toast.error('Amount must be greater than ₱0');
                                           return;
                                         }
-                                        // Cap amount: cannot exceed current balance + the old amount (which would be re-added)
+                                        // Error if amount exceeds current balance + old amount
                                         const maxAllowed = parseFloat(debtor.balance) + parseFloat(p.amount);
-                                        const capped = Math.min(raw, maxAllowed);
+                                        if (raw > maxAllowed) {
+                                          toast.error('Payment cannot exceed remaining balance (' + fmt(maxAllowed) + ')');
+                                          return;
+                                        }
+                                        const capped = raw;
                                         setHistoryPwPending({ type: 'edit', index: ev.index, amount: capped });
                                         setPwAction('history-edit');
                                         setPwOpen(true);

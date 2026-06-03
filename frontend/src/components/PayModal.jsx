@@ -39,6 +39,11 @@ export default function PayModal({ open, onClose, debtor, onPay }) {
       toast.error('Payment amount must be greater than ₱0');
       return;
     }
+    const currentBalance = parseFloat(debtor.balance || 0);
+    if (payAmt > currentBalance) {
+      toast.error('Payment cannot exceed remaining balance (' + fmt(currentBalance) + ')');
+      return;
+    }
     if (!date) {
       toast.error('Please enter a valid payment date');
       return;

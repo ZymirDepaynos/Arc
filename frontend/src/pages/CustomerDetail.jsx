@@ -894,9 +894,14 @@ export default function CustomerDetail() {
                                       className="btn btn-primary" 
                                       style={{ height: 32, padding: '0 12px', borderRadius: 6, fontSize: 12 }}
                                       onClick={() => {
+                                        const raw = parseFloat(editHistoryAmount) || 0;
+                                        if (raw <= 0) {
+                                          toast.error('Amount must be greater than ₱0');
+                                          return;
+                                        }
                                         // Cap amount: cannot exceed current balance + the old amount (which would be re-added)
                                         const maxAllowed = parseFloat(debtor.balance) + parseFloat(p.amount);
-                                        const capped = Math.min(parseFloat(editHistoryAmount) || 0, maxAllowed);
+                                        const capped = Math.min(raw, maxAllowed);
                                         setHistoryPwPending({ type: 'edit', index: ev.index, amount: capped });
                                         setPwAction('history-edit');
                                         setPwOpen(true);

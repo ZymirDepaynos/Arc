@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, CreditCard, Calendar } from 'lucide-react';
+import toast from 'react-hot-toast';
 import { getToday, parseNaturalDate as parseNaturalDateUtil, formatDisplayDate } from '../utils/dateUtils';
 
 const fmt = (n) =>
@@ -34,7 +35,14 @@ export default function PayModal({ open, onClose, debtor, onPay }) {
 
   const handlePay = async () => {
     const payAmt = parseFloat(amount);
-    if (!amount || payAmt <= 0 || !date) return;
+    if (!amount || isNaN(payAmt) || payAmt <= 0) {
+      toast.error('Payment amount must be greater than ₱0');
+      return;
+    }
+    if (!date) {
+      toast.error('Please enter a valid payment date');
+      return;
+    }
     setLoading(true);
     try {
       await onPay(debtor.id, payAmt, date);

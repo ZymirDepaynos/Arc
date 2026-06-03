@@ -99,16 +99,27 @@ export default function DebtorModal({ open, onClose, onSubmit, initial = null })
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    // — Required field checks —
+    if (!form.name.trim()) {
+      toast.error('Customer name is required'); return;
+    }
+    if (!form.balance && form.balance !== 0) {
+      toast.error('Initial balance is required'); return;
+    }
+
     const rawBalance = parseFloat(form.balance || 0);
     const rawAdvance = parseFloat(form.advance_payment || 0);
 
+    if (rawBalance <= 0) {
+      toast.error('Initial balance must be greater than ₱0'); return;
+    }
     if (rawAdvance > rawBalance) {
       toast.error('Advance payment cannot be greater than the initial balance');
       return;
     }
 
     const pDate = parseNaturalDate(form.date_borrowed_text);
-
     if (!pDate) { toast.error('Invalid Date of Purchase'); return; }
 
     setLoading(true);

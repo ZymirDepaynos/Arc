@@ -110,7 +110,7 @@ export default function Dashboard() {
     setSortOrder(newOrder);
     setSortMenuOpen(false);
     const labels = {
-      'recently-added': 'Recently Added',
+      'recently-added': 'Recent Activity',
       'a-z': 'A-Z',
       'date-desc': 'Recent Dates',
       'date-asc': 'Oldest Dates'
@@ -605,8 +605,10 @@ export default function Dashboard() {
       if (sortOrder === 'a-z') return a.name.localeCompare(b.name);
       if (sortOrder === 'date-asc') return new Date(a.date_borrowed) - new Date(b.date_borrowed);
       if (sortOrder === 'date-desc') return new Date(b.date_borrowed) - new Date(a.date_borrowed);
-      // default: recently-added — sort by id descending (newest record first)
-      return (b.id ?? 0) - (a.id ?? 0);
+      // default: recent-activity — sort by updated_at desc so any transaction (payment, edit, etc.) bubbles to top
+      const aTime = new Date(a.updated_at || a.created_at || 0).getTime();
+      const bTime = new Date(b.updated_at || b.created_at || 0).getTime();
+      return bTime - aTime;
     });
 
   const indexOfLastItem = currentPage * itemsPerPage;
@@ -973,7 +975,7 @@ export default function Dashboard() {
                       exit={{ opacity: 0, y: 10, scale: 0.95 }}
                     >
                       <div className="dropdown-item" onClick={() => handleSortChange('recently-added')}>
-                        <span style={{ flex: 1 }}>Recently Added</span>
+                        <span style={{ flex: 1 }}>Recent Activity</span>
                         {sortOrder === 'recently-added' && <Check size={14} color="var(--accent)" />}
                       </div>
                       <div className="dropdown-item" onClick={() => handleSortChange('a-z')}>

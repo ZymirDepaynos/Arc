@@ -574,7 +574,7 @@ export default function CustomerDetail() {
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               <div style={{ display: 'flex', gap: 12 }}>
-                <button className="btn btn-primary" onClick={() => setPayOpen(true)} style={{ flex: 1, height: 44, borderRadius: 12, fontSize: 14 }}>
+                <button className="btn btn-primary" onClick={() => { setPwAction('pay'); setPwOpen(true); }} style={{ flex: 1, height: 44, borderRadius: 12, fontSize: 14 }}>
                   Add Payment
                 </button>
                 <button className="btn btn-outline" onClick={() => { setPwAction('settle'); setPwOpen(true); }} style={{ flex: 1, height: 44, borderRadius: 12, fontSize: 14, background: 'var(--bg-page)' }}>
@@ -960,6 +960,7 @@ export default function CustomerDetail() {
         action={
           pwAction === 'edit'           ? `edit ${debtor.name}'s profile` :
           pwAction === 'settle'         ? `fully settle ${debtor.name}'s debt` :
+          pwAction === 'pay'            ? `record a payment for ${debtor.name}` :
           pwAction === 'history-edit'   ? 'edit this payment entry' :
           pwAction === 'history-delete' ? 'delete this payment entry' :
           `delete ${debtor.name}'s record`
@@ -968,6 +969,7 @@ export default function CustomerDetail() {
           if (pwAction === 'edit')   setEditOpen(true);
           if (pwAction === 'delete') setConfirmDelete(true);
           if (pwAction === 'settle') setConfirmSettle(true);
+          if (pwAction === 'pay')    setPayOpen(true);
           if (pwAction === 'history-edit' && historyPwPending) {
             if (historyPwPending.type === 'open-edit') {
               // Just open the edit input

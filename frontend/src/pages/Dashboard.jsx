@@ -1042,7 +1042,7 @@ export default function Dashboard() {
                     onToggleSelect={() => toggleSelect(debtor.id)}
                     onEdit={() => { setPwAction({ type: 'edit', data: debtor }); setPwOpen(true); }}
                     onDelete={() => { setPwAction({ type: 'delete', data: debtor }); setPwOpen(true); }}
-                    onPay={() => setPayDebtor(debtor)}
+                    onPay={() => { setPwAction({ type: 'pay', data: debtor }); setPwOpen(true); }}
                     onSettle={() => { setPwAction({ type: 'settle', data: debtor }); setPwOpen(true); }}
                     isSelectionMode={isSelectionMode}
                   />
@@ -1180,9 +1180,10 @@ export default function Dashboard() {
         open={pwOpen}
         onClose={() => { setPwOpen(false); setPwAction(null); }}
         action={
-          pwAction?.type === 'add' ? 'add a new customer' :
-          pwAction?.type === 'edit' ? `edit ${pwAction?.data?.name}'s profile` :
+          pwAction?.type === 'add'    ? 'add a new customer' :
+          pwAction?.type === 'edit'   ? `edit ${pwAction?.data?.name}'s profile` :
           pwAction?.type === 'settle' ? `fully settle ${pwAction?.data?.name}'s debt` :
+          pwAction?.type === 'pay'    ? `record a payment for ${pwAction?.data?.name}` :
           `delete ${pwAction?.data?.name}'s record`
         }
         onSuccess={() => {
@@ -1190,6 +1191,7 @@ export default function Dashboard() {
           if (pwAction?.type === 'edit')   setEditDebtor(pwAction.data);
           if (pwAction?.type === 'delete') setDeleteData(pwAction.data);
           if (pwAction?.type === 'settle') setConfirmData(pwAction.data);
+          if (pwAction?.type === 'pay')    setPayDebtor(pwAction.data);
           setPwAction(null);
         }}
       />

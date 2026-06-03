@@ -346,10 +346,17 @@ router.post('/:id/edit-history', async (req, res) => {
     }
 
     const oldAmount = parseFloat(item.amount) || 0;
-    const diff = parseFloat(newAmount) - oldAmount;
+    const rawNewAmount = parseFloat(newAmount) || 0;
+
+    // Guard: the new amount cannot be greater than (current balance + old amount)
+    // because that would push the running balance negative.
+    const maxAllowed = parseFloat(current.balance) + oldAmount;
+    const clampedNewAmount = Math.min(rawNewAmount, maxAllowed);
+
+    const diff = clampedNewAmount - oldAmount;
 
     // Update the item
-    item.amount = parseFloat(newAmount);
+    item.amount = clampedNewAmount;
     
     // Req 3: Append [Edited] tag
     if (!item.note) item.note = 'Advance Payment';
@@ -365,7 +372,7 @@ router.post('/:id/edit-history', async (req, res) => {
     }
 
     // Update main debtor record
-    const newBalance = parseFloat(current.balance) - diff;
+    const newBalance = Math.max(0, parseFloat(current.balance) - diff);
     const newAdvance = parseFloat(current.advance_payment) + diff;
     const newStatus = newBalance <= 0 ? 'paid' : (newAdvance > 0 ? 'partial' : 'active');
 

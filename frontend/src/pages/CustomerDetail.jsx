@@ -57,10 +57,11 @@ export default function CustomerDetail() {
   const [editingHistoryIndex, setEditingHistoryIndex] = useState(null);
   const [editHistoryAmount, setEditHistoryAmount] = useState('');
   const [confirmDeleteHistoryIndex, setConfirmDeleteHistoryIndex] = useState(null);
+  const [historyPwPending, setHistoryPwPending] = useState(null); // { type: 'edit'|'delete', index, amount? }
 
   // Password gate
   const [pwOpen, setPwOpen]     = useState(false);
-  const [pwAction, setPwAction] = useState(null); // 'edit' | 'delete' | 'settle'
+  const [pwAction, setPwAction] = useState(null); // 'edit' | 'delete' | 'settle' | 'history-edit' | 'history-delete'
 
   const API_URL = import.meta.env.VITE_API_URL || '';
 
@@ -823,9 +824,9 @@ export default function CustomerDetail() {
                                   className="btn btn-outline"
                                   style={{ height: 28, padding: '0 10px', borderRadius: 6, fontSize: 12 }}
                                   onClick={() => {
-                                    setEditingHistoryIndex(ev.index);
-                                    setEditHistoryAmount(p.amount.toString());
-                                    setConfirmDeleteHistoryIndex(null);
+                                    setHistoryPwPending({ type: 'open-edit', index: ev.index, amount: p.amount });
+                                    setPwAction('history-edit');
+                                    setPwOpen(true);
                                   }}
                                 >
                                   Edit
@@ -840,7 +841,9 @@ export default function CustomerDetail() {
                                     <button
                                       className="btn btn-outline"
                                       style={{ height: 28, padding: '0 10px', borderRadius: 6, fontSize: 12, color: '#EF4444', borderColor: 'rgba(239,68,68,0.4)', background: 'rgba(239,68,68,0.08)' }}
-                                      onClick={() => handleDeleteHistory(ev.index)}
+                                      onClick={() => {
+                                        handleDeleteHistory(ev.index);
+                                      }}
                                     >
                                       Yes
                                     </button>
@@ -858,8 +861,9 @@ export default function CustomerDetail() {
                                     style={{ height: 28, padding: '0 8px', borderRadius: 6, fontSize: 12, color: '#EF4444', borderColor: 'rgba(239,68,68,0.2)', background: 'rgba(239,68,68,0.05)' }}
                                     title="Delete this entry and rollback balance"
                                     onClick={() => {
-                                      setConfirmDeleteHistoryIndex(ev.index);
-                                      setEditingHistoryIndex(null);
+                                      setHistoryPwPending({ type: 'delete', index: ev.index });
+                                      setPwAction('history-delete');
+                                      setPwOpen(true);
                                     }}
                                   >
                                     <Trash2 size={12} />
@@ -889,7 +893,14 @@ export default function CustomerDetail() {
                                     <button 
                                       className="btn btn-primary" 
                                       style={{ height: 32, padding: '0 12px', borderRadius: 6, fontSize: 12 }}
-                                      onClick={() => handleEditHistory(ev.index, editHistoryAmount)}
+                                      onClick={() => {
+                                        // Cap amount: cannot exceed current balance + the old amount (which would be re-added)
+                                        const maxAllowed = parseFloat(debtor.balance) + parseFloat(p.amount);
+                                        const capped = Math.min(parseFloat(editHistoryAmount) || 0, maxAllowed);
+                                        setHistoryPwPending({ type: 'edit', index: ev.index, amount: capped });
+                                        setPwAction('history-edit');
+                                        setPwOpen(true);
+                                      }}
                                     >
                                       Save
                                     </button>
@@ -940,17 +951,35 @@ export default function CustomerDetail() {
       {/* Password Gate */}
       <PasswordModal
         open={pwOpen}
-        onClose={() => { setPwOpen(false); setPwAction(null); }}
+        onClose={() => { setPwOpen(false); setPwAction(null); setHistoryPwPending(null); }}
         action={
-          pwAction === 'edit' ? `edit ${debtor.name}'s profile` :
-          pwAction === 'settle' ? `fully settle ${debtor.name}'s debt` :
+          pwAction === 'edit'           ? `edit ${debtor.name}'s profile` :
+          pwAction === 'settle'         ? `fully settle ${debtor.name}'s debt` :
+          pwAction === 'history-edit'   ? 'edit this payment entry' :
+          pwAction === 'history-delete' ? 'delete this payment entry' :
           `delete ${debtor.name}'s record`
         }
         onSuccess={() => {
           if (pwAction === 'edit')   setEditOpen(true);
           if (pwAction === 'delete') setConfirmDelete(true);
           if (pwAction === 'settle') setConfirmSettle(true);
+          if (pwAction === 'history-edit' && historyPwPending) {
+            if (historyPwPending.type === 'open-edit') {
+              // Just open the edit input
+              setEditingHistoryIndex(historyPwPending.index);
+              setEditHistoryAmount(historyPwPending.amount.toString());
+              setConfirmDeleteHistoryIndex(null);
+            } else {
+              // Actually save the edit (already capped)
+              handleEditHistory(historyPwPending.index, historyPwPending.amount);
+            }
+          }
+          if (pwAction === 'history-delete' && historyPwPending) {
+            setConfirmDeleteHistoryIndex(historyPwPending.index);
+            setEditingHistoryIndex(null);
+          }
           setPwAction(null);
+          setHistoryPwPending(null);
         }}
       />
 

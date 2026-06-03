@@ -1028,7 +1028,7 @@ export default function Dashboard() {
                   <th className="col-date">Date of Purchase</th>
                   <th className="col-init-balance hide-mobile">Initial Balance</th>
                   <th className="col-balance">Balance</th>
-                  <th className="col-status hide-tablet">Status</th>
+                  <th className="col-status hide-tablet" style={{ textAlign: 'center', width: 80 }}>Status</th>
                   <th className="col-actions"></th>
                 </tr>
               </thead>

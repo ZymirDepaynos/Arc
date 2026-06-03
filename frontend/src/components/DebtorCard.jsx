@@ -185,7 +185,7 @@ export default function DebtorCard({ debtor, onDelete, onPay, index, selected, o
                     top: '100%',
                     right: 0,
                     marginTop: 4,
-                    background: 'var(--bg-card)',
+                    background: 'var(--glass-bg)',
                     border: '1px solid var(--border)',
                     borderRadius: 12,
                     boxShadow: 'var(--shadow-md)',

@@ -379,7 +379,7 @@ export default function CustomerDetail() {
     
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(isSettled ? C.green[0] : C.textBody[0], isSettled ? C.green[1] : C.textBody[1], isSettled ? C.green[2] : C.textBody[2]);
-    doc.text(isSettled ? '₱0.00 (Paid)' : fmtPDF(debtor.balance), margin + 38, mY2);
+    doc.text(isSettled ? 'P0.00 (Paid)' : fmtPDF(debtor.balance), margin + 38, mY2);
 
     // ════════════════════════════════════════════════════════════
     //  4. TABLE DATA
@@ -442,10 +442,10 @@ export default function CustomerDetail() {
         
         const amtNum = parseFloat(p.amount || 0);
         const amountStr = amtNum !== 0
-          ? (amtNum < 0 ? `₱ + ${parseFloat(Math.abs(amtNum)).toLocaleString('en-PH', {minimumFractionDigits: 2})}` : `₱ - ${parseFloat(amtNum).toLocaleString('en-PH', {minimumFractionDigits: 2})}`)
+          ? (amtNum < 0 ? `P + ${parseFloat(Math.abs(amtNum)).toLocaleString('en-PH', {minimumFractionDigits: 2})}` : `P - ${parseFloat(amtNum).toLocaleString('en-PH', {minimumFractionDigits: 2})}`)
           : '';
           
-        const balStr = p.balance_after !== undefined ? (p.balance_after <= 0 ? '₱0.00 (Paid)' : fmtPDF(p.balance_after)) : '';
+        const balStr = p.balance_after !== undefined ? (p.balance_after <= 0 ? 'P0.00 (Paid)' : fmtPDF(p.balance_after)) : '';
         tableData.push([`${rowNum++}`, ev.dateStr, desc, amountStr, balStr]);
       }
     });

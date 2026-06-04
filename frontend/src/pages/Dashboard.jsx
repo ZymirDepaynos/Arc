@@ -187,7 +187,7 @@ export default function Dashboard() {
     doc.text('OVERALL PAY TOTAL', box1X + 3, 13);
     doc.setFontSize(11);
     doc.setTextColor(...C.white);
-    doc.text('₱' + overallPayTotal.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 }), box1X + 3, 22);
+    doc.text('P' + overallPayTotal.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 }), box1X + 3, 22);
 
     // Box 2 — Customers Settled
     doc.setFillColor(...C.headerDark);

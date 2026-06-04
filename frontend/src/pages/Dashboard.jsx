@@ -228,7 +228,7 @@ export default function Dashboard() {
           rowNum,
           d.name,
           d.date_borrowed ? new Date(d.date_borrowed).toLocaleDateString('en-PH') : '—',
-          '₱' + parseFloat(d.original_debt || 0).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+          'P' + parseFloat(d.original_debt || 0).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
           d.updated_at ? new Date(d.updated_at).toLocaleDateString('en-PH') : '—',
           displayStatus
         ];
@@ -237,8 +237,8 @@ export default function Dashboard() {
           rowNum,
           d.name,
           d.date_borrowed ? new Date(d.date_borrowed).toLocaleDateString('en-PH') : '—',
-          '₱' + parseFloat(d.advance_payment || 0).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
-          '₱' + parseFloat(d.balance || 0).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+          'P' + parseFloat(d.advance_payment || 0).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+          'P' + parseFloat(d.balance || 0).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
           displayStatus
         ];
       }

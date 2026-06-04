@@ -235,7 +235,7 @@ export default function CustomerDetail() {
     const margin = 14;
     const contentW = pageW - margin * 2;
 
-    const fmtPDF = (n) => '₱' + parseFloat(n || 0).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const fmtPDF = (n) => 'P' + parseFloat(n || 0).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
     const C = {
       primaryBlue: [51,  92, 154],  // Header & section titles

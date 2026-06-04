@@ -112,7 +112,6 @@ router.post('/', async (req, res) => {
       advance_payment_date,
       receipt_numbers,
       date_borrowed,
-      due_date,
       notes,
       original_debt: requestedOriginalDebt,
     } = req.body;
@@ -150,7 +149,6 @@ router.post('/', async (req, res) => {
         payment_history: history,
         receipt_numbers: receipt_numbers || [],
         date_borrowed,
-        due_date: due_date || null,
         notes: notes || '',
         status: rawAdvance > 0 && storedBalance > 0 ? 'partial' : storedBalance <= 0 ? 'paid' : 'active',
       }])
@@ -175,7 +173,6 @@ router.put('/:id', async (req, res) => {
       advance_payment_date,
       receipt_numbers,
       date_borrowed,
-      due_date,
       notes,
       original_debt: requestedOriginalDebt,
     } = req.body;
@@ -213,7 +210,6 @@ router.put('/:id', async (req, res) => {
         advance_payment_date: advance_payment_date || current.advance_payment_date,
         receipt_numbers: receipt_numbers || [],
         date_borrowed,
-        due_date: due_date || null,
         notes: notes || '',
         status: newStatus,
         payment_history: history,

@@ -1331,9 +1331,8 @@ body.light-mode ::-webkit-scrollbar-thumb {
   }
 }
 
-/* .hide-mobile is a no-op — mobile view removed; elements always show */
+/* .hide-mobile is a no-op - mobile view removed; elements always show */
 .hide-mobile {
-  display: revert;
 }
 
 /* .hide-desktop elements are permanently hidden (no mobile fallback) */

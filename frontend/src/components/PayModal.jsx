@@ -4,8 +4,7 @@ import { X, CreditCard, Calendar } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { getToday, parseNaturalDate as parseNaturalDateUtil, formatDisplayDate } from '../utils/dateUtils';
 
-const fmt = (n) =>
-  '₱' + parseFloat(n || 0).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+import { fmt } from '../utils/format';
 
 // Wrap shared parseNaturalDate to add future-date validation
 const parseNaturalDate = (input) => {

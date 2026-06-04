@@ -2,9 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Settings2 } from 'lucide-react';
 import toast from 'react-hot-toast';
-
-const fmt = (n) =>
-  '₱' + parseFloat(n || 0).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+import { fmt } from '../utils/format';
 
 export default function AdjustBalanceModal({ open, onClose, debtor, onAdjust }) {
   const [newBalance, setNewBalance] = useState('');

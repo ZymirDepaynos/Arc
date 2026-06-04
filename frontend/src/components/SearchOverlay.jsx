@@ -1,13 +1,15 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, X, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { parseNaturalDate, formatDisplayDate } from '../utils/dateUtils';
+import { getStatusLabel } from '../utils/format';
 
 export default function SearchOverlay({ open, onClose, debtors }) {
   const [query, setQuery] = useState('');
   const inputRef = useRef(null);
   const navigate = useNavigate();
+  const parsedDate = useMemo(() => parseNaturalDate(query), [query]);
 
   useEffect(() => {
     if (open) {
@@ -23,10 +25,9 @@ export default function SearchOverlay({ open, onClose, debtors }) {
     const s = cleanSearch.startsWith('#') ? cleanSearch.substring(1) : cleanSearch;
     
     // Check if it's a date search
-    const parsed = parseNaturalDate(query);
-    if (parsed) {
+    if (parsedDate) {
       const storedDate = d.date_borrowed ? d.date_borrowed.substring(0, 10) : '';
-      if (storedDate === parsed) return true;
+      if (storedDate === parsedDate) return true;
     }
 
     const nameMatch = d.name.toLowerCase().startsWith(s) || 
@@ -59,9 +60,9 @@ export default function SearchOverlay({ open, onClose, debtors }) {
                 onChange={(e) => setQuery(e.target.value)}
                 className="overlay-search-input"
               />
-              {query && parseNaturalDate(query) && (
+              {query && parsedDate && (
                 <div style={{ position: 'absolute', right: 48, top: '50%', transform: 'translateY(-50%)', fontSize: 11, color: 'var(--accent)', fontWeight: 700 }}>
-                  ✓ {formatDisplayDate(parseNaturalDate(query))}
+                  ✓ {formatDisplayDate(parsedDate)}
                 </div>
               )}
               <button className="close-search-btn" onClick={onClose}>
@@ -91,9 +92,7 @@ export default function SearchOverlay({ open, onClose, debtors }) {
                     <div className="result-info">
                       <div className="result-name">{debtor.name}</div>
                       <div className="result-status">
-                        {debtor.status === 'active' ? 'Outstanding' : 
-                        debtor.status === 'paid' ? 'Paid' : 
-                         debtor.status.charAt(0).toUpperCase() + debtor.status.slice(1)}
+                        {getStatusLabel(debtor.status)}
                       </div>
                     </div>
                     <ChevronRight size={18} className="result-arrow" />

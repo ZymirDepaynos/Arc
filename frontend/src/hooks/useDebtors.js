@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import axios from 'axios';
 
 // Resolved once at module load — never re-evaluated per render
@@ -61,7 +61,7 @@ export function useDebtors() {
     return res.data;
   };
 
-  const totals = Array.isArray(debtors) ? debtors.reduce(
+  const totals = useMemo(() => Array.isArray(debtors) ? debtors.reduce(
     (acc, d) => {
       acc.totalBalance += parseFloat(d.balance) || 0;
       acc.totalAdvance += parseFloat(d.advance_payment) || 0;
@@ -71,7 +71,7 @@ export function useDebtors() {
       return acc;
     },
     { totalBalance: 0, totalAdvance: 0, activeCount: 0, partialCount: 0, paidCount: 0 }
-  ) : { totalBalance: 0, totalAdvance: 0, activeCount: 0, partialCount: 0, paidCount: 0 };
+  ) : { totalBalance: 0, totalAdvance: 0, activeCount: 0, partialCount: 0, paidCount: 0 }, [debtors]);
 
   return {
     debtors,

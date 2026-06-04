@@ -10,13 +10,14 @@ const supabase = createClient(
 
 const processDate = (inputDate) => {
   if (!inputDate) return new Date().toISOString();
-  // Ensure we compare against Manila today string YYYY-MM-DD
-  const todayStr = new Date().toLocaleString("en-CA", {timeZone: "Asia/Manila"}).split(',')[0];
-  if (inputDate === todayStr) {
-    return new Date().toISOString();
-  }
+  const todayStr = new Date().toLocaleString('en-CA', { timeZone: 'Asia/Manila' }).split(',')[0];
+  if (inputDate === todayStr) return new Date().toISOString();
   return inputDate;
 };
+
+/** Derive debtor status from current balance and total advance paid */
+const computeStatus = (balance, advance) =>
+  balance <= 0 ? 'paid' : advance > 0 ? 'partial' : 'active';
 
 // POST bulk create (for CSV Import)
 router.post('/import-all', async (req, res) => {
@@ -51,7 +52,7 @@ router.post('/import-all', async (req, res) => {
           date_borrowed: c.date_borrowed || new Date().toISOString().split('T')[0],
           notes: c.notes || '',
           receipt_numbers: c.receipt_numbers || [],
-          status: rawAdvance > 0 && storedBalance > 0 ? 'partial' : storedBalance <= 0 ? 'paid' : 'active'
+          status: computeStatus(storedBalance, rawAdvance)
         };
       }))
       .select();
@@ -82,7 +83,7 @@ router.get('/', async (req, res) => {
     res.json(data);
   } catch (err) {
     console.error('API Error [GET /]:', err);
-    res.status(500).json({ error: 'Fetch failed', details: err.message });
+    res.status(500).json({ error: err.message });
   }
 });
 
@@ -147,7 +148,7 @@ router.post('/', async (req, res) => {
         receipt_numbers: receipt_numbers || [],
         date_borrowed,
         notes: notes || '',
-        status: rawAdvance > 0 && storedBalance > 0 ? 'partial' : storedBalance <= 0 ? 'paid' : 'active',
+        status: computeStatus(storedBalance, rawAdvance),
       }])
       .select()
       .single();
@@ -194,7 +195,7 @@ router.put('/:id', async (req, res) => {
     }
 
     const history = req.body.payment_history || current.payment_history || [];
-    const newStatus = newAdvance > 0 && newBalance > 0 ? 'partial' : newBalance <= 0 ? 'paid' : 'active';
+    const newStatus = computeStatus(newBalance, newAdvance);
 
     const { data, error } = await supabase
       .from('debtors')
@@ -363,7 +364,7 @@ router.post('/:id/edit-history', async (req, res) => {
     // Update main debtor record
     const newBalance = Math.max(0, parseFloat(current.balance) - diff);
     const newAdvance = parseFloat(current.advance_payment) + diff;
-    const newStatus = newBalance <= 0 ? 'paid' : (newAdvance > 0 ? 'partial' : 'active');
+    const newStatus = computeStatus(newBalance, newAdvance);
 
     const { data, error } = await supabase
       .from('debtors')
@@ -430,7 +431,7 @@ router.delete('/:id/history/:index', async (req, res) => {
     // Rollback root balance and advance_payment
     const newBalance = parseFloat(current.balance) + deletedAmount;
     const newAdvance = Math.max(0, parseFloat(current.advance_payment) - deletedAmount);
-    const newStatus = newBalance <= 0 ? 'paid' : (newAdvance > 0 ? 'partial' : 'active');
+    const newStatus = computeStatus(newBalance, newAdvance);
 
     const { data, error } = await supabase
       .from('debtors')

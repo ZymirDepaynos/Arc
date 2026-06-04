@@ -16,16 +16,7 @@ const EMPTY_FORM = {
   status: 'active',
 };
 
-// Parse stored notes back into an items array
-function parseItems(notes) {
-  if (!notes) return [];
-  try {
-    const parsed = JSON.parse(notes);
-    if (Array.isArray(parsed)) return parsed;
-  } catch (_) { /* not JSON — legacy plain text */ }
-  // Legacy: treat each non-empty line as an item
-  return notes.split('\n').map(l => l.replace(/^\d+\.\s*/, '').trim()).filter(Boolean);
-}
+import { parseItems } from '../utils/format';
 
 export default function DebtorModal({ open, onClose, onSubmit, initial = null }) {
   const [form, setForm] = useState(EMPTY_FORM);

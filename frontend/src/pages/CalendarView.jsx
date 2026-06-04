@@ -4,16 +4,9 @@ import { motion } from 'framer-motion';
 import {
   ArrowLeft,
   ChevronLeft,
-  ChevronRight,
-  Menu,
-  Bell,
-  Grid as GridIcon,
-  User,
-  Settings,
-  Calendar as CalendarIcon
+  ChevronRight
 } from 'lucide-react';
 import axios from 'axios';
-import MobileNav from '../components/MobileNav';
 
 const API_URL = import.meta.env.VITE_API_URL || '';
 
@@ -21,7 +14,6 @@ export default function CalendarView() {
   const navigate = useNavigate();
   const [debtors, setDebtors] = useState([]);
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [viewType, setViewType] = useState('Month'); // Year, Month, Week
   const [dropdownOpen, setDropdownOpen] = useState(null); // 'month' or 'year' or null
 
   const fmt = (n) => '₱' + parseFloat(n || 0).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });

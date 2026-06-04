@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, UserX, Search, Download, Bell, Calendar as CalendarIcon, ArrowUpDown, Check, CheckSquare, Square, FileText, FileSpreadsheet, X, Settings } from 'lucide-react';
-import MobileNav from '../components/MobileNav';
+import { Plus, UserX, Search, Download, Bell, Calendar as CalendarIcon, ArrowUpDown, Check, CheckSquare, FileText, FileSpreadsheet, X, Settings } from 'lucide-react';
+
 import SearchOverlay from '../components/SearchOverlay';
 import toast from 'react-hot-toast';
 import jsPDF from 'jspdf';
@@ -118,25 +118,10 @@ export default function Dashboard() {
     toast.success(`Sorted by ${labels[newOrder]}`);
   };
 
-  const handleModeChange = (mode) => {
-    if (mode === filterStatus) {
-      setFilterStatus('All');
-    } else {
-      setFilterStatus(mode);
-    }
-    setSearch('');
-    setSortMenuOpen(false);
-    setCurrentPage(1);
-    // Focus search bar
-    setTimeout(() => {
-      const input = document.getElementById('main-search-input') || document.getElementById('mobile-search-trigger');
-      input?.focus();
-    }, 100);
-  };
+
 
   const exportToPDF = (exportData = debtors) => {
-    const sortedData = [...exportData].sort((a, b) => a.name.localeCompare(b.name));
-    exportData = sortedData;
+    const data = [...exportData].sort((a, b) => a.name.localeCompare(b.name));
     const doc = new jsPDF();
     const pageW = doc.internal.pageSize.getWidth();
     const pageH = doc.internal.pageSize.getHeight();
@@ -159,9 +144,9 @@ export default function Dashboard() {
       day: '2-digit', month: 'short', year: 'numeric'
     }).toUpperCase();
 
-    const totalPaidCount = exportData.filter(d => d.status === 'paid').length;
+    const totalPaidCount = data.filter(d => d.status === 'paid').length;
     // Overall Pay Total = sum of all payments made across all customers
-    const overallPayTotal = exportData.reduce((acc, d) => {
+    const overallPayTotal = data.reduce((acc, d) => {
       const paid = (d.payment_history || [])
         .filter(p => p.type !== 'edit' && p.type !== 'manual_adjustment' && p.amount > 0)
         .reduce((s, p) => s + parseFloat(p.amount || 0), 0);
@@ -183,7 +168,7 @@ export default function Dashboard() {
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(255, 235, 220);
     doc.text(`DATE GENERATED: ${generatedDate}`, margin, 24);
-    doc.text(`TOTAL CUSTOMERS: ${exportData.length}`, margin, 30);
+    doc.text(`TOTAL CUSTOMERS: ${data.length}`, margin, 30);
 
     // ════════════════════════════════════════════════════════════════════
     //  2. SUMMARY BOXES (top-right)
@@ -213,7 +198,7 @@ export default function Dashboard() {
     doc.text('CUSTOMERS SETTLED', box2X + 3, 13);
     doc.setFontSize(11);
     doc.setTextColor(...C.white);
-    doc.text(`${totalPaidCount} / ${exportData.length}`, box2X + 3, 22);
+    doc.text(`${totalPaidCount} / ${data.length}`, box2X + 3, 22);
 
     // ════════════════════════════════════════════════════════════════════
     //  3. TABLE SECTION HEADER BAR
@@ -229,13 +214,13 @@ export default function Dashboard() {
     // ════════════════════════════════════════════════════════════════════
     //  4. TABLE DATA WITH ROW NUMBERS
     // ════════════════════════════════════════════════════════════════════
-    const isCompletedExport = exportData.length > 0 && exportData.every(d => d.status === 'paid');
+    const isCompletedExport = data.length > 0 && data.every(d => d.status === 'paid');
 
     const tableHeaders = isCompletedExport
       ? ['#', 'CUSTOMER NAME', 'PURCHASE DATE', 'TOTAL PAID', 'DATE SETTLED', 'STATUS']
       : ['#', 'CUSTOMER NAME', 'PURCHASE DATE', 'ADVANCE', 'BALANCE', 'STATUS'];
 
-    const tableData = exportData.map((d, idx) => {
+    const tableData = data.map((d, idx) => {
       const displayStatus = d.status === 'active' ? 'OUTSTANDING' : d.status.toUpperCase();
       const rowNum = String(idx + 1);
       if (isCompletedExport) {
@@ -1198,7 +1183,7 @@ export default function Dashboard() {
 
       {/* Settings Modal */}
       <SettingsModal open={settingsOpen} onClose={() => setSettingsOpen(false)} />
-      <MobileNav onAddClick={() => { setPwAction({ type: 'add' }); setPwOpen(true); }} />
+
 
       <SearchOverlay 
         open={searchOpen} 

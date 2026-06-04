@@ -3,28 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { Trash2, CreditCard, Check, MoreVertical } from 'lucide-react';
 
-const fmt = (n) =>
-  '₱' + parseFloat(n || 0).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-
-const fmtDate = (d) => {
-  if (!d) return '—';
-  try {
-    const isDateOnly = d.length === 10 || !d.includes('T');
-    const date = isDateOnly ? new Date(d + 'T12:00:00') : new Date(d);
-    if (isNaN(date.getTime())) return '—';
-    return date.toLocaleDateString('en-PH', { year: 'numeric', month: 'short', day: 'numeric' });
-  } catch {
-    return '—';
-  }
-};
-
-const initials = (name) =>
-  name
-    .split(' ')
-    .map((w) => w[0])
-    .slice(0, 2)
-    .join('')
-    .toUpperCase();
+import { fmt, fmtDate, initials } from '../utils/format';
 
 export default function DebtorCard({ debtor, onDelete, onPay, index, selected, onToggleSelect, isSelectionMode }) {
   const navigate = useNavigate();

@@ -1,11 +1,12 @@
 import axios from 'axios';
 
-const ARC_PW_KEY      = 'arc_pw_hash';
-const ARC_ATTEMPTS_KEY = 'arc_pw_attempts';
-const ARC_LOCKOUT_KEY  = 'arc_pw_lockout';
-const DEFAULT_PASSWORD = 'arc2026';
-const MAX_ATTEMPTS     = 5;
-const LOCKOUT_MS       = 60_000; // 60 seconds
+const ARC_PW_KEY          = 'arc_pw_hash';
+const ARC_DELETED_LOGS_KEY = 'arc_deleted_logs';
+const ARC_ATTEMPTS_KEY    = 'arc_pw_attempts';
+const ARC_LOCKOUT_KEY     = 'arc_pw_lockout';
+const DEFAULT_PASSWORD    = 'arc2026';
+const MAX_ATTEMPTS        = 5;
+const LOCKOUT_MS          = 60_000; // 60 seconds
 
 const API_URL = import.meta.env.VITE_API_URL || '';
 
@@ -16,8 +17,7 @@ export async function sha256(str) {
     .join('');
 }
 
-/** Legacy: No longer used since backend seeds password, kept for safety. */
-export async function initPassword() {}
+
 
 /** Returns seconds remaining in lockout (0 = not locked). */
 function lockoutRemaining() {
@@ -86,7 +86,7 @@ export async function changePassword(currentPassword, newPassword) {
 
 export async function getAuditLogs() {
   try {
-    const res = await axios.get(`${API_URL}/api/settings/arc_deleted_logs`);
+    const res = await axios.get(`${API_URL}/api/settings/${ARC_DELETED_LOGS_KEY}`);
     return Array.isArray(res.data.value) ? res.data.value : [];
   } catch (err) {
     if (err.response?.status === 404) return [];
@@ -99,7 +99,7 @@ export async function addAuditLog(newLogs) {
   try {
     const existing = await getAuditLogs();
     const updated = [...existing, ...(Array.isArray(newLogs) ? newLogs : [newLogs])];
-    await axios.put(`${API_URL}/api/settings/arc_deleted_logs`, { value: updated });
+    await axios.put(`${API_URL}/api/settings/${ARC_DELETED_LOGS_KEY}`, { value: updated });
   } catch (err) {
     console.error('Failed to save audit logs', err);
   }

@@ -17,7 +17,7 @@ import toast from 'react-hot-toast';
 import DebtorModal from '../components/DebtorModal';
 import PayModal from '../components/PayModal';
 import ConfirmModal from '../components/ConfirmModal';
-import MobileNav from '../components/MobileNav';
+
 import SearchOverlay from '../components/SearchOverlay';
 import PasswordModal from '../components/PasswordModal';
 import { addAuditLog } from '../utils/auth';
@@ -1007,7 +1007,7 @@ export default function CustomerDetail() {
         </button>
       </div>
 
-      <MobileNav />
+
 
       <SearchOverlay 
         open={searchOpen} 

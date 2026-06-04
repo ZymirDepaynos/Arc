@@ -28,12 +28,12 @@ export default function DebtorCard({ debtor, onDelete, onPay, index, selected, o
     }
   };
 
-  // Status mapping to LoadLogic dot style
+  
   const getStatusClass = () => {
     switch (debtor.status) {
-      case 'active': return 'active'; // yellow-ish
-      case 'partial': return 'partial'; // blue-ish
-      case 'paid': return 'paid'; // green
+      case 'active': return 'active'; 
+      case 'partial': return 'partial'; 
+      case 'paid': return 'paid'; 
       default: return '';
     }
   };
@@ -56,7 +56,7 @@ export default function DebtorCard({ debtor, onDelete, onPay, index, selected, o
       onClick={handleRowClick}
       style={{ cursor: 'pointer' }}
     >
-      {/* Selection Checkbox */}
+      {}
       {isSelectionMode && (
         <td className="col-selection">
           <div 
@@ -70,12 +70,12 @@ export default function DebtorCard({ debtor, onDelete, onPay, index, selected, o
           </div>
         </td>
       )}
-      {/* ID */}
+      {}
       <td className="col-receipt hide-mobile" style={{ color: 'var(--text-secondary)', fontSize: 13, fontWeight: 600 }}>
         {debtor.receipt_numbers && debtor.receipt_numbers.length > 0 ? `#${debtor.receipt_numbers[0]}` : '—'}
       </td>
 
-      {/* Name */}
+      {}
       <td className="col-name">
         <div className="table-avatar-cell">
           <div className="row-avatar" style={{ border: '1px solid rgba(0, 245, 160, 0.2)' }}>{initials(debtor.name)}</div>
@@ -83,12 +83,12 @@ export default function DebtorCard({ debtor, onDelete, onPay, index, selected, o
         </div>
       </td>
 
-      {/* Date of Purchase — fills the empty column slot */}
+      {}
       <td className="col-date" style={{ color: 'var(--text-secondary)', fontSize: 13 }}>
         {fmtDate(debtor.date_borrowed)}
       </td>
 
-      {/* Initial Balance */}
+      {}
       <td className="col-init-balance hide-mobile">
         {debtor.original_debt > 0
           ? <span style={{ fontWeight: 700, color: 'var(--status-active-text)' }}>{fmt(debtor.original_debt)}</span>
@@ -96,12 +96,12 @@ export default function DebtorCard({ debtor, onDelete, onPay, index, selected, o
         }
       </td>
 
-      {/* Balance */}
+      {}
       <td className="col-balance">
         <span style={{ fontWeight: 700, color: 'var(--text-primary)' }}>{fmt(debtor.balance)}</span>
       </td>
 
-      {/* Status */}
+      {}
       <td className="col-status hide-tablet">
         <div className="status-dot">
           <span className={`dot ${getStatusClass()}`}></span>
@@ -109,10 +109,10 @@ export default function DebtorCard({ debtor, onDelete, onPay, index, selected, o
         </div>
       </td>
 
-      {/* Actions */}
+      {}
       <td className="col-actions" onClick={(e) => e.stopPropagation()}>
         <div className="action-cell">
-          {/* Desktop buttons: hidden on small screens */}
+          {}
           <div className="desktop-actions" style={{ display: 'flex', gap: 10 }}>
             {debtor.status !== 'paid' && (
               <button
@@ -142,7 +142,7 @@ export default function DebtorCard({ debtor, onDelete, onPay, index, selected, o
             </button>
           </div>
 
-          {/* Mobile 3-dot menu */}
+          {}
           <div className="mobile-actions" ref={menuRef} style={{ position: 'relative' }}>
             <button 
               className="btn-icon-sm" 

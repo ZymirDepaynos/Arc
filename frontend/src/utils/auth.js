@@ -6,7 +6,7 @@ const ARC_ATTEMPTS_KEY    = 'arc_pw_attempts';
 const ARC_LOCKOUT_KEY     = 'arc_pw_lockout';
 const DEFAULT_PASSWORD    = 'arc2026';
 const MAX_ATTEMPTS        = 5;
-const LOCKOUT_MS          = 60_000; // 60 seconds
+const LOCKOUT_MS          = 60_000; 
 
 const API_URL = import.meta.env.VITE_API_URL || '';
 
@@ -26,12 +26,6 @@ function lockoutRemaining() {
   return 0;
 }
 
-/**
- * Verify a password attempt.
- * Returns { success: true }
- *       | { success: false, locked: true, remaining: <seconds> }
- *       | { success: false, locked: false, attemptsLeft: <n> }
- */
 export async function verifyPassword(password) {
   const remaining = lockoutRemaining();
   if (remaining > 0) return { success: false, locked: true, remaining };
@@ -69,11 +63,6 @@ export async function verifyPassword(password) {
   return { success: false, locked: false, attemptsLeft: MAX_ATTEMPTS - attempts };
 }
 
-/**
- * Change the stored password.
- * Returns the same shape as verifyPassword (currentPassword must pass first),
- * or { success: true } on success.
- */
 export async function changePassword(currentPassword, newPassword) {
   const result = await verifyPassword(currentPassword);
   if (!result.success) return result;

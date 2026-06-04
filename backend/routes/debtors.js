@@ -1,8 +1,3 @@
-/**
- * LOCAL DEV BACKEND — backend/routes/debtors.js
- * Used only by `npm run server` (server.js) for local development.
- * The production API is in /api/routes/debtors.js (ESM, deployed to Vercel).
- */
 const express = require('express');
 const router = express.Router();
 const { createClient } = require('@supabase/supabase-js');
@@ -12,7 +7,7 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
-// GET all debtors (with optional search)
+
 router.get('/', async (req, res) => {
   try {
     const { search } = req.query;
@@ -33,7 +28,7 @@ router.get('/', async (req, res) => {
   }
 });
 
-// GET single debtor
+
 router.get('/:id', async (req, res) => {
   try {
     const { data, error } = await supabase
@@ -48,7 +43,7 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-// POST create debtor
+
 router.post('/', async (req, res) => {
   try {
     const {
@@ -81,7 +76,7 @@ router.post('/', async (req, res) => {
   }
 });
 
-// PUT update debtor
+
 router.put('/:id', async (req, res) => {
   try {
     const {
@@ -118,7 +113,7 @@ router.put('/:id', async (req, res) => {
   }
 });
 
-// DELETE debtor
+
 router.delete('/:id', async (req, res) => {
   try {
     const { error } = await supabase
@@ -133,12 +128,12 @@ router.delete('/:id', async (req, res) => {
   }
 });
 
-// POST record a payment
+
 router.post('/:id/pay', async (req, res) => {
   try {
     const { amount, date } = req.body;
 
-    // Get current record
+    
     const { data: current, error: fetchError } = await supabase
       .from('debtors')
       .select('balance, advance_payment, payment_history')
@@ -158,7 +153,7 @@ router.post('/:id/pay', async (req, res) => {
     const newAdvance = parseFloat(current.advance_payment) + payAmount;
     const newStatus = newBalance === 0 ? 'paid' : 'partial';
     
-    // PHT Compliance: Use client date or fallback to server local YYYY-MM-DD
+    
     const paymentDate = date || new Date().toISOString().split('T')[0];
 
     const newPaymentEntry = {

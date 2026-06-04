@@ -8,7 +8,7 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
-// GET a setting
+
 router.get('/:key', async (req, res) => {
   try {
     const { data, error } = await supabase
@@ -29,7 +29,7 @@ router.get('/:key', async (req, res) => {
   }
 });
 
-// PUT update a setting
+
 router.put('/:key', async (req, res) => {
   try {
     const { value } = req.body;

@@ -38,20 +38,20 @@ export default function Dashboard() {
   const [searchOpen, setSearchOpen] = useState(false);
   const [selectedIds, setSelectedIds] = useState([]);
   const [isSelectionMode, setIsSelectionMode] = useState(false);
-  const [sortOrder, setSortOrder] = useState('recently-added'); // recently-added, date-desc, date-asc, a-z
-  const [bulkConfirm, setBulkConfirm] = useState(null); // { type: 'paid' | 'delete' }
+  const [sortOrder, setSortOrder] = useState('recently-added');
+  const [bulkConfirm, setBulkConfirm] = useState(null);
   const [exportFilterOpen, setExportFilterOpen] = useState(false);
-  const [exportFilterType, setExportFilterType] = useState(null); // 'pdf' | 'csv'
+  const [exportFilterType, setExportFilterType] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageInputVal, setPageInputVal] = useState('1');
-  const [searchMode, setSearchMode] = useState('all'); // 'all' | 'name' | 'date'
+  const [searchMode, setSearchMode] = useState('all');
   const [matchCase, setMatchCase] = useState(false);
   const [wholeWord, setWholeWord] = useState(false);
   const itemsPerPage = 10;
 
-  // Password gate
-  const [pwOpen, setPwOpen]       = useState(false);
-  const [pwAction, setPwAction]   = useState(null); // { type: 'edit'|'delete', data }
+
+  const [pwOpen, setPwOpen] = useState(false);
+  const [pwAction, setPwAction] = useState(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
 
   const SEARCH_PLACEHOLDER = 'Search by name or date (e.g. May, May 4, 2026, May 2026).';
@@ -73,13 +73,13 @@ export default function Dashboard() {
       selectedIds.forEach(id => {
         const debtor = debtors.find(d => d.id === id);
         if (debtor) {
-           newLogs.push({
-             id: `deleted-${id}-${Date.now()}`,
-             date: new Date().toISOString(),
-             customerName: debtor.name,
-             type: 'deleted',
-             amount: debtor.balance
-           });
+          newLogs.push({
+            id: `deleted-${id}-${Date.now()}`,
+            date: new Date().toISOString(),
+            customerName: debtor.name,
+            type: 'deleted',
+            amount: debtor.balance
+          });
         }
       });
       await addAuditLog(newLogs);
@@ -127,17 +127,16 @@ export default function Dashboard() {
     const pageH = doc.internal.pageSize.getHeight();
     const margin = 14;
 
-    // ── Color palette (warm peach / terracotta) ───────────────────────────
     const C = {
-      header:    [214, 150, 114],  // terracotta/salmon
-      headerDark:[180, 110,  80],  // darker terracotta
-      peachLight:[252, 235, 225],  // very light peach — alt rows
-      peachMid:  [240, 200, 178],  // mid peach — table header row
-      border:    [210, 170, 150],  // peach-tan border
-      textDark:  [ 80,  45,  20],  // warm dark brown
-      textBody:  [100,  65,  40],  // warm brown body
-      textMuted: [160, 120, 100],  // muted warm
-      white:     [255, 255, 255],
+      header: [214, 150, 114],
+      headerDark: [180, 110, 80],
+      peachLight: [252, 235, 225],
+      peachMid: [240, 200, 178],
+      border: [210, 170, 150],
+      textDark: [80, 45, 20],
+      textBody: [100, 65, 40],
+      textMuted: [160, 120, 100],
+      white: [255, 255, 255],
     };
 
     const generatedDate = new Date().toLocaleDateString('en-US', {
@@ -145,7 +144,7 @@ export default function Dashboard() {
     }).toUpperCase();
 
     const totalPaidCount = data.filter(d => d.status === 'paid').length;
-    // Overall Pay Total = sum of all payments made across all customers
+
     const overallPayTotal = data.reduce((acc, d) => {
       const paid = (d.payment_history || [])
         .filter(p => p.type !== 'edit' && p.type !== 'manual_adjustment' && p.amount > 0)
@@ -153,9 +152,6 @@ export default function Dashboard() {
       return acc + paid;
     }, 0);
 
-    // ════════════════════════════════════════════════════════════════════
-    //  1. HEADER BAND
-    // ════════════════════════════════════════════════════════════════════
     doc.setFillColor(...C.header);
     doc.rect(0, 0, pageW, 40, 'F');
 
@@ -170,15 +166,13 @@ export default function Dashboard() {
     doc.text(`DATE GENERATED: ${generatedDate}`, margin, 24);
     doc.text(`TOTAL CUSTOMERS: ${data.length}`, margin, 30);
 
-    // ════════════════════════════════════════════════════════════════════
-    //  2. SUMMARY BOXES (top-right)
-    // ════════════════════════════════════════════════════════════════════
+
     const boxW = 44;
     const boxH = 28;
     const box1X = pageW - margin - boxW * 2 - 4;
     const box2X = pageW - margin - boxW;
 
-    // Box 1 — Overall Pay Total
+
     doc.setFillColor(...C.headerDark);
     doc.roundedRect(box1X, 6, boxW, boxH, 2, 2, 'F');
     doc.setFontSize(6.5);
@@ -189,7 +183,7 @@ export default function Dashboard() {
     doc.setTextColor(...C.white);
     doc.text('P' + overallPayTotal.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 }), box1X + 3, 22);
 
-    // Box 2 — Customers Settled
+
     doc.setFillColor(...C.headerDark);
     doc.roundedRect(box2X, 6, boxW, boxH, 2, 2, 'F');
     doc.setFontSize(6.5);
@@ -200,9 +194,6 @@ export default function Dashboard() {
     doc.setTextColor(...C.white);
     doc.text(`${totalPaidCount} / ${data.length}`, box2X + 3, 22);
 
-    // ════════════════════════════════════════════════════════════════════
-    //  3. TABLE SECTION HEADER BAR
-    // ════════════════════════════════════════════════════════════════════
     const tableBarY = 46;
     doc.setFillColor(...C.header);
     doc.rect(margin, tableBarY, pageW - margin * 2, 8, 'F');
@@ -211,9 +202,6 @@ export default function Dashboard() {
     doc.setFont('helvetica', 'bold');
     doc.text('CUSTOMER RECORDS', margin + 3, tableBarY + 5.5);
 
-    // ════════════════════════════════════════════════════════════════════
-    //  4. TABLE DATA WITH ROW NUMBERS
-    // ════════════════════════════════════════════════════════════════════
     const isCompletedExport = data.length > 0 && data.every(d => d.status === 'paid');
 
     const tableHeaders = isCompletedExport
@@ -244,9 +232,6 @@ export default function Dashboard() {
       }
     });
 
-    // ════════════════════════════════════════════════════════════════════
-    //  5. RENDER TABLE
-    // ════════════════════════════════════════════════════════════════════
     autoTable(doc, {
       startY: tableBarY + 8,
       head: [tableHeaders],
@@ -269,14 +254,14 @@ export default function Dashboard() {
       alternateRowStyles: { fillColor: C.peachLight },
       margin: { left: margin, right: margin },
       columnStyles: {
-        0: { cellWidth: 13, halign: 'center', textColor: C.textMuted }, // # (room for 3-digit)
-        1: { cellWidth: 47 },                                            // Name
-        2: { cellWidth: 32 },                                            // Date (no wrap)
-        3: { cellWidth: 28, halign: 'right' },                          // Advance/Total Paid
-        4: { cellWidth: 30, halign: 'right', fontStyle: 'bold' },       // Balance/Date Settled
-        5: { cellWidth: 32, halign: 'center' },                         // Status
+        0: { cellWidth: 13, halign: 'center', textColor: C.textMuted },
+        1: { cellWidth: 47 },
+        2: { cellWidth: 32 },
+        3: { cellWidth: 28, halign: 'right' },
+        4: { cellWidth: 30, halign: 'right', fontStyle: 'bold' },
+        5: { cellWidth: 32, halign: 'center' },
       },
-      // Total: 13+47+32+28+30+32 = 182mm
+
       didDrawPage: (hookData) => {
         const pageCount = doc.internal.getNumberOfPages();
         const currentPage = hookData.pageNumber;
@@ -301,7 +286,7 @@ export default function Dashboard() {
     const sortedData = [...exportData].sort((a, b) => a.name.localeCompare(b.name));
     const rows = sortedData.map(d => [
       d.id,
-      `"${d.name.replace(/"/g, '""')}"`, // Escape quotes for CSV
+      `"${d.name.replace(/"/g, '""')}"`,
       d.original_debt || 0,
       d.date_borrowed,
       d.advance_payment,
@@ -312,14 +297,14 @@ export default function Dashboard() {
     const csvContent = headers.join(",") + "\n" + rows.map(e => e.join(",")).join("\n");
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
-    
+
     const link = document.createElement("a");
     link.setAttribute("href", url);
     link.setAttribute("download", `Arc_Full_Data_${new Date().toISOString().split('T')[0]}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    URL.revokeObjectURL(url); // Clean up memory
+    URL.revokeObjectURL(url);
     toast.success('Database Exported for Excel');
     setDataMenuOpen(false);
   };
@@ -354,7 +339,7 @@ export default function Dashboard() {
         const text = event.target.result;
         const lines = text.split('\n').filter(line => line.trim());
         const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
-        
+
         const data = lines.slice(1).map(line => {
           const values = line.split(',').map(v => v.trim().replace(/^"|"$/g, ''));
           const obj = {};
@@ -376,7 +361,7 @@ export default function Dashboard() {
           success: `Successfully imported ${data.length} customers!`,
           error: 'Failed to import CSV'
         });
-        
+
         setDataMenuOpen(false);
         e.target.value = ''; // Reset input
       } catch (err) {
@@ -392,7 +377,6 @@ export default function Dashboard() {
       ...form,
       balance: rawBalance,
       original_debt: rawBalance,
-      // Strip UI-only display keys
       date_borrowed_text: undefined,
       adjustment_date_text: undefined,
       current_balance: undefined,
@@ -407,7 +391,7 @@ export default function Dashboard() {
   const handleEdit = async (form) => {
     const rawBalance = parseFloat(form.balance || 0);
 
-    // Auto-settle: editing Initial Balance to 0 fully settles the account
+
     if (rawBalance === 0 && editDebtor && editDebtor.status !== 'paid' && editDebtor.balance > 0) {
       await toast.promise(recordPayment(editDebtor.id, editDebtor.balance), {
         loading: 'Settling account…',
@@ -417,7 +401,7 @@ export default function Dashboard() {
       return;
     }
 
-    // Audit changes for history
+
     const old = editDebtor;
     const changes = [];
     const fmtD = (d) => d ? new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'N/A';
@@ -443,10 +427,10 @@ export default function Dashboard() {
     const payload = {
       ...form,
       original_debt: rawBalance,
-      balance: old.balance, // Don't modify current balance during edit
-      advance_payment: old.advance_payment, // Don't modify advance payment
+      balance: old.balance,
+      advance_payment: old.advance_payment,
       payment_history: updatedHistory,
-      // Strip UI-only display keys
+
       date_borrowed_text: undefined,
       current_balance: undefined,
     };
@@ -483,18 +467,17 @@ export default function Dashboard() {
     });
   };
 
-  // Partial date matching: 'may' → all May, 'may 4' → all May 4th any year,
-  // 'may 4 2026' → exact, 'may 2026' → all May in 2026, '2026' → all in 2026
+
+
   const matchesDate = (dateBorrowed, rawInput) => {
     if (!dateBorrowed || !rawInput) return false;
-    const storedDate = dateBorrowed.substring(0, 10); // YYYY-MM-DD
+    const storedDate = dateBorrowed.substring(0, 10);
     const [syear, smonth, sday] = storedDate.split('-').map(Number);
 
-    const MONTH_NAMES = ['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'];
+    const MONTH_NAMES = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
     const clean = rawInput.toLowerCase().replace(/,/g, '').trim();
     const parts = clean.split(/\s+/);
 
-    // --- Year-only search: '2026' → match any record in that year ---
     if (parts.length === 1 && /^\d{4}$/.test(parts[0])) {
       const yearNum = parseInt(parts[0]);
       if (yearNum > 1900 && yearNum < 3000) return syear === yearNum;
@@ -510,24 +493,24 @@ export default function Dashboard() {
       }
       const secondNum = parseInt(parts[1]);
       if (!isNaN(secondNum)) {
-        // Check if the second part is a year (> 1900) or a day
+
         if (secondNum > 1900 && secondNum < 3000 && parts.length === 2) {
-          // 'may 2026' → match month + year, any day
+
           return smonth === monthNum && syear === secondNum;
         }
         if (parts.length === 2) {
-          // 'may 4' → match month + day, any year
+
           return smonth === monthNum && sday === secondNum;
         }
         const thirdNum = parseInt(parts[2]);
         if (parts.length >= 3 && !isNaN(thirdNum) && thirdNum > 1900) {
-          // 'may 4 2026' → exact date match
+
           return smonth === monthNum && sday === secondNum && syear === thirdNum;
         }
       }
     }
 
-    // Fallback: try exact ISO parse
+
     const parsed = parseNaturalDate(rawInput);
     if (parsed) return storedDate === parsed;
 
@@ -536,7 +519,7 @@ export default function Dashboard() {
 
   const filteredCustomers = debtors
     .filter(d => {
-      // 1. Apply status filter first
+
       if (filterStatus === 'Paid' && d.status !== 'paid') return false;
       if (filterStatus === 'Active' && d.status !== 'active') return false;
       if (filterStatus === 'Partial' && d.status !== 'partial') return false;
@@ -544,28 +527,25 @@ export default function Dashboard() {
       const rawS = search.trim();
       if (!rawS) return true;
 
-      // Apply case sensitivity
+
       const term = matchCase ? rawS : rawS.toLowerCase();
       const s = term.startsWith('#') ? term.substring(1) : term;
 
-      // --- Name matching (case + whole-word aware) ---
       let nameMatch;
       if (wholeWord) {
-        // Exact match comparison
+
         const nameToCompare = matchCase ? d.name : d.name.toLowerCase();
         nameMatch = (nameToCompare === s);
       } else {
-        // Partial match (substring)
+
         const nameToCompare = matchCase ? d.name : d.name.toLowerCase();
         nameMatch = nameToCompare.includes(s);
       }
 
-      // --- Date matching (always case-insensitive, case/whole-word flags don't apply) ---
       const dateMatch = matchesDate(d.date_borrowed, rawS);
 
-      // --- Receipt / ID matching ---
-      const idMatch = wholeWord 
-        ? d.id.toString() === s 
+      const idMatch = wholeWord
+        ? d.id.toString() === s
         : d.id.toString().includes(s);
 
       const receiptMatch = d.receipt_numbers &&
@@ -574,7 +554,6 @@ export default function Dashboard() {
           return wholeWord ? rComp === s : rComp.includes(s);
         });
 
-      // --- Scoped to searchMode ---
       let matchesSearch;
       if (searchMode === 'name') {
         matchesSearch = nameMatch;
@@ -590,7 +569,7 @@ export default function Dashboard() {
       if (sortOrder === 'a-z') return a.name.localeCompare(b.name);
       if (sortOrder === 'date-asc') return new Date(a.date_borrowed) - new Date(b.date_borrowed);
       if (sortOrder === 'date-desc') return new Date(b.date_borrowed) - new Date(a.date_borrowed);
-      // default: recent-activity — sort by updated_at desc so any transaction (payment, edit, etc.) bubbles to top
+
       const aTime = new Date(a.updated_at || a.created_at || 0).getTime();
       const bTime = new Date(b.updated_at || b.created_at || 0).getTime();
       return bTime - aTime;
@@ -611,21 +590,21 @@ export default function Dashboard() {
     }
   };
 
-  // Reset to first page + clear selections when filtering
+
   useEffect(() => {
     setCurrentPage(1);
     setPageInputVal('1');
     setSelectedIds([]);
   }, [search, filterStatus, sortOrder, searchMode, matchCase, wholeWord]);
 
-  // Clear selections when page changes
+
   useEffect(() => {
     setSelectedIds([]);
   }, [currentPage]);
 
   return (
     <>
-      {/* Mobile Top Header (App-like) */}
+      { }
       <div className="hide-desktop" style={{ padding: '24px 24px 0' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
           <div>
@@ -641,7 +620,7 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Desktop Top Bar */}
+      { }
       <div className="top-bar hide-mobile" style={{ flexWrap: 'nowrap' }}>
         <div className="logo-brand" onClick={() => navigate('/')} style={{ cursor: 'pointer' }}>
           <span className="logo-text">Arc</span>
@@ -649,7 +628,7 @@ export default function Dashboard() {
 
         <div className="top-main-actions">
           <div className="search-wrap search-wrap-enhanced" style={{ position: 'relative' }}>
-            {/* Mode pill tabs */}
+            { }
             <div className="search-mode-tabs">
               {[['all', 'All'], ['name', 'Name'], ['date', 'Date']].map(([mode, label]) => (
                 <button
@@ -703,14 +682,14 @@ export default function Dashboard() {
               )}
             </div>
           </div>
-          
+
           <div className="action-buttons-group">
             {/* Data Actions Dropdown */}
             <div style={{ position: 'relative' }}>
-              <button 
-                className="calendar-pill-btn" 
+              <button
+                className="calendar-pill-btn"
                 onClick={() => setDataMenuOpen(!dataMenuOpen)}
-                style={{ 
+                style={{
                   background: dataMenuOpen ? 'var(--accent)' : 'var(--bg-card)',
                   color: dataMenuOpen ? '#000' : 'var(--text-primary)',
                   borderColor: dataMenuOpen ? 'var(--accent)' : 'var(--border)'
@@ -723,11 +702,11 @@ export default function Dashboard() {
               <AnimatePresence>
                 {dataMenuOpen && (
                   <>
-                    <div 
-                      style={{ position: 'fixed', inset: 0, zIndex: 99 }} 
-                      onClick={() => setDataMenuOpen(false)} 
+                    <div
+                      style={{ position: 'fixed', inset: 0, zIndex: 99 }}
+                      onClick={() => setDataMenuOpen(false)}
                     />
-                    <motion.div 
+                    <motion.div
                       className="dropdown-menu"
                       initial={{ opacity: 0, y: 10, scale: 0.95 }}
                       animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -749,11 +728,11 @@ export default function Dashboard() {
                       <label className="dropdown-item" style={{ cursor: 'pointer' }}>
                         <Plus size={16} />
                         <span>Import from CSV</span>
-                        <input 
-                          type="file" 
-                          accept=".csv" 
-                          onChange={handleImportCSV} 
-                          style={{ display: 'none' }} 
+                        <input
+                          type="file"
+                          accept=".csv"
+                          onChange={handleImportCSV}
+                          style={{ display: 'none' }}
                         />
                       </label>
                     </motion.div>
@@ -762,8 +741,8 @@ export default function Dashboard() {
               </AnimatePresence>
             </div>
 
-            <button 
-              className="calendar-pill-btn" 
+            <button
+              className="calendar-pill-btn"
               onClick={() => navigate('/calendar')}
               title="Calendar"
             >
@@ -787,10 +766,10 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Mobile Search Bar */}
+      { }
       <div className="hide-desktop" style={{ padding: '0 24px 24px' }}>
         <div className="search-wrap search-wrap-enhanced">
-          {/* Mobile mode tabs */}
+          { }
           <div className="search-mode-tabs">
             {[['all', 'All'], ['name', 'Name'], ['date', 'Date']].map(([mode, label]) => (
               <button
@@ -863,7 +842,7 @@ export default function Dashboard() {
         searchLabel={search.trim() || null}
       />
 
-      {/* Table Section */}
+      { }
       <div className="table-section">
         <div className="table-header-row">
           <div className="table-header-left">
@@ -872,13 +851,13 @@ export default function Dashboard() {
               <div className="table-stats hide-mobile">
                 Total Customers: {filteredCustomers.length}
               </div>
-              <button 
+              <button
                 className={`filter-chip ${isSelectionMode ? 'active' : ''}`}
                 onClick={() => {
                   setIsSelectionMode(!isSelectionMode);
                   if (!isSelectionMode) setSelectedIds([]);
                 }}
-                style={{ 
+                style={{
                   background: isSelectionMode ? 'var(--accent)' : 'var(--bg-card)',
                   color: isSelectionMode ? '#000' : 'var(--text-primary)',
                   borderColor: isSelectionMode ? 'var(--accent)' : 'var(--border)',
@@ -900,8 +879,8 @@ export default function Dashboard() {
           <div className="table-filters">
             <div className="filter-chips hide-mobile">
               {['All', 'Outstanding', 'Partial', 'Paid'].map(status => (
-                <button 
-                  key={status} 
+                <button
+                  key={status}
                   className={`filter-chip ${filterStatus === (status === 'Outstanding' ? 'Active' : status) ? 'active' : ''}`}
                   onClick={() => {
                     setFilterStatus(status === 'Outstanding' ? 'Active' : status);
@@ -918,7 +897,7 @@ export default function Dashboard() {
               ))}
             </div>
 
-            <select 
+            <select
               className="filter-select-mobile hide-desktop"
               value={filterStatus}
               onChange={(e) => setFilterStatus(e.target.value)}
@@ -930,10 +909,10 @@ export default function Dashboard() {
             </select>
 
             <div style={{ position: 'relative' }}>
-              <button 
-                className="calendar-pill-btn" 
+              <button
+                className="calendar-pill-btn"
                 onClick={() => setSortMenuOpen(!sortMenuOpen)}
-                style={{ 
+                style={{
                   background: sortMenuOpen ? 'var(--accent)' : 'var(--bg-card)',
                   color: sortMenuOpen ? '#000' : 'var(--text-primary)',
                   borderColor: sortMenuOpen ? 'var(--accent)' : 'var(--border)',
@@ -948,11 +927,11 @@ export default function Dashboard() {
               <AnimatePresence>
                 {sortMenuOpen && (
                   <>
-                    <div 
-                      style={{ position: 'fixed', inset: 0, zIndex: 99 }} 
-                      onClick={() => setSortMenuOpen(false)} 
+                    <div
+                      style={{ position: 'fixed', inset: 0, zIndex: 99 }}
+                      onClick={() => setSortMenuOpen(false)}
                     />
-                    <motion.div 
+                    <motion.div
                       className="dropdown-menu"
                       style={{ right: 0, left: 'auto', width: 200 }}
                       initial={{ opacity: 0, y: 10, scale: 0.95 }}
@@ -1000,7 +979,7 @@ export default function Dashboard() {
                 <tr>
                   {isSelectionMode && (
                     <th className="col-selection">
-                      <div 
+                      <div
                         className={`checkbox-custom ${currentCustomers.length > 0 && currentCustomers.every(d => selectedIds.includes(d.id)) ? 'checked' : ''}`}
                         onClick={toggleAll}
                       >
@@ -1035,14 +1014,14 @@ export default function Dashboard() {
               </motion.tbody>
             </table>
 
-            {/* Pagination Controls */}
+            { }
             {totalPages > 1 && (
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 24, padding: '0 8px', flexWrap: 'wrap', gap: 12 }}>
                 <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>
                   Showing {indexOfFirstItem + 1}–{Math.min(indexOfLastItem, filteredCustomers.length)} of {filteredCustomers.length} customers
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  {/* Prev */}
+                  { }
                   <button
                     className="btn btn-outline btn-sm"
                     disabled={currentPage === 1}
@@ -1056,7 +1035,7 @@ export default function Dashboard() {
                     ‹ Prev
                   </button>
 
-                  {/* Page Input */}
+                  { }
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                     <input
                       id="pagination-page-input"
@@ -1109,7 +1088,7 @@ export default function Dashboard() {
                     </span>
                   </div>
 
-                  {/* Next */}
+                  { }
                   <button
                     className="btn btn-outline btn-sm"
                     disabled={currentPage === totalPages}
@@ -1129,7 +1108,7 @@ export default function Dashboard() {
         )}
       </div>
 
-      {/* Modals */}
+      { }
       <DebtorModal open={addOpen} onClose={() => setAddOpen(false)} onSubmit={handleAdd} />
       <DebtorModal
         open={!!editDebtor}
@@ -1160,44 +1139,44 @@ export default function Dashboard() {
         message={`Are you sure you want to permanently delete the record for ${deleteData?.name}? This cannot be undone.`}
       />
 
-      {/* Password Gate */}
+      { }
       <PasswordModal
         open={pwOpen}
         onClose={() => { setPwOpen(false); setPwAction(null); }}
         action={
-          pwAction?.type === 'add'    ? 'add a new customer' :
-          pwAction?.type === 'edit'   ? `edit ${pwAction?.data?.name}'s profile` :
-          pwAction?.type === 'settle' ? `fully settle ${pwAction?.data?.name}'s debt` :
-          pwAction?.type === 'pay'    ? `record a payment for ${pwAction?.data?.name}` :
-          pwAction?.type === 'bulk_paid' ? 'mark selected customers as paid' :
-          pwAction?.type === 'bulk_delete' ? 'delete selected customers' :
-          `delete ${pwAction?.data?.name}'s record`
+          pwAction?.type === 'add' ? 'add a new customer' :
+            pwAction?.type === 'edit' ? `edit ${pwAction?.data?.name}'s profile` :
+              pwAction?.type === 'settle' ? `fully settle ${pwAction?.data?.name}'s debt` :
+                pwAction?.type === 'pay' ? `record a payment for ${pwAction?.data?.name}` :
+                  pwAction?.type === 'bulk_paid' ? 'mark selected customers as paid' :
+                    pwAction?.type === 'bulk_delete' ? 'delete selected customers' :
+                      `delete ${pwAction?.data?.name}'s record`
         }
         onSuccess={() => {
-          if (pwAction?.type === 'add')    setAddOpen(true);
-          if (pwAction?.type === 'edit')   setEditDebtor(pwAction.data);
+          if (pwAction?.type === 'add') setAddOpen(true);
+          if (pwAction?.type === 'edit') setEditDebtor(pwAction.data);
           if (pwAction?.type === 'delete') setDeleteData(pwAction.data);
           if (pwAction?.type === 'settle') setConfirmData(pwAction.data);
-          if (pwAction?.type === 'pay')    setPayDebtor(pwAction.data);
+          if (pwAction?.type === 'pay') setPayDebtor(pwAction.data);
           if (pwAction?.type === 'bulk_paid') setBulkConfirm({ type: 'paid' });
           if (pwAction?.type === 'bulk_delete') setBulkConfirm({ type: 'delete' });
           setPwAction(null);
         }}
       />
 
-      {/* Settings Modal */}
+      { }
       <SettingsModal open={settingsOpen} onClose={() => setSettingsOpen(false)} />
 
 
-      <SearchOverlay 
-        open={searchOpen} 
-        onClose={() => setSearchOpen(false)} 
-        debtors={debtors} 
+      <SearchOverlay
+        open={searchOpen}
+        onClose={() => setSearchOpen(false)}
+        debtors={debtors}
       />
 
       <AnimatePresence>
         {selectedIds.length > 0 && (
-          <motion.div 
+          <motion.div
             className="bulk-actions-bar"
             initial={{ y: 100, x: '-50%', opacity: 0 }}
             animate={{ y: 0, x: '-50%', opacity: 1 }}
@@ -1221,13 +1200,13 @@ export default function Dashboard() {
         onConfirm={bulkConfirm?.type === 'paid' ? handleBulkPaid : handleBulkDelete}
         title={bulkConfirm?.type === 'paid' ? 'Mark All as Paid?' : 'Delete Selected?'}
         message={
-          bulkConfirm?.type === 'paid' 
-          ? `You are about to mark ${selectedIds.length} customers as fully paid. This will settle all their remaining balances.`
-          : `Are you sure you want to permanently delete ${selectedIds.length} records? This action cannot be undone.`
+          bulkConfirm?.type === 'paid'
+            ? `You are about to mark ${selectedIds.length} customers as fully paid. This will settle all their remaining balances.`
+            : `Are you sure you want to permanently delete ${selectedIds.length} records? This action cannot be undone.`
         }
       />
 
-      {/* Export Filter Modal */}
+      { }
       <AnimatePresence>
         {exportFilterOpen && (
           <motion.div

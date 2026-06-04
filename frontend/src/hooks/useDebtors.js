@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import axios from 'axios';
 
-// Resolved once at module load — never re-evaluated per render
+
 const API_URL = import.meta.env.VITE_API_URL || '';
 
 export function useDebtors() {

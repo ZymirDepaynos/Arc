@@ -6,7 +6,7 @@ export default function ThemeToggle() {
   const [isLight, setIsLight] = useState(() => document.body.classList.contains('light-mode'));
 
   useEffect(() => {
-    // Check localStorage on mount
+    
     const saved = localStorage.getItem('theme');
     if (saved === 'light') {
       document.body.classList.add('light-mode');

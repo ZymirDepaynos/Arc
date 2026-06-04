@@ -15,14 +15,14 @@ const processDate = (inputDate) => {
   return inputDate;
 };
 
-/** Derive debtor status from current balance and total advance paid */
+
 const computeStatus = (balance, advance) =>
   balance <= 0 ? 'paid' : advance > 0 ? 'partial' : 'active';
 
-// POST bulk create (for CSV Import)
+
 router.post('/import-all', async (req, res) => {
   try {
-    const customers = req.body; // Array of customer objects
+    const customers = req.body; 
     if (!Array.isArray(customers)) {
       return res.status(400).json({ error: 'Data must be an array of customers' });
     }
@@ -87,7 +87,7 @@ router.get('/', async (req, res) => {
   }
 });
 
-// GET single debtor
+
 router.get('/:id', async (req, res) => {
   try {
     const { data, error } = await supabase
@@ -102,7 +102,7 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-// POST create debtor
+
 router.post('/', async (req, res) => {
   try {
     const {
@@ -125,7 +125,7 @@ router.post('/', async (req, res) => {
 
     const storedBalance = Math.max(0, originalDebt - rawAdvance);
 
-    // Add advance payment to history if provided
+    
     const history = [];
     if (rawAdvance > 0) {
       history.push({
@@ -174,7 +174,7 @@ router.put('/:id', async (req, res) => {
       original_debt: requestedOriginalDebt,
     } = req.body;
 
-    // Fetch current
+    
     const { data: current, error: fetchError } = await supabase
       .from('debtors')
       .select('*')
@@ -188,7 +188,7 @@ router.put('/:id', async (req, res) => {
     let newAdvance = parseFloat(current.advance_payment) || 0;
     let newBalance = parseFloat(current.balance) || 0;
 
-    // If original debt changed (only allowed when there is no advance payment)
+    
     if (newOriginalDebt !== current.original_debt && (parseFloat(current.advance_payment) || 0) === 0) {
       newBalance = newOriginalDebt;
       newAdvance = 0;
@@ -222,7 +222,7 @@ router.put('/:id', async (req, res) => {
   }
 });
 
-// DELETE debtor
+
 router.delete('/:id', async (req, res) => {
   try {
     const { error } = await supabase
@@ -237,12 +237,12 @@ router.delete('/:id', async (req, res) => {
   }
 });
 
-// POST record a payment
+
 router.post('/:id/pay', async (req, res) => {
   try {
     const { amount, date } = req.body;
 
-    // Get current record
+    
     const { data: current, error: fetchError } = await supabase
       .from('debtors')
       .select('balance, advance_payment, payment_history')
@@ -261,7 +261,7 @@ router.post('/:id/pay', async (req, res) => {
     const newBalance = currentBalance - payAmount;
     const newAdvance = parseFloat(current.advance_payment) + payAmount;
     
-    // PHT Compliance: Use exact timestamp if today, otherwise keep date
+    
     const paymentDate = processDate(date);
 
     const paymentEntry = {
@@ -312,7 +312,7 @@ router.post('/:id/pay', async (req, res) => {
   }
 });
 
-// POST edit history item
+
 router.post('/:id/edit-history', async (req, res) => {
   try {
     const { index, newAmount } = req.body;
@@ -338,30 +338,30 @@ router.post('/:id/edit-history', async (req, res) => {
     const oldAmount = parseFloat(item.amount) || 0;
     const rawNewAmount = parseFloat(newAmount) || 0;
 
-    // Guard: the new amount cannot be greater than (current balance + old amount)
-    // because that would push the running balance negative.
+    
+    
     const maxAllowed = parseFloat(current.balance) + oldAmount;
     const clampedNewAmount = Math.min(rawNewAmount, maxAllowed);
 
     const diff = clampedNewAmount - oldAmount;
 
-    // Update the item
+    
     item.amount = clampedNewAmount;
     
-    // Req 3: Append [Edited] tag
+
     if (!item.note) item.note = 'Advance Payment';
     if (!item.note.includes('[Edited]')) {
       item.note = `${item.note} [Edited]`;
     }
 
-    // Recalculate balance_after for subsequent items
+    
     for (let i = index; i < history.length; i++) {
       if (history[i].balance_after !== undefined) {
         history[i].balance_after = parseFloat(history[i].balance_after) - diff;
       }
     }
 
-    // Update main debtor record
+    
     const newBalance = Math.max(0, parseFloat(current.balance) - diff);
     const newAdvance = parseFloat(current.advance_payment) + diff;
     const newStatus = computeStatus(newBalance, newAdvance);
@@ -387,7 +387,7 @@ router.post('/:id/edit-history', async (req, res) => {
   }
 });
 
-// ── Req 7.4–7.6: DELETE individual history entry + rollback ─────────────────
+
 router.delete('/:id/history/:index', async (req, res) => {
   try {
     const index = parseInt(req.params.index, 10);
@@ -408,27 +408,27 @@ router.delete('/:id/history/:index', async (req, res) => {
 
     const item = history[index];
 
-    // Guard: cannot delete profile edit entries (no financial impact)
+    
     if (item.type === 'edit') {
       return res.status(400).json({ error: 'Profile edit entries cannot be deleted' });
     }
 
-    // Req 7.5: Capture deleted amount for rollback calculation
+
     const deletedAmount = parseFloat(item.amount) || 0;
 
-    // Remove the entry from the history array
+    
     history.splice(index, 1);
 
-    // Req 7.6: Recalculate balance_after for ALL subsequent entries
-    // Reversing a payment (credit) adds the amount back to each running balance
-    // Reversing a debit adjustment (negative amount) subtracts it back
+
+    
+    
     for (let i = index; i < history.length; i++) {
       if (history[i].balance_after !== undefined) {
         history[i].balance_after = parseFloat(history[i].balance_after) + deletedAmount;
       }
     }
 
-    // Rollback root balance and advance_payment
+    
     const newBalance = parseFloat(current.balance) + deletedAmount;
     const newAdvance = Math.max(0, parseFloat(current.advance_payment) - deletedAmount);
     const newStatus = computeStatus(newBalance, newAdvance);

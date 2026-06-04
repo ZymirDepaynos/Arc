@@ -116,7 +116,7 @@ export default function DebtorModal({ open, onClose, onSubmit, initial = null })
     setLoading(true);
     setError(null);
     try {
-      // Flush any pending item that was typed but not yet confirmed with Enter
+      
       const finalItems = itemInput.trim() ? [...items, itemInput.trim()] : items;
       await onSubmit({
         ...form,
@@ -195,7 +195,7 @@ export default function DebtorModal({ open, onClose, onSubmit, initial = null })
               )}
 
               <div className="form-grid">
-                {/* Name */}
+                {}
                 <div className="form-group full floating-group">
                   <input
                     className="form-input"
@@ -208,7 +208,7 @@ export default function DebtorModal({ open, onClose, onSubmit, initial = null })
                   <label className="floating-label">Full Name *</label>
                 </div>
 
-                {/* Balance */}
+                {}
                 <div className="form-group floating-group">
                   <input
                     className="form-input"
@@ -241,7 +241,7 @@ export default function DebtorModal({ open, onClose, onSubmit, initial = null })
                   )}
                 </div>
 
-                {/* Date of Purchase */}
+                {}
                 <div className="form-group floating-group">
                   <div style={{ position: 'relative' }}>
                     <input
@@ -290,7 +290,7 @@ export default function DebtorModal({ open, onClose, onSubmit, initial = null })
                   {dateHint(dateParsed, form.date_borrowed)}
                 </div>
 
-                {/* Advance Payment (ADD mode only) */}
+                {}
                 {!initial && (
                   <div className="form-group floating-group">
                     <input
@@ -332,7 +332,7 @@ export default function DebtorModal({ open, onClose, onSubmit, initial = null })
 
 
 
-                {/* Receipt Number */}
+                {}
                 <div className="form-group full floating-group">
                   <input
                     className="form-input"
@@ -347,7 +347,7 @@ export default function DebtorModal({ open, onClose, onSubmit, initial = null })
                   <label className="floating-label">Receipt No.</label>
                 </div>
 
-                {/* Items Purchased — dynamic bullet list */}
+                {}
                 <div className="form-group full" style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                   <label className="form-label" style={{ marginBottom: 0 }}>
                     Items Purchased
@@ -356,7 +356,7 @@ export default function DebtorModal({ open, onClose, onSubmit, initial = null })
                     </span>
                   </label>
 
-                  {/* Input row */}
+                  {}
                   <input
                     id="items-purchased-input"
                     className="form-input"
@@ -442,7 +442,7 @@ export default function DebtorModal({ open, onClose, onSubmit, initial = null })
                 </div>
               </div>
 
-              {/* Footer */}
+              {}
               <div style={{ display: 'flex', gap: 10, marginTop: 24 }}>
                 <button
                   type="button"

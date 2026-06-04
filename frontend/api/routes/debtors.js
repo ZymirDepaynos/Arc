@@ -10,8 +10,7 @@ const supabase = createClient(
 
 const processDate = (inputDate) => {
   if (!inputDate) return new Date().toISOString();
-  // Ensure we compare against Manila today string YYYY-MM-DD
-  const todayStr = new Date().toLocaleString("en-CA", {timeZone: "Asia/Manila"}).split(',')[0];
+  const todayStr = new Date().toLocaleString("en-CA", { timeZone: "Asia/Manila" }).split(',')[0];
   if (inputDate === todayStr) {
     return new Date().toISOString();
   }
@@ -21,7 +20,7 @@ const processDate = (inputDate) => {
 // POST bulk create (for CSV Import)
 router.post('/import-all', async (req, res) => {
   try {
-    const customers = req.body; // Array of customer objects
+    const customers = req.body;
     if (!Array.isArray(customers)) {
       return res.status(400).json({ error: 'Data must be an array of customers' });
     }
@@ -180,7 +179,6 @@ router.put('/:id', async (req, res) => {
       original_debt: requestedOriginalDebt,
     } = req.body;
 
-    // Fetch current
     const { data: current, error: fetchError } = await supabase
       .from('debtors')
       .select('*')
@@ -190,11 +188,10 @@ router.put('/:id', async (req, res) => {
     if (fetchError) throw fetchError;
 
     const newOriginalDebt = parseFloat(requestedOriginalDebt || balance) || current.original_debt;
-    
+
     let newAdvance = parseFloat(current.advance_payment) || 0;
     let newBalance = parseFloat(current.balance) || 0;
 
-    // If original debt changed (only allowed when there is no advance payment)
     if (newOriginalDebt !== current.original_debt && (parseFloat(current.advance_payment) || 0) === 0) {
       newBalance = newOriginalDebt;
       newAdvance = 0;
@@ -268,8 +265,7 @@ router.post('/:id/pay', async (req, res) => {
 
     const newBalance = currentBalance - payAmount;
     const newAdvance = parseFloat(current.advance_payment) + payAmount;
-    
-    // PHT Compliance: Use exact timestamp if today, otherwise keep date
+
     const paymentDate = processDate(date);
 
     const paymentEntry = {
@@ -278,7 +274,7 @@ router.post('/:id/pay', async (req, res) => {
       balance_after: newBalance,
       note: 'Advance Payment'
     };
-    
+
     const history = Array.isArray(current.payment_history) ? [...current.payment_history, paymentEntry] : [paymentEntry];
 
     if (newBalance <= 0) {
@@ -295,7 +291,7 @@ router.post('/:id/pay', async (req, res) => {
         .eq('id', req.params.id)
         .select()
         .single();
-      
+
       if (updateError) throw updateError;
       return res.json({ message: 'Debt fully settled and marked as paid', settled: true, data });
     }
@@ -325,7 +321,7 @@ router.post('/:id/pay', async (req, res) => {
 router.post('/:id/adjust', async (req, res) => {
   try {
     const { newBalance, reason } = req.body;
-    
+
     // Get current record
     const { data: current, error: fetchError } = await supabase
       .from('debtors')
@@ -338,8 +334,8 @@ router.post('/:id/adjust', async (req, res) => {
     const oldBalance = parseFloat(current.balance);
     const parsedNewBalance = parseFloat(newBalance);
 
-    const changes = [`Manual Adjustment: Balance changed from ₱${oldBalance.toLocaleString('en-PH', {minimumFractionDigits:2})} to ₱${parsedNewBalance.toLocaleString('en-PH', {minimumFractionDigits:2})}. Reason: ${reason}`];
-    
+    const changes = [`Manual Adjustment: Balance changed from ₱${oldBalance.toLocaleString('en-PH', { minimumFractionDigits: 2 })} to ₱${parsedNewBalance.toLocaleString('en-PH', { minimumFractionDigits: 2 })}. Reason: ${reason}`];
+
     const paymentEntry = {
       id: Date.now().toString(),
       type: 'manual_adjustment',
@@ -350,7 +346,7 @@ router.post('/:id/adjust', async (req, res) => {
       changes: changes.join(' | '),
       created_at: new Date().toISOString()
     };
-    
+
     const history = Array.isArray(current.payment_history) ? [...current.payment_history, paymentEntry] : [paymentEntry];
 
     const newStatus = parsedNewBalance <= 0 ? 'paid' : (parseFloat(current.advance_payment) > 0 ? 'partial' : 'active');
@@ -378,7 +374,7 @@ router.post('/:id/adjust', async (req, res) => {
 router.post('/:id/edit-history', async (req, res) => {
   try {
     const { index, newAmount } = req.body;
-    
+
     const { data: current, error: fetchError } = await supabase
       .from('debtors')
       .select('*')
@@ -402,8 +398,8 @@ router.post('/:id/edit-history', async (req, res) => {
 
     // Update the item
     item.amount = parseFloat(newAmount);
-    
-    // Req 3: Append [Edited] tag
+
+
     if (!item.note) item.note = 'Advance Payment';
     if (!item.note.includes('[Edited]')) {
       item.note = `${item.note} [Edited]`;
@@ -442,7 +438,6 @@ router.post('/:id/edit-history', async (req, res) => {
   }
 });
 
-// ── Req 7.4–7.6: DELETE individual history entry + rollback ─────────────────
 router.delete('/:id/history/:index', async (req, res) => {
   try {
     const index = parseInt(req.params.index, 10);
@@ -463,27 +458,20 @@ router.delete('/:id/history/:index', async (req, res) => {
 
     const item = history[index];
 
-    // Guard: cannot delete profile edit entries (no financial impact)
     if (item.type === 'edit') {
       return res.status(400).json({ error: 'Profile edit entries cannot be deleted' });
     }
 
-    // Req 7.5: Capture deleted amount for rollback calculation
     const deletedAmount = parseFloat(item.amount) || 0;
 
-    // Remove the entry from the history array
     history.splice(index, 1);
 
-    // Req 7.6: Recalculate balance_after for ALL subsequent entries
-    // Reversing a payment (credit) adds the amount back to each running balance
-    // Reversing a debit adjustment (negative amount) subtracts it back
     for (let i = index; i < history.length; i++) {
       if (history[i].balance_after !== undefined) {
         history[i].balance_after = parseFloat(history[i].balance_after) + deletedAmount;
       }
     }
 
-    // Rollback root balance and advance_payment
     const newBalance = parseFloat(current.balance) + deletedAmount;
     const newAdvance = Math.max(0, parseFloat(current.advance_payment) - deletedAmount);
     const newStatus = newBalance <= 0 ? 'paid' : (newAdvance > 0 ? 'partial' : 'active');

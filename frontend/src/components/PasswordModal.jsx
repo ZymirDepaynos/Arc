@@ -3,15 +3,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, Lock, Eye, EyeOff, ShieldAlert } from 'lucide-react';
 import { verifyPassword } from '../utils/auth';
 
-/**
- * A password-gate modal.
- *
- * Props:
- *   open        – boolean
- *   onClose     – called when dismissed without success
- *   onSuccess   – called when correct password entered
- *   action      – short description shown in the prompt, e.g. "edit this customer"
- */
 export default function PasswordModal({ open, onClose, onSuccess, action = 'continue' }) {
   const [password, setPassword]         = useState('');
   const [showPw, setShowPw]             = useState(false);
@@ -96,7 +87,7 @@ export default function PasswordModal({ open, onClose, onSuccess, action = 'cont
             onClick={e => e.stopPropagation()}
             style={{ maxWidth: 400, width: '100%' }}
           >
-            {/* Header */}
+            {}
             <div className="modal-header">
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 <div style={{
@@ -119,7 +110,7 @@ export default function PasswordModal({ open, onClose, onSuccess, action = 'cont
             </p>
 
             <form onSubmit={handleSubmit}>
-              {/* Password field */}
+              {}
               <div className="form-group floating-group" style={{ position: 'relative', marginBottom: 0 }}>
                 <input
                   ref={inputRef}
@@ -148,7 +139,7 @@ export default function PasswordModal({ open, onClose, onSuccess, action = 'cont
                 </button>
               </div>
 
-              {/* Error message */}
+              {}
               <AnimatePresence>
                 {error && (
                   <motion.div
@@ -167,7 +158,7 @@ export default function PasswordModal({ open, onClose, onSuccess, action = 'cont
                 )}
               </AnimatePresence>
 
-              {/* Actions */}
+              {}
               <div style={{ display: 'flex', gap: 10, marginTop: 24 }}>
                 <button type="button" className="btn btn-outline" style={{ flex: 1 }} onClick={onClose}>
                   Cancel

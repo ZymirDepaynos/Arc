@@ -9,7 +9,7 @@ export default function SummaryStats({ totals, filteredTotals, searchLabel }) {
 
   return (
     <>
-      {/* Search aggregate banner — only shown when searching */}
+      {}
       <AnimatePresence>
         {isFiltered && (
           <motion.div
@@ -24,7 +24,7 @@ export default function SummaryStats({ totals, filteredTotals, searchLabel }) {
               marginBottom: 16,
             }}
           >
-            {/* Search label header */}
+            {}
             <div
               style={{
                 gridColumn: '1 / -1',
@@ -46,7 +46,7 @@ export default function SummaryStats({ totals, filteredTotals, searchLabel }) {
               &nbsp;—&nbsp;{(filteredTotals.activeCount + filteredTotals.partialCount + filteredTotals.paidCount)} customer(s) found
             </div>
 
-            {/* Filtered: Total Outstanding */}
+            {}
             <div
               style={{
                 background: 'var(--glass-bg)',
@@ -69,7 +69,7 @@ export default function SummaryStats({ totals, filteredTotals, searchLabel }) {
               </div>
             </div>
 
-            {/* Filtered: Total Collected */}
+            {}
             <div
               style={{
                 background: 'var(--glass-bg)',
@@ -95,9 +95,9 @@ export default function SummaryStats({ totals, filteredTotals, searchLabel }) {
         )}
       </AnimatePresence>
 
-      {/* Global Stats — always visible */}
+      {}
       <div className="stats-container">
-        {/* Box 1: Total Outstanding */}
+        {}
         <div className="stat-box">
           <div className="stat-box-header">
             <span className="stat-box-title">Total Outstanding</span>
@@ -116,7 +116,7 @@ export default function SummaryStats({ totals, filteredTotals, searchLabel }) {
               </span>
             </div>
             
-            {/* Animated trend bars */}
+            {}
             <div style={{ display: 'flex', alignItems: 'flex-end', gap: 4, height: 40, marginTop: 24, opacity: 0.8 }}>
               {[30, 45, 35, 60, 45, 55, 80, 45, 70, 35, 50, 40, 60, 30].map((h, i) => (
                 <div 
@@ -135,7 +135,7 @@ export default function SummaryStats({ totals, filteredTotals, searchLabel }) {
           </div>
         </div>
 
-        {/* Box 2: Total Collected */}
+        {}
         <div className="stat-box">
           <div className="stat-box-header">
             <span className="stat-box-title">Total Collected</span>

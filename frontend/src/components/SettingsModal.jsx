@@ -4,7 +4,7 @@ import { X, Settings, Eye, EyeOff, KeyRound } from 'lucide-react';
 import { changePassword } from '../utils/auth';
 import toast from 'react-hot-toast';
 
-// ── Defined OUTSIDE the component so React never recreates it on re-render ──
+
 function PwField({ label, value, onChange, show, onToggle, onClearError }) {
   return (
     <div className="form-group floating-group" style={{ position: 'relative' }}>
@@ -120,7 +120,7 @@ export default function SettingsModal({ open, onClose }) {
               <button className="btn-icon" onClick={handleClose}><X size={18} /></button>
             </div>
 
-            {/* Section label */}
+            {}
             <div style={{
               display: 'flex', alignItems: 'center', gap: 8,
               fontSize: 11, fontWeight: 700, color: 'var(--text-muted)',

@@ -18,7 +18,7 @@ export default function CalendarView() {
   const [dropdownOpen, setDropdownOpen] = useState(null); // 'month' or 'year' or null
 
   const fmt = (n) => '₱' + parseFloat(n || 0).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  const [selectedDayEvents, setSelectedDayEvents] = useState(null); // { date: '...', events: [] }
+  const [selectedDayEvents, setSelectedDayEvents] = useState(null); 
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -46,14 +46,13 @@ export default function CalendarView() {
     .filter(d => Array.isArray(d.payment_history))
     .flatMap(d => d.payment_history.map(p => ({ ...p, name: d.name, debtorId: d.id })))
     .filter(ev => {
-      // Filter out edits/adjustments if any
       if (ev.type === 'edit' || ev.type === 'manual_adjustment') return false;
-      // Calculate days since entry
+      
       const entryDate = new Date(ev.created_at || ev.date);
       const now = new Date();
-      // Reset hours to compare pure days
-      entryDate.setHours(0,0,0,0);
-      now.setHours(0,0,0,0);
+      
+      entryDate.setHours(0, 0, 0, 0);
+      now.setHours(0, 0, 0, 0);
       const daysAgo = (now - entryDate) / (1000 * 60 * 60 * 24);
       return daysAgo >= -1 && daysAgo <= 7;
     })
@@ -68,15 +67,15 @@ export default function CalendarView() {
   const startDay = firstDayOfMonth(year, month);
   const totalDays = daysInMonth(year, month);
 
-  // Pad start (prev month days)
+  
   for (let i = 0; i < startDay; i++) {
     calendarDays.push({ day: null, type: 'prev' });
   }
-  // Current month days
+  
   for (let i = 1; i <= totalDays; i++) {
     calendarDays.push({ day: i, type: 'current' });
   }
-  // Pad end
+  
   while (calendarDays.length % 7 !== 0) {
     calendarDays.push({ day: null, type: 'next' });
   }
@@ -87,13 +86,13 @@ export default function CalendarView() {
     const events = [];
 
     (Array.isArray(debtors) ? debtors : []).forEach(d => {
-      // Purchase Event
+      
       if (d.date_borrowed) {
-        // Handle both "YYYY-MM-DD" and ISO strings safely
-        const isMatch = d.date_borrowed.includes('T') 
+        
+        const isMatch = d.date_borrowed.includes('T')
           ? new Date(d.date_borrowed).getFullYear() === year && new Date(d.date_borrowed).getMonth() === month && new Date(d.date_borrowed).getDate() === day
           : d.date_borrowed.startsWith(dateStr);
-          
+
         if (isMatch) {
           events.push({
             type: 'borrowed',
@@ -104,7 +103,7 @@ export default function CalendarView() {
           });
         }
       }
-      // Payment Events
+      
       if (Array.isArray(d.payment_history)) {
         d.payment_history.forEach(p => {
           if (p.date) {
@@ -127,7 +126,7 @@ export default function CalendarView() {
 
   return (
     <div className="calendar-container">
-      {/* Sidebar - Left Section */}
+      {}
       <div className="calendar-sidebar">
         <button className="btn-icon-sm" onClick={() => navigate('/')} style={{ marginBottom: 20 }}>
           <ArrowLeft size={20} />
@@ -162,9 +161,9 @@ export default function CalendarView() {
         </div>
       </div>
 
-      {/* Main Content - Right Section */}
+      {}
       <div className="calendar-main">
-        {/* Top Header */}
+        {}
         <div className="calendar-header">
           <div className="calendar-title-area">
             <h2 style={{ fontSize: 24, fontWeight: 800, color: 'var(--text-primary)' }}>Records</h2>
@@ -173,7 +172,7 @@ export default function CalendarView() {
           <div className="view-filters">
             <span className="filter-label">View:</span>
 
-            {/* Month Dropdown */}
+            {}
             <div className="custom-dropdown-container">
               <div
                 className="filter-select-ui"
@@ -203,7 +202,7 @@ export default function CalendarView() {
               )}
             </div>
 
-            {/* Year Dropdown */}
+            {}
             <div className="custom-dropdown-container">
               <div
                 className="filter-select-ui"
@@ -235,7 +234,7 @@ export default function CalendarView() {
           </div>
         </div>
 
-        {/* Calendar Grid */}
+        {}
         <div className="calendar-body">
           <div className="weekday-header">
             {['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'].map(d => (

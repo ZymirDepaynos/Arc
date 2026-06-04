@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { 
-  ArrowLeft, 
-  Edit2, 
-  Trash2, 
-  CreditCard, 
-  History, 
+import {
+  ArrowLeft,
+  Edit2,
+  Trash2,
+  CreditCard,
+  History,
   Search as SearchIcon,
   Download
 } from 'lucide-react';
@@ -59,9 +59,9 @@ export default function CustomerDetail() {
   const [confirmDeleteHistoryIndex, setConfirmDeleteHistoryIndex] = useState(null);
   const [historyPwPending, setHistoryPwPending] = useState(null); // { type: 'edit'|'delete', index, amount? }
 
-  // Password gate
-  const [pwOpen, setPwOpen]     = useState(false);
-  const [pwAction, setPwAction] = useState(null); // 'edit' | 'delete' | 'settle' | 'history-edit' | 'history-delete'
+  
+  const [pwOpen, setPwOpen] = useState(false);
+  const [pwAction, setPwAction] = useState(null); 
 
   const API_URL = import.meta.env.VITE_API_URL || '';
 
@@ -91,7 +91,7 @@ export default function CustomerDetail() {
   const handleEdit = async (form) => {
     const rawBalance = parseFloat(form.balance || 0);
 
-    // Auto-settle: editing Initial Balance to 0 fully settles the account
+    
     if (rawBalance === 0 && debtor.status !== 'paid' && debtor.balance > 0) {
       await toast.promise(
         axios.post(`${API_URL}/api/debtors/${id}/pay`, {
@@ -103,7 +103,7 @@ export default function CustomerDetail() {
       return;
     }
 
-    // Audit changes for history
+    
     const old = debtor;
     const changes = [];
     const fmtD = (d) => d ? new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'N/A';
@@ -117,8 +117,8 @@ export default function CustomerDetail() {
     if (parseFloat(old.original_debt || old.balance) !== rawBalance) {
       changes.push(`Initial Balance: ${fmt(old.original_debt || old.balance)} → ${fmt(rawBalance)}`);
     }
+
     
-    // Track receipt numbers and items
     const oldReceipts = old.receipt_numbers || [];
     const newReceipts = form.receipt_numbers || [];
     if (JSON.stringify([...oldReceipts].sort()) !== JSON.stringify([...newReceipts].sort())) {
@@ -142,10 +142,9 @@ export default function CustomerDetail() {
     const payload = {
       ...form,
       original_debt: rawBalance,
-      balance: old.balance, // Don't modify current balance during edit
-      advance_payment: old.advance_payment, // Don't modify advance payment
+      balance: old.balance,
+      advance_payment: old.advance_payment,
       payment_history: updatedHistory,
-      // Strip UI-only display keys
       date_borrowed_text: undefined,
 
       current_balance: undefined,
@@ -172,7 +171,7 @@ export default function CustomerDetail() {
     );
   };
 
-  // Req 7.4–7.6: Delete a single history entry and rollback the balance
+
   const handleDeleteHistory = async (index) => {
     await toast.promise(
       axios.delete(`${API_URL}/api/debtors/${id}/history/${index}`),
@@ -216,7 +215,7 @@ export default function CustomerDetail() {
       loading: 'Deleting...', success: 'Record deleted', error: 'Failed to delete',
     });
 
-    // Log to history
+    
     await addAuditLog({
       id: `deleted-${debtorId}-${Date.now()}`,
       date: new Date().toISOString(),
@@ -238,15 +237,15 @@ export default function CustomerDetail() {
     const fmtPDF = (n) => 'P' + parseFloat(n || 0).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
     const C = {
-      primaryBlue: [51,  92, 154],  // Header & section titles
-      boxBorder:   [100, 149, 237], // Summary box border
-      textDark:    [ 15,  30,  60],
-      textBody:    [ 33,  33,  33], // general black text
-      textMuted:   [120, 120, 120],
-      white:       [255, 255, 255],
-      green:       [ 46, 125,  50], // Settled / Paid amounts
-      skyBlue:     [240, 246, 252], // faint zebra striping
-      lineBorder:  [220, 225, 230], // thin table borders
+      primaryBlue: [51, 92, 154],
+      boxBorder: [100, 149, 237],
+      textDark: [15, 30, 60],
+      textBody: [33, 33, 33],
+      textMuted: [120, 120, 120],
+      white: [255, 255, 255],
+      green: [46, 125, 50],
+      skyBlue: [240, 246, 252],
+      lineBorder: [220, 225, 230],
     };
 
     const totalPaid = (debtor.payment_history || [])
@@ -270,9 +269,6 @@ export default function CustomerDetail() {
     const receiptText = debtor.receipt_numbers?.length
       ? debtor.receipt_numbers.map(r => `# ${r}`).join(', ') : 'N/A (Pending)';
 
-    // ════════════════════════════════════════════════════════════
-    //  1. HEADER BAND
-    // ════════════════════════════════════════════════════════════
     const headerH = 26;
     doc.setFillColor(...C.primaryBlue);
     doc.rect(0, 0, pageW, headerH, 'F');
@@ -282,9 +278,6 @@ export default function CustomerDetail() {
     doc.setFont('helvetica', 'bold');
     doc.text('INDIVIDUAL TRANSACTION REPORT', pageW / 2, headerH / 2 + 3, { align: 'center' });
 
-    // ════════════════════════════════════════════════════════════
-    //  2. CUSTOMER DETAILS
-    // ════════════════════════════════════════════════════════════
     let y = headerH + 12;
 
     doc.setFontSize(14);
@@ -293,8 +286,8 @@ export default function CustomerDetail() {
     doc.text('CUSTOMER DETAILS', margin, y);
 
     y += 10;
+
     
-    // Row 1: Name and Date
     doc.setFontSize(10);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(...C.primaryBlue);
@@ -307,7 +300,7 @@ export default function CustomerDetail() {
     doc.text(debtor.name, margin, y);
     doc.text(fmtDate(debtor.date_borrowed), margin + 100, y);
 
-    // Row 2: Receipt No
+    
     y += 10;
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(...C.primaryBlue);
@@ -318,7 +311,7 @@ export default function CustomerDetail() {
     doc.setTextColor(...C.textBody);
     doc.text(receiptText, margin, y);
 
-    // Row 3: Items
+    
     y += 10;
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(...C.primaryBlue);
@@ -337,29 +330,22 @@ export default function CustomerDetail() {
       y += 5;
     }
 
-    // ════════════════════════════════════════════════════════════
-    //  3. TRANSACTION SUMMARY BOX
-    // ════════════════════════════════════════════════════════════
     y += 6;
     const boxH = 30;
 
-    // Border box (no fill)
     doc.setDrawColor(...C.boxBorder);
     doc.setLineWidth(0.5);
     doc.rect(margin, y, contentW, boxH);
 
-    // Title
     doc.setFontSize(12);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(...C.primaryBlue);
     doc.text('TRANSACTION SUMMARY', margin + 10, y + 8);
 
-    // Metrics
     doc.setFontSize(9);
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(...C.textBody);
-    
-    // Row 1 inside box
+
     const mY1 = y + 16;
     doc.text('Initial Balance:', margin + 10, mY1);
     doc.setFont('helvetica', 'bold');
@@ -371,19 +357,15 @@ export default function CustomerDetail() {
     doc.setTextColor(...C.green);
     doc.text(fmtPDF(totalPaid), margin + 120, mY1);
 
-    // Row 2 inside box
     const mY2 = y + 24;
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(...C.textBody);
     doc.text('Current Balance:', margin + 10, mY2);
-    
+
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(isSettled ? C.green[0] : C.textBody[0], isSettled ? C.green[1] : C.textBody[1], isSettled ? C.green[2] : C.textBody[2]);
     doc.text(isSettled ? 'P0.00 (Paid)' : fmtPDF(debtor.balance), margin + 38, mY2);
 
-    // ════════════════════════════════════════════════════════════
-    //  4. TABLE DATA
-    // ════════════════════════════════════════════════════════════
     const tableTop = y + boxH + 8;
     const events = [];
 
@@ -439,12 +421,12 @@ export default function CustomerDetail() {
           const reasonMatch = (p.changes || '').match(/Reason: (.*)/);
           desc = `Balance Adjustment (${reasonMatch ? reasonMatch[1] : 'Manual'})`;
         }
-        
+
         const amtNum = parseFloat(p.amount || 0);
         const amountStr = amtNum !== 0
-          ? (amtNum < 0 ? `P + ${parseFloat(Math.abs(amtNum)).toLocaleString('en-PH', {minimumFractionDigits: 2})}` : `P - ${parseFloat(amtNum).toLocaleString('en-PH', {minimumFractionDigits: 2})}`)
+          ? (amtNum < 0 ? `P + ${parseFloat(Math.abs(amtNum)).toLocaleString('en-PH', { minimumFractionDigits: 2 })}` : `P - ${parseFloat(amtNum).toLocaleString('en-PH', { minimumFractionDigits: 2 })}`)
           : '';
-          
+
         const balStr = p.balance_after !== undefined ? (p.balance_after <= 0 ? 'P0.00 (Paid)' : fmtPDF(p.balance_after)) : '';
         tableData.push([`${rowNum++}`, ev.dateStr, desc, amountStr, balStr]);
       }
@@ -484,7 +466,7 @@ export default function CustomerDetail() {
         3: { cellWidth: 38, halign: 'center', fontStyle: 'bold' },
         4: { cellWidth: 40, halign: 'center', fontStyle: 'bold' },
       },
-      didParseCell: function(data) {
+      didParseCell: function (data) {
         if (data.section === 'body' && data.row.raw[2] === 'Account Paid') {
           data.cell.styles.fontStyle = 'bold';
         }
@@ -519,8 +501,8 @@ export default function CustomerDetail() {
 
   return (
     <div style={{ minHeight: '100vh', paddingBottom: 80, padding: '40px 32px', maxWidth: '100%' }}>
-      
-      {/* Header Row */}
+
+      {}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 24, marginBottom: 40 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
           <button
@@ -554,10 +536,10 @@ export default function CustomerDetail() {
         </div>
       </div>
 
-      {/* METRICS ROW (3 Columns utilizing full width) */}
+      {}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 24, marginBottom: 24 }}>
-        
-        {/* Card 1: Current Balance */}
+
+        {}
         <div className="stat-box" style={{ padding: 24, borderRadius: 24, background: 'var(--bg-card)', display: 'flex', flexDirection: 'column', justifyContent: 'center', border: '1px solid var(--border)' }}>
           <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>
             Current Balance
@@ -585,7 +567,7 @@ export default function CustomerDetail() {
           )}
         </div>
 
-        {/* Card 2: Initial Balance */}
+        {}
         <div className="stat-box" style={{ padding: 24, borderRadius: 24, background: 'var(--bg-card)', border: '1px solid var(--border)', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
           <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>
             Initial Balance
@@ -595,7 +577,7 @@ export default function CustomerDetail() {
           </div>
         </div>
 
-        {/* Card 3: Receipt Information */}
+        {}
         <div className="stat-box" style={{ padding: 24, borderRadius: 24, background: 'var(--bg-card)', border: '1px solid var(--border)', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
           <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>
             Receipt Number
@@ -606,12 +588,11 @@ export default function CustomerDetail() {
         </div>
       </div>
 
-      {/* BOTTOM ROW (Consolidated Details & Larger Timeline) */}
+      {}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Left: Consolidated Details & Items */}
         <div className="lg:col-span-1 flex flex-col gap-8">
           <div className="stat-box" style={{ padding: 24, borderRadius: 24, background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
-            {/* Section 1: Dates */}
+            {}
             <div style={{ marginBottom: 24, paddingBottom: 24, borderBottom: '1px solid var(--border)' }}>
               <h3 style={{ fontSize: 17, fontWeight: 800, color: 'var(--text-primary)', marginBottom: 12, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Purchase Date</h3>
               <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary)' }}>
@@ -619,7 +600,7 @@ export default function CustomerDetail() {
               </div>
             </div>
 
-            {/* Section 2: Items Purchased */}
+            {}
             <div>
               <h3 style={{ fontSize: 15, fontWeight: 800, color: 'var(--text-primary)', marginBottom: 12, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Items Purchased</h3>
               {(() => {
@@ -629,7 +610,6 @@ export default function CustomerDetail() {
                     const parsed = JSON.parse(debtor.notes);
                     if (Array.isArray(parsed)) items = parsed;
                   } catch (_) {
-                    // Legacy plain text — split by newline
                     items = debtor.notes.split('\n').map(l => l.replace(/^\d+\.\s*/, '').trim()).filter(Boolean);
                   }
                 }
@@ -649,7 +629,7 @@ export default function CustomerDetail() {
           </div>
         </div>
 
-        {/* Right: Larger Timeline (2/3 width) */}
+        {}
         <div className="lg:col-span-2">
           <div className="stat-box" style={{ padding: 32, borderRadius: 24, background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24, paddingBottom: 16, borderBottom: '1px solid var(--border)', flexWrap: 'wrap', gap: 16 }}>
@@ -659,7 +639,7 @@ export default function CustomerDetail() {
                 </div>
                 <h2 style={{ fontSize: 20, fontWeight: 800, margin: 0, color: 'var(--text-primary)', letterSpacing: '-0.3px' }}>Timeline & History</h2>
               </div>
-              
+
               <div style={{ display: 'flex', gap: 8, background: 'var(--bg-page)', padding: 4, borderRadius: 12 }}>
                 <button
                   onClick={() => setActiveTab('transactions')}
@@ -703,27 +683,27 @@ export default function CustomerDetail() {
                 const events = [];
 
                 if (activeTab === 'transactions') {
-                  // 1. Record Started Event
+                  
                   events.push({
                     id: 'created',
                     type: 'created',
-                    timestamp: debtor.date_borrowed 
+                    timestamp: debtor.date_borrowed
                       ? new Date(debtor.date_borrowed + 'T12:00:00').getTime()
                       : new Date(debtor.created_at).getTime(),
-                    dateStr: debtor.date_borrowed 
+                    dateStr: debtor.date_borrowed
                       ? new Date(debtor.date_borrowed + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
                       : new Date(debtor.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
                   });
 
-                  // 2. Payments and Adjustments
+                  
                   if (debtor.payment_history) {
                     debtor.payment_history.forEach((payment, idx) => {
                       if (payment.type !== 'edit' && payment.type !== 'manual_adjustment') {
                         const isDateOnly = payment.date && (payment.date.length === 10 || !payment.date.includes('T'));
-                        const pDate = isDateOnly 
+                        const pDate = isDateOnly
                           ? new Date(payment.date + 'T12:00:00')
                           : new Date(payment.date);
-                        
+
                         events.push({
                           id: `payment-${idx}`,
                           type: 'payment_or_edit',
@@ -736,7 +716,7 @@ export default function CustomerDetail() {
                     });
                   }
 
-                  // 3. Settled Event
+                  
                   if (isSettled) {
                     events.push({
                       id: 'settled',
@@ -746,29 +726,28 @@ export default function CustomerDetail() {
                     });
                   }
                 } else {
-                  // Edits Log
+                  
                   if (debtor.payment_history) {
                     debtor.payment_history.forEach((payment, idx) => {
                       if (payment.type === 'edit' || payment.type === 'manual_adjustment') {
                         const isDateOnly = payment.date && (payment.date.length === 10 || !payment.date.includes('T'));
-                        const pDate = isDateOnly 
+                        const pDate = isDateOnly
                           ? new Date(payment.date + 'T12:00:00')
                           : new Date(payment.date);
-                        
+
                         events.push({
                           id: `edit-${idx}`,
                           type: 'payment_or_edit',
                           timestamp: pDate.getTime(),
                           dateStr: pDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
                           payment,
-                          index: idx  // needed for delete rollback
+                          index: idx
                         });
                       }
                     });
                   }
                 }
 
-                // Sort events consistently: most recent at the top (descending)
                 events.sort((a, b) => b.timestamp - a.timestamp);
 
                 if (events.length === 0) {
@@ -804,7 +783,7 @@ export default function CustomerDetail() {
 
                   const p = ev.payment;
                   const isEditing = editingHistoryIndex === ev.index;
-                  
+
                   return (
                     <div key={ev.id} className="timeline-item">
                       <div className={`timeline-dot ${p.type === 'edit' ? 'status' : (p.type === 'manual_adjustment' ? 'created' : 'payment')}`}></div>
@@ -813,11 +792,10 @@ export default function CustomerDetail() {
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
                           <div className="timeline-title">{p.type === 'edit' ? 'Profile Updated' : (p.note || 'Advance Payment')}</div>
 
-                          {/* Action buttons — hidden when account is settled */}
+                          {}
                           {!isSettled && !p.type && (
                             <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexShrink: 0 }}>
 
-                              {/* Edit button (Req 7.1) */}
                               {!isEditing && confirmDeleteHistoryIndex !== ev.index && (
                                 <button
                                   className="btn btn-outline"
@@ -832,7 +810,6 @@ export default function CustomerDetail() {
                                 </button>
                               )}
 
-                              {/* Delete button (Req 7.4) — inline confirm/cancel */}
                               {!isEditing && (
                                 confirmDeleteHistoryIndex === ev.index ? (
                                   <>
@@ -873,24 +850,24 @@ export default function CustomerDetail() {
                             </div>
                           )}
                         </div>
-                        
+
                         <div className="timeline-desc">
-                          {p.type === 'edit' 
+                          {p.type === 'edit'
                             ? <>{p.changes}</>
                             : p.type === 'manual_adjustment'
                               ? <>{p.changes}</>
-                              : isEditing 
+                              : isEditing
                                 ? (
                                   <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 8 }}>
-                                    <input 
-                                      type="number" 
-                                      value={editHistoryAmount} 
+                                    <input
+                                      type="number"
+                                      value={editHistoryAmount}
                                       onChange={(e) => setEditHistoryAmount(e.target.value.replace(/[^0-9]/g, ''))}
-                                      onKeyDown={(e) => ['e','E','+','-','.'].includes(e.key) && e.preventDefault()}
+                                      onKeyDown={(e) => ['e', 'E', '+', '-', '.'].includes(e.key) && e.preventDefault()}
                                       style={{ width: 100, height: 32, padding: '0 8px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--bg-page)', color: 'var(--text-primary)' }}
                                     />
-                                    <button 
-                                      className="btn btn-primary" 
+                                    <button
+                                      className="btn btn-primary"
                                       style={{ height: 32, padding: '0 12px', borderRadius: 6, fontSize: 12 }}
                                       onClick={() => {
                                         const raw = parseFloat(editHistoryAmount) || 0;
@@ -902,7 +879,7 @@ export default function CustomerDetail() {
                                           toast.error('Amount must be greater than ₱0');
                                           return;
                                         }
-                                        // Error if amount exceeds current balance + old amount
+                                        
                                         const maxAllowed = parseFloat(debtor.balance) + parseFloat(p.amount);
                                         if (raw > maxAllowed) {
                                           toast.error('Payment cannot exceed remaining balance (' + fmt(maxAllowed) + ')');
@@ -916,8 +893,8 @@ export default function CustomerDetail() {
                                     >
                                       Save
                                     </button>
-                                    <button 
-                                      className="btn btn-outline" 
+                                    <button
+                                      className="btn btn-outline"
                                       style={{ height: 32, padding: '0 12px', borderRadius: 6, fontSize: 12 }}
                                       onClick={() => setEditingHistoryIndex(null)}
                                     >
@@ -925,7 +902,7 @@ export default function CustomerDetail() {
                                     </button>
                                   </div>
                                 )
-                                : p.amount < 0 
+                                : p.amount < 0
                                   ? <>Balance adjusted by <span className="timeline-money">{fmt(Math.abs(p.amount))}</span>. Remaining balance: <span className="timeline-money">{fmt(p.balance_after)}</span>.</>
                                   : <>A payment of <span className="timeline-money">{fmt(p.amount)}</span> was made. Remaining balance: <span className="timeline-money">{fmt(p.balance_after)}</span>.</>}
                         </div>
@@ -935,15 +912,15 @@ export default function CustomerDetail() {
                 });
               })()}
             </div>
+          </div>
         </div>
       </div>
-      </div>
 
-      {/* Modals */}
+      {}
       <DebtorModal open={editOpen} onClose={() => setEditOpen(false)} onSubmit={handleEdit} initial={debtor} />
       <PayModal open={payOpen} onClose={() => setPayOpen(false)} debtor={debtor} onPay={handlePay} />
 
-      
+
       <ConfirmModal
         open={confirmSettle}
         onClose={() => setConfirmSettle(false)}
@@ -960,31 +937,29 @@ export default function CustomerDetail() {
         message={`Are you sure you want to permanently delete the record for ${debtor.name}? This cannot be undone.`}
       />
 
-      {/* Password Gate */}
+      {}
       <PasswordModal
         open={pwOpen}
         onClose={() => { setPwOpen(false); setPwAction(null); setHistoryPwPending(null); }}
         action={
-          pwAction === 'edit'           ? `edit ${debtor.name}'s profile` :
-          pwAction === 'settle'         ? `fully settle ${debtor.name}'s debt` :
-          pwAction === 'pay'            ? `record a payment for ${debtor.name}` :
-          pwAction === 'history-edit'   ? 'edit this payment entry' :
-          pwAction === 'history-delete' ? 'delete this payment entry' :
-          `delete ${debtor.name}'s record`
+          pwAction === 'edit' ? `edit ${debtor.name}'s profile` :
+            pwAction === 'settle' ? `fully settle ${debtor.name}'s debt` :
+              pwAction === 'pay' ? `record a payment for ${debtor.name}` :
+                pwAction === 'history-edit' ? 'edit this payment entry' :
+                  pwAction === 'history-delete' ? 'delete this payment entry' :
+                    `delete ${debtor.name}'s record`
         }
         onSuccess={() => {
-          if (pwAction === 'edit')   setEditOpen(true);
+          if (pwAction === 'edit') setEditOpen(true);
           if (pwAction === 'delete') setConfirmDelete(true);
           if (pwAction === 'settle') setConfirmSettle(true);
-          if (pwAction === 'pay')    setPayOpen(true);
+          if (pwAction === 'pay') setPayOpen(true);
           if (pwAction === 'history-edit' && historyPwPending) {
             if (historyPwPending.type === 'open-edit') {
-              // Just open the edit input
               setEditingHistoryIndex(historyPwPending.index);
               setEditHistoryAmount(historyPwPending.amount.toString());
               setConfirmDeleteHistoryIndex(null);
             } else {
-              // Actually save the edit (already capped)
               handleEditHistory(historyPwPending.index, historyPwPending.amount);
             }
           }
@@ -998,8 +973,8 @@ export default function CustomerDetail() {
       />
 
       <div className="hide-desktop" style={{ position: 'fixed', bottom: 100, left: 24, right: 24, zIndex: 900 }}>
-        <button 
-          className="btn btn-primary" 
+        <button
+          className="btn btn-primary"
           style={{ width: '100%', height: 56, borderRadius: 16, fontSize: 16, fontWeight: 700 }}
           onClick={() => { setPwAction('settle'); setPwOpen(true); }}
         >
@@ -1009,10 +984,10 @@ export default function CustomerDetail() {
 
 
 
-      <SearchOverlay 
-        open={searchOpen} 
-        onClose={() => setSearchOpen(false)} 
-        debtors={allDebtors} 
+      <SearchOverlay
+        open={searchOpen}
+        onClose={() => setSearchOpen(false)}
+        debtors={allDebtors}
       />
     </div>
   );

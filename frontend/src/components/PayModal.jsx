@@ -6,7 +6,7 @@ import { getToday, parseNaturalDate as parseNaturalDateUtil, formatDisplayDate }
 
 import { fmt } from '../utils/format';
 
-// Wrap shared parseNaturalDate to add future-date validation
+
 const parseNaturalDate = (input) => {
   const parsed = parseNaturalDateUtil(input);
   if (!parsed) return input?.trim() ? null : null;

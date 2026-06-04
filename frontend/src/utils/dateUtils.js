@@ -4,7 +4,7 @@ export const parseNaturalDate = (input) => {
   if (!input || !input.trim()) return null;
   const clean = input.trim();
   
-  // Already ISO format YYYY-MM-DD
+  
   if (/^\d{4}-\d{2}-\d{2}$/.test(clean)) {
     return clean;
   }
@@ -22,13 +22,13 @@ export const parseNaturalDate = (input) => {
       if (!isNaN(day) && !isNaN(year) && year > 1900) {
         const d = new Date(year, monthIdx, day); // LOCAL date, no UTC shift
         if (!isNaN(d.getTime())) {
-          return d.toLocaleDateString('en-CA'); // YYYY-MM-DD
+          return d.toLocaleDateString('en-CA'); 
         }
       }
     }
   }
 
-  // Format: "3 May 2026"
+  
   if (parts.length >= 3) {
     const monthIdx = monthNames.findIndex(mn => parts[1] && parts[1].startsWith(mn));
     if (monthIdx !== -1) {
@@ -41,7 +41,7 @@ export const parseNaturalDate = (input) => {
     }
   }
 
-  // Format: "May 3" (assume current year)
+  
   if (parts.length === 2) {
     const monthIdx = monthNames.findIndex(mn => parts[0].startsWith(mn));
     if (monthIdx !== -1) {
@@ -54,7 +54,7 @@ export const parseNaturalDate = (input) => {
     }
   }
 
-  // Fallback: try native parse but append noon to avoid UTC shift
+  
   const withNoon = clean + ' 12:00:00';
   const direct = new Date(withNoon);
   if (!isNaN(direct.getTime())) {

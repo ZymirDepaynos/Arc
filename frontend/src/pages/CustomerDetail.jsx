@@ -543,7 +543,7 @@ export default function CustomerDetail() {
 
         <div style={{ display: 'flex', gap: 12 }}>
           <button className="btn btn-outline" onClick={handleExport} style={{ height: 48, padding: '0 24px', borderRadius: 24 }}>
-            <Download size={16} style={{ marginRight: 8 }} /> Export
+            <Download size={16} style={{ marginRight: 8 }} /> Save PDF
           </button>
           <button className="btn btn-outline" onClick={() => { setPwAction('edit'); setPwOpen(true); }} style={{ height: 48, padding: '0 24px', borderRadius: 24 }}>
             <Edit2 size={16} style={{ marginRight: 8 }} /> Edit Profile

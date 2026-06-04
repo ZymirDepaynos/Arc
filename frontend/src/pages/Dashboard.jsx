@@ -1169,6 +1169,8 @@ export default function Dashboard() {
           pwAction?.type === 'edit'   ? `edit ${pwAction?.data?.name}'s profile` :
           pwAction?.type === 'settle' ? `fully settle ${pwAction?.data?.name}'s debt` :
           pwAction?.type === 'pay'    ? `record a payment for ${pwAction?.data?.name}` :
+          pwAction?.type === 'bulk_paid' ? 'mark selected customers as paid' :
+          pwAction?.type === 'bulk_delete' ? 'delete selected customers' :
           `delete ${pwAction?.data?.name}'s record`
         }
         onSuccess={() => {
@@ -1177,6 +1179,8 @@ export default function Dashboard() {
           if (pwAction?.type === 'delete') setDeleteData(pwAction.data);
           if (pwAction?.type === 'settle') setConfirmData(pwAction.data);
           if (pwAction?.type === 'pay')    setPayDebtor(pwAction.data);
+          if (pwAction?.type === 'bulk_paid') setBulkConfirm({ type: 'paid' });
+          if (pwAction?.type === 'bulk_delete') setBulkConfirm({ type: 'delete' });
           setPwAction(null);
         }}
       />
@@ -1202,9 +1206,9 @@ export default function Dashboard() {
             <div className="bulk-count">{selectedIds.length} Selected</div>
             <div className="bulk-btns">
               {selectedIds.some(id => debtors.find(d => d.id === id)?.status !== 'paid') && (
-                <button className="btn btn-primary btn-sm" onClick={() => setBulkConfirm({ type: 'paid' })}>Mark as Paid</button>
+                <button className="btn btn-primary btn-sm" onClick={() => { setPwAction({ type: 'bulk_paid' }); setPwOpen(true); }}>Mark as Paid</button>
               )}
-              <button className="btn btn-outline btn-sm" style={{ borderColor: '#FF4D4D', color: '#FF4D4D' }} onClick={() => setBulkConfirm({ type: 'delete' })}>Delete All</button>
+              <button className="btn btn-outline btn-sm" style={{ borderColor: '#FF4D4D', color: '#FF4D4D' }} onClick={() => { setPwAction({ type: 'bulk_delete' }); setPwOpen(true); }}>Delete All</button>
               <button className="btn" style={{ background: 'var(--accent)', color: '#FFFFFF', width: 42, height: 42, borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 }} onClick={() => setSelectedIds([])}><X size={20} /></button>
             </div>
           </motion.div>

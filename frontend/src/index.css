@@ -195,7 +195,6 @@ h1,
   border-radius: var(--radius-xl);
   border: 1px solid var(--glass-border);
   margin-bottom: 32px;
-  flex-wrap: wrap;
   gap: 16px;
   overflow: hidden;
 }

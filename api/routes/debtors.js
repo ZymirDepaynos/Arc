@@ -129,7 +129,7 @@ router.post('/', async (req, res) => {
     const history = [];
     if (rawAdvance > 0) {
       history.push({
-        date: processDate(advance_payment_date || date_borrowed),
+        date: processDate(date_borrowed),
         amount: rawAdvance,
         balance_after: storedBalance,
         note: 'Advance Payment',

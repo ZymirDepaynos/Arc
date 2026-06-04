@@ -55,10 +55,8 @@ router.post('/', async (req, res) => {
       name,
       balance,
       advance_payment,
-      advance_payment_date,
       receipt_numbers,
       date_borrowed,
-      due_date,
       notes,
     } = req.body;
 
@@ -68,10 +66,8 @@ router.post('/', async (req, res) => {
         name,
         balance: parseFloat(balance),
         advance_payment: parseFloat(advance_payment) || 0,
-        advance_payment_date: advance_payment_date || null,
         receipt_numbers: receipt_numbers || [],
         date_borrowed,
-        due_date: due_date || null,
         notes: notes || '',
         status: advance_payment && parseFloat(advance_payment) > 0 ? 'partial' : 'active',
       }])
@@ -92,10 +88,8 @@ router.put('/:id', async (req, res) => {
       name,
       balance,
       advance_payment,
-      advance_payment_date,
       receipt_numbers,
       date_borrowed,
-      due_date,
       notes,
       status,
     } = req.body;
@@ -106,10 +100,8 @@ router.put('/:id', async (req, res) => {
         name,
         balance: parseFloat(balance),
         advance_payment: parseFloat(advance_payment) || 0,
-        advance_payment_date: advance_payment_date || null,
         receipt_numbers: receipt_numbers || [],
         date_borrowed,
-        due_date: due_date || null,
         notes: notes || '',
         payment_history: req.body.payment_history,
         status,
@@ -183,7 +175,6 @@ router.post('/:id/pay', async (req, res) => {
       .update({
         balance: newBalance,
         advance_payment: newAdvance,
-        advance_payment_date: paymentDate,
         payment_history: updatedHistory,
         status: newStatus,
         updated_at: new Date().toISOString(),

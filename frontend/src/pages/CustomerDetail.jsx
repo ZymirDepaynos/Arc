@@ -144,11 +144,10 @@ export default function CustomerDetail() {
       original_debt: rawBalance,
       balance: old.balance, // Don't modify current balance during edit
       advance_payment: old.advance_payment, // Don't modify advance payment
-      advance_payment_date: old.advance_payment_date,
       payment_history: updatedHistory,
       // Strip UI-only display keys
       date_borrowed_text: undefined,
-      advance_payment_date_text: undefined,
+
       current_balance: undefined,
     };
 

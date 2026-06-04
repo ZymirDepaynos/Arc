@@ -4,7 +4,8 @@ import { motion } from 'framer-motion';
 import {
   ArrowLeft,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Calendar as CalendarIcon
 } from 'lucide-react';
 import axios from 'axios';
 

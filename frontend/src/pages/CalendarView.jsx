@@ -854,7 +854,7 @@ export default function CalendarView() {
         .detail-event-item.paid .amount { color: #30D158; }
         .detail-event-item.borrowed .amount { color: #FF9F0A; }
       `}} />
-      <MobileNav />
+
     </div>
   );
 }

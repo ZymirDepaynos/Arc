@@ -642,7 +642,7 @@ export default function Dashboard() {
       </div>
 
       {/* Desktop Top Bar */}
-      <div className="top-bar hide-mobile">
+      <div className="top-bar hide-mobile" style={{ flexWrap: 'nowrap' }}>
         <div className="logo-brand" onClick={() => navigate('/')} style={{ cursor: 'pointer' }}>
           <span className="logo-text">Arc</span>
         </div>

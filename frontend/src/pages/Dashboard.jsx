@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, UserX, Search, Download, Bell, Calendar as CalendarIcon, ArrowUpDown, Check, CheckSquare, FileText, FileSpreadsheet, X, LogOut, Timer, Archive } from 'lucide-react';
+import { Plus, UserX, Search, Download, Bell, Calendar as CalendarIcon, ArrowUpDown, Check, CheckSquare, FileText, FileSpreadsheet, X, LogOut, Timer, Archive, Settings, ChevronDown } from 'lucide-react';
 
 import SearchOverlay from '../components/SearchOverlay';
 import toast from 'react-hot-toast';
@@ -32,6 +32,7 @@ export default function Dashboard() {
 
   const [dataMenuOpen, setDataMenuOpen] = useState(false);
   const [sortMenuOpen, setSortMenuOpen] = useState(false);
+  const [settingsMenuOpen, setSettingsMenuOpen] = useState(false);
 
   const [addOpen, setAddOpen] = useState(false);
   const [editDebtor, setEditDebtor] = useState(null);
@@ -764,31 +765,96 @@ export default function Dashboard() {
               <CalendarIcon size={16} />
               <span>Calendar</span>
             </button>
-            <button
-              className="calendar-pill-btn"
-              onClick={() => navigate('/archive')}
-              title="Archive"
-            >
-              <Archive size={16} />
-              <span>Archive</span>
-            </button>
             <ThemeToggle />
-            <button
-              className="btn btn-outline"
-              onClick={() => setSessionSettingsOpen(true)}
-              title="Session Timeout Settings"
-              style={{ width: 44, height: 44, padding: 0, borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-            >
-              <Timer size={18} />
-            </button>
-            <button
-              className="btn btn-outline"
-              onClick={signOut}
-              title="Sign Out"
-              style={{ width: 44, height: 44, padding: 0, borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-            >
-              <LogOut size={18} />
-            </button>
+
+            {/* Settings dropdown */}
+            <div style={{ position: 'relative' }}>
+              <button
+                className="btn btn-outline"
+                onClick={() => setSettingsMenuOpen(o => !o)}
+                title="Settings"
+                style={{ height: 44, padding: '0 14px', borderRadius: 12, display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, fontWeight: 700 }}
+              >
+                <Settings size={16} />
+                <ChevronDown size={13} style={{ opacity: 0.6, transition: 'transform 0.2s', transform: settingsMenuOpen ? 'rotate(180deg)' : 'rotate(0deg)' }} />
+              </button>
+              <AnimatePresence>
+                {settingsMenuOpen && (
+                  <>
+                    <div
+                      style={{ position: 'fixed', inset: 0, zIndex: 998 }}
+                      onClick={() => setSettingsMenuOpen(false)}
+                    />
+                    <motion.div
+                      initial={{ opacity: 0, y: -8, scale: 0.96 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: -8, scale: 0.96 }}
+                      transition={{ duration: 0.15 }}
+                      style={{
+                        position: 'absolute',
+                        top: 'calc(100% + 8px)',
+                        right: 0,
+                        width: 200,
+                        background: 'var(--glass-bg)',
+                        border: '1px solid var(--border)',
+                        borderRadius: 14,
+                        padding: 6,
+                        zIndex: 999,
+                        boxShadow: 'var(--shadow-lg)',
+                      }}
+                    >
+                      <button
+                        onClick={() => { navigate('/archive'); setSettingsMenuOpen(false); }}
+                        style={{
+                          width: '100%', display: 'flex', alignItems: 'center', gap: 12,
+                          padding: '10px 14px', borderRadius: 10, border: 'none',
+                          background: 'transparent', color: 'var(--text-primary)',
+                          fontFamily: 'inherit', fontSize: 13, fontWeight: 600,
+                          cursor: 'pointer', transition: 'background 0.15s',
+                        }}
+                        onMouseEnter={e => e.currentTarget.style.background = 'var(--accent-light)'}
+                        onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                      >
+                        <Archive size={15} style={{ color: 'var(--accent)', flexShrink: 0 }} />
+                        Archive
+                      </button>
+                      <button
+                        onClick={() => { setSessionSettingsOpen(true); setSettingsMenuOpen(false); }}
+                        style={{
+                          width: '100%', display: 'flex', alignItems: 'center', gap: 12,
+                          padding: '10px 14px', borderRadius: 10, border: 'none',
+                          background: 'transparent', color: 'var(--text-primary)',
+                          fontFamily: 'inherit', fontSize: 13, fontWeight: 600,
+                          cursor: 'pointer', transition: 'background 0.15s',
+                        }}
+                        onMouseEnter={e => e.currentTarget.style.background = 'var(--accent-light)'}
+                        onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                      >
+                        <Timer size={15} style={{ color: 'var(--accent)', flexShrink: 0 }} />
+                        Session Timeout
+                      </button>
+                      <div style={{ height: 1, background: 'var(--border)', margin: '4px 8px' }} />
+                      <button
+                        onClick={() => { signOut(); setSettingsMenuOpen(false); }}
+                        style={{
+                          width: '100%', display: 'flex', alignItems: 'center', gap: 12,
+                          padding: '10px 14px', borderRadius: 10, border: 'none',
+                          background: 'transparent', color: '#EF4444',
+                          fontFamily: 'inherit', fontSize: 13, fontWeight: 600,
+                          cursor: 'pointer', transition: 'background 0.15s',
+                        }}
+                        onMouseEnter={e => e.currentTarget.style.background = 'rgba(239,68,68,0.08)'}
+                        onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                      >
+                        <LogOut size={15} style={{ flexShrink: 0 }} />
+                        Sign Out
+                      </button>
+                    </motion.div>
+                  </>
+                )}
+              </AnimatePresence>
+            </div>
+
             <button className="btn btn-primary" onClick={() => setAddOpen(true)}>
               <Plus size={18} />
               <span>Add New Customer</span>

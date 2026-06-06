@@ -7,9 +7,9 @@ import {
   ChevronRight,
   Calendar as CalendarIcon
 } from 'lucide-react';
-import axios from 'axios';
+import api from '../lib/api';
 
-const API_URL = import.meta.env.VITE_API_URL || '';
+
 
 export default function CalendarView() {
   const navigate = useNavigate();
@@ -24,7 +24,7 @@ export default function CalendarView() {
   useEffect(() => {
     const fetchAll = async () => {
       try {
-        const res = await axios.get(`${API_URL}/api/debtors`);
+        const res = await api.get('/api/debtors');
         setDebtors(res.data);
       } catch (err) {
         console.error('Failed to fetch debtors for calendar', err);

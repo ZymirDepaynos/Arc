@@ -379,7 +379,12 @@ export default function CustomerDetail() {
       });
     }
 
-    events.sort((a, b) => a.timestamp - b.timestamp);
+    events.sort((a, b) => {
+      if (a.timestamp !== b.timestamp) return a.timestamp - b.timestamp;
+      if (a.type === 'created') return -1;
+      if (b.type === 'created') return 1;
+      return 0;
+    });
 
     const tableData = [];
     let rowNum = 1;
@@ -723,7 +728,12 @@ export default function CustomerDetail() {
                   }
                 }
 
-                events.sort((a, b) => b.timestamp - a.timestamp);
+                events.sort((a, b) => {
+                  if (a.timestamp !== b.timestamp) return b.timestamp - a.timestamp;
+                  if (a.type === 'created') return 1;
+                  if (b.type === 'created') return -1;
+                  return 0;
+                });
 
                 if (events.length === 0) {
                   return <div style={{ fontSize: 14, color: 'var(--text-muted)', fontStyle: 'italic', marginLeft: -32, marginTop: 16 }}>No records found.</div>;

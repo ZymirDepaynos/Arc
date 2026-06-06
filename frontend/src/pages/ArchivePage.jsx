@@ -183,7 +183,6 @@ export default function ArchivePage() {
                   <th style={{ textAlign: 'left', padding: '12px 16px', fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', borderBottom: '1px solid var(--border)' }}>Customer</th>
                   <th className="hide-mobile" style={{ textAlign: 'left', padding: '12px 16px', fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', borderBottom: '1px solid var(--border)' }}>Original Debt</th>
                   <th style={{ textAlign: 'left', padding: '12px 16px', fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', borderBottom: '1px solid var(--border)' }}>Balance</th>
-                  <th className="hide-tablet" style={{ textAlign: 'left', padding: '12px 16px', fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', borderBottom: '1px solid var(--border)' }}>Status</th>
                   <th className="hide-tablet" style={{ textAlign: 'left', padding: '12px 16px', fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', borderBottom: '1px solid var(--border)' }}>Archived</th>
                   <th style={{ textAlign: 'right', padding: '12px 16px', fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', borderBottom: '1px solid var(--border)' }}>Actions</th>
                 </tr>
@@ -212,7 +211,7 @@ export default function ArchivePage() {
                               {initials(record.name)}
                             </div>
                             <div style={{ minWidth: 0, overflow: 'hidden' }}>
-                              <span style={{ fontWeight: 700, color: 'var(--text-primary)', display: 'block', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 180 }}>{record.name}</span>
+                              <span style={{ fontWeight: 700, color: 'var(--text-primary)', display: 'block', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{record.name}</span>
                               <span style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 500, whiteSpace: 'nowrap' }}>
                                 {fmtDate(record.date_borrowed)}
                               </span>
@@ -224,12 +223,6 @@ export default function ArchivePage() {
                         </td>
                         <td style={{ padding: '14px 16px', fontWeight: 700, color: 'var(--text-primary)' }}>
                           {fmt(record.balance)}
-                        </td>
-                        <td className="hide-tablet" style={{ padding: '14px 16px' }}>
-                          <div className="status-dot">
-                            <span className={`dot ${getStatusClass(record.status)}`} />
-                            {getStatusText(record.status)}
-                          </div>
                         </td>
                         <td className="hide-tablet" style={{ padding: '14px 16px', fontSize: 12, color: 'var(--text-muted)', fontWeight: 500 }}>
                           {fmtArchiveDate(record.archived_at)}

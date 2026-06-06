@@ -9,6 +9,7 @@ export const SessionContext = createContext({ updateTimeout: async () => {} });
 import Dashboard from './pages/Dashboard';
 import CustomerDetail from './pages/CustomerDetail';
 import CalendarView from './pages/CalendarView';
+import ArchivePage from './pages/ArchivePage';
 import LoginPage from './pages/LoginPage';
 
 function InactivityGuard({ children }) {
@@ -75,6 +76,7 @@ function AppRoutes() {
       <Route path="/" element={<ProtectedRoute><div className="app-layout"><main className="main-content"><Dashboard /></main></div></ProtectedRoute>} />
       <Route path="/debtor/:id" element={<ProtectedRoute><div className="app-layout"><main className="main-content"><CustomerDetail /></main></div></ProtectedRoute>} />
       <Route path="/calendar" element={<ProtectedRoute><div className="app-layout"><main className="main-content"><CalendarView /></main></div></ProtectedRoute>} />
+      <Route path="/archive" element={<ProtectedRoute><div className="app-layout"><main className="main-content"><ArchivePage /></main></div></ProtectedRoute>} />
     </Routes>
   );
 }

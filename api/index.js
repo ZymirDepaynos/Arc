@@ -4,6 +4,7 @@ import { requireAuth } from './middleware/auth.js';
 
 import debtorsRoutes from './routes/debtors.js';
 import settingsRoutes from './routes/settings.js';
+import archiveRoutes from './routes/archive.js';
 
 const app = express();
 
@@ -13,6 +14,7 @@ app.use(express.urlencoded({ limit: '10mb', extended: true }));
 
 app.use('/api/debtors', requireAuth, debtorsRoutes);
 app.use('/api/settings', requireAuth, settingsRoutes);
+app.use('/api/archive', requireAuth, archiveRoutes);
 
 app.get('/api', (req, res) => {
   res.json({ message: 'Arc API is running ✓' });

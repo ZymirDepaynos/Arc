@@ -195,33 +195,9 @@ export default function CustomerDetail() {
   };
 
   const handleDelete = async () => {
-    const debtorName = debtor.name;
-    const debtorBalance = debtor.balance;
-    const debtorId = id;
-
     await toast.promise(api.delete(`/api/debtors/${id}`), {
-      loading: 'Deleting...', success: 'Record deleted', error: 'Failed to delete',
+      loading: 'Archiving...', success: 'Moved to archive', error: 'Failed to archive',
     });
-
-    try {
-      let existing = [];
-      try {
-        const res = await api.get('/api/settings/arc_deleted_logs');
-        if (Array.isArray(res.data.value)) existing = res.data.value;
-      } catch (e) {
-        if (e.response?.status !== 404) throw e;
-      }
-      const updated = [...existing, {
-        id: `deleted-${debtorId}-${Date.now()}`,
-        date: new Date().toISOString(),
-        customerName: debtorName,
-        type: 'deleted',
-        amount: debtorBalance
-      }];
-      await api.put('/api/settings/arc_deleted_logs', { value: updated });
-    } catch (err) {
-      console.error('Failed to save audit logs', err);
-    }
 
     navigate('/');
   };
@@ -928,8 +904,8 @@ export default function CustomerDetail() {
         open={confirmDelete}
         onClose={() => setConfirmDelete(false)}
         onConfirm={handleDelete}
-        title="Delete Record?"
-        message={`Are you sure you want to permanently delete the record for ${debtor.name}? This cannot be undone.`}
+        title="Move to Archive?"
+        message={`This will move ${debtor.name}'s record to the archive. You can restore it later from the Archive page.`}
       />
 
       <div className="hide-desktop" style={{ position: 'fixed', bottom: 100, left: 24, right: 24, zIndex: 900 }}>

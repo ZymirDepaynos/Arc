@@ -73,6 +73,7 @@ router.get('/', async (req, res) => {
       .from('debtors')
       .select('*')
       .eq('user_id', req.user.id)
+      .is('archived_at', null)
       .order('created_at', { ascending: false });
 
     if (search) {
@@ -233,12 +234,12 @@ router.delete('/:id', async (req, res) => {
   try {
     const { error } = await supabase
       .from('debtors')
-      .delete()
+      .update({ archived_at: new Date().toISOString() })
       .eq('id', req.params.id)
       .eq('user_id', req.user.id);
 
     if (error) throw error;
-    res.json({ message: 'Debtor deleted successfully' });
+    res.json({ message: 'Debtor archived successfully' });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

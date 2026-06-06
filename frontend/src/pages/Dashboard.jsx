@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, UserX, Search, Download, Bell, Calendar as CalendarIcon, ArrowUpDown, Check, CheckSquare, FileText, FileSpreadsheet, X, LogOut, Timer } from 'lucide-react';
+import { Plus, UserX, Search, Download, Bell, Calendar as CalendarIcon, ArrowUpDown, Check, CheckSquare, FileText, FileSpreadsheet, X, LogOut, Timer, Archive } from 'lucide-react';
 
 import SearchOverlay from '../components/SearchOverlay';
 import toast from 'react-hot-toast';
@@ -763,6 +763,14 @@ export default function Dashboard() {
             >
               <CalendarIcon size={16} />
               <span>Calendar</span>
+            </button>
+            <button
+              className="calendar-pill-btn"
+              onClick={() => navigate('/archive')}
+              title="Archive"
+            >
+              <Archive size={16} />
+              <span>Archive</span>
             </button>
             <ThemeToggle />
             <button

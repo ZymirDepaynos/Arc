@@ -21,6 +21,8 @@ export function useInactivityTimer() {
     if (timerRef.current) clearInterval(timerRef.current);
 
     timerRef.current = setInterval(() => {
+      if (document.visibilityState !== 'visible') return;
+
       const timeoutMs = timeoutMsRef.current;
       if (!timeoutMs) return;
 
@@ -59,31 +61,28 @@ export function useInactivityTimer() {
     };
 
     loadTimeout();
-
     recordActivity();
 
-    const checkOnFocus = () => {
-      const timeoutMs = timeoutMsRef.current;
-      if (!timeoutMs) return;
-      const lastActivity = parseInt(localStorage.getItem(ACTIVITY_KEY) || '0', 10);
-      const elapsed = Date.now() - lastActivity;
-      if (elapsed >= timeoutMs) {
-        toast('Session expired. Signing you out...', { icon: '🔒' });
-        signOut();
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        recordActivity();
       }
     };
 
+    const handleFocus = () => {
+      recordActivity();
+    };
+
     ACTIVITY_EVENTS.forEach(evt => window.addEventListener(evt, recordActivity, { passive: true }));
-    window.addEventListener('focus', checkOnFocus);
-    document.addEventListener('visibilitychange', () => {
-      if (document.visibilityState === 'visible') checkOnFocus();
-    });
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('focus', handleFocus);
 
     startTimer();
 
     return () => {
       ACTIVITY_EVENTS.forEach(evt => window.removeEventListener(evt, recordActivity));
-      window.removeEventListener('focus', checkOnFocus);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', handleFocus);
       if (timerRef.current) clearInterval(timerRef.current);
     };
   }, [user, recordActivity, signOut, startTimer]);

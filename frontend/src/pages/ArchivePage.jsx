@@ -208,12 +208,12 @@ export default function ArchivePage() {
                         </td>
                         <td style={{ padding: '14px 16px' }}>
                           <div className="table-avatar-cell">
-                            <div className="row-avatar" style={{ border: '1px solid rgba(239,68,68,0.2)', background: 'rgba(239,68,68,0.08)', color: '#EF4444' }}>
+                            <div className="row-avatar" style={{ border: '1px solid rgba(239,68,68,0.2)', background: 'rgba(239,68,68,0.08)', color: '#EF4444', flexShrink: 0 }}>
                               {initials(record.name)}
                             </div>
-                            <div>
-                              <span style={{ fontWeight: 700, color: 'var(--text-primary)', display: 'block' }}>{record.name}</span>
-                              <span style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 500 }}>
+                            <div style={{ minWidth: 0, overflow: 'hidden' }}>
+                              <span style={{ fontWeight: 700, color: 'var(--text-primary)', display: 'block', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 180 }}>{record.name}</span>
+                              <span style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 500, whiteSpace: 'nowrap' }}>
                                 {fmtDate(record.date_borrowed)}
                               </span>
                             </div>

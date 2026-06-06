@@ -28,6 +28,7 @@ const formatDisplay = (ms) => {
 export default function SessionSettingsModal({ open, onClose, onUpdate }) {
   const [current, setCurrent] = useState(30 * 60 * 1000);
   const [customValue, setCustomValue] = useState('');
+  const [customUnit, setCustomUnit] = useState('minutes');
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -69,13 +70,14 @@ export default function SessionSettingsModal({ open, onClose, onUpdate }) {
   };
 
   const handleCustomSubmit = () => {
-    const mins = parseInt(customValue, 10);
-    if (isNaN(mins) || mins < 1) {
-      toast.error('Enter at least 1 minute');
+    const val = parseInt(customValue, 10);
+    if (isNaN(val) || val < 1) {
+      toast.error(`Enter at least 1 ${customUnit === 'hours' ? 'hour' : 'minute'}`);
       return;
     }
+    const mins = customUnit === 'hours' ? val * 60 : val;
     if (mins > 1440) {
-      toast.error('Maximum is 1440 minutes (24 hours)');
+      toast.error('Maximum is 24 hours (1440 minutes)');
       return;
     }
     applyTimeout(mins * 60 * 1000);
@@ -171,18 +173,18 @@ export default function SessionSettingsModal({ open, onClose, onUpdate }) {
                 <input
                   type="number"
                   min={1}
-                  max={1440}
+                  max={customUnit === 'hours' ? 24 : 1440}
                   value={customValue}
                   onChange={(e) => setCustomValue(e.target.value.replace(/[^0-9]/g, ''))}
                   onKeyDown={(e) => {
                     if (['e', 'E', '+', '-', '.'].includes(e.key)) e.preventDefault();
                     if (e.key === 'Enter') handleCustomSubmit();
                   }}
-                  placeholder="e.g. 45"
+                  placeholder={customUnit === 'hours' ? 'e.g. 2' : 'e.g. 45'}
                   style={{
                     width: '100%',
                     height: 48,
-                    padding: '0 80px 0 16px',
+                    padding: '0 120px 0 16px',
                     borderRadius: 12,
                     border: `1px solid ${isCustom ? 'var(--accent)' : 'var(--border)'}`,
                     background: isCustom ? 'var(--accent-light)' : 'var(--glass-bg)',
@@ -195,18 +197,52 @@ export default function SessionSettingsModal({ open, onClose, onUpdate }) {
                     MozAppearance: 'textfield',
                   }}
                 />
-                <span style={{
+                <div style={{
                   position: 'absolute',
-                  right: 16,
+                  right: 8,
                   top: '50%',
                   transform: 'translateY(-50%)',
-                  fontSize: 12,
-                  fontWeight: 600,
-                  color: 'var(--text-muted)',
-                  pointerEvents: 'none',
+                  display: 'flex',
+                  borderRadius: 8,
+                  overflow: 'hidden',
+                  border: '1px solid var(--border)',
                 }}>
-                  minutes
-                </span>
+                  <button
+                    type="button"
+                    onClick={() => setCustomUnit('minutes')}
+                    style={{
+                      padding: '6px 10px',
+                      fontSize: 11,
+                      fontWeight: 700,
+                      fontFamily: 'inherit',
+                      border: 'none',
+                      cursor: 'pointer',
+                      background: customUnit === 'minutes' ? 'var(--accent)' : 'transparent',
+                      color: customUnit === 'minutes' ? '#fff' : 'var(--text-muted)',
+                      transition: 'all 0.15s ease',
+                    }}
+                  >
+                    Min
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setCustomUnit('hours')}
+                    style={{
+                      padding: '6px 10px',
+                      fontSize: 11,
+                      fontWeight: 700,
+                      fontFamily: 'inherit',
+                      border: 'none',
+                      borderLeft: '1px solid var(--border)',
+                      cursor: 'pointer',
+                      background: customUnit === 'hours' ? 'var(--accent)' : 'transparent',
+                      color: customUnit === 'hours' ? '#fff' : 'var(--text-muted)',
+                      transition: 'all 0.15s ease',
+                    }}
+                  >
+                    Hr
+                  </button>
+                </div>
               </div>
               <button
                 className="btn btn-primary"

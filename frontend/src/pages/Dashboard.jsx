@@ -757,14 +757,6 @@ export default function Dashboard() {
               </AnimatePresence>
             </div>
 
-            <button
-              className="calendar-pill-btn"
-              onClick={() => navigate('/calendar')}
-              title="Calendar"
-            >
-              <CalendarIcon size={16} />
-              <span>Calendar</span>
-            </button>
             <ThemeToggle />
 
             {/* Settings dropdown */}
@@ -803,6 +795,37 @@ export default function Dashboard() {
                         boxShadow: 'var(--shadow-lg)',
                       }}
                     >
+                      <button
+                        onClick={() => { setDataMenuOpen(true); setSettingsMenuOpen(false); }}
+                        style={{
+                          width: '100%', display: 'flex', alignItems: 'center', gap: 12,
+                          padding: '10px 14px', borderRadius: 10, border: 'none',
+                          background: 'transparent', color: 'var(--text-primary)',
+                          fontFamily: 'inherit', fontSize: 13, fontWeight: 600,
+                          cursor: 'pointer', transition: 'background 0.15s',
+                        }}
+                        onMouseEnter={e => e.currentTarget.style.background = 'var(--accent-light)'}
+                        onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                      >
+                        <Download size={15} style={{ color: 'var(--accent)', flexShrink: 0 }} />
+                        Data Actions
+                      </button>
+                      <button
+                        onClick={() => { navigate('/calendar'); setSettingsMenuOpen(false); }}
+                        style={{
+                          width: '100%', display: 'flex', alignItems: 'center', gap: 12,
+                          padding: '10px 14px', borderRadius: 10, border: 'none',
+                          background: 'transparent', color: 'var(--text-primary)',
+                          fontFamily: 'inherit', fontSize: 13, fontWeight: 600,
+                          cursor: 'pointer', transition: 'background 0.15s',
+                        }}
+                        onMouseEnter={e => e.currentTarget.style.background = 'var(--accent-light)'}
+                        onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                      >
+                        <CalendarIcon size={15} style={{ color: 'var(--accent)', flexShrink: 0 }} />
+                        Calendar
+                      </button>
+                      <div style={{ height: 1, background: 'var(--border)', margin: '4px 8px' }} />
                       <button
                         onClick={() => { navigate('/archive'); setSettingsMenuOpen(false); }}
                         style={{

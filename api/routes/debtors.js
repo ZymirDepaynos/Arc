@@ -52,7 +52,8 @@ router.post('/import-all', async (req, res) => {
           date_borrowed: c.date_borrowed || new Date().toISOString().split('T')[0],
           notes: c.notes || '',
           receipt_numbers: c.receipt_numbers || [],
-          status: computeStatus(storedBalance, rawAdvance)
+          status: computeStatus(storedBalance, rawAdvance),
+          user_id: req.user.id
         };
       }))
       .select();
@@ -65,13 +66,13 @@ router.post('/import-all', async (req, res) => {
   }
 });
 
-// GET all debtors (with optional search)
 router.get('/', async (req, res) => {
   try {
     const { search } = req.query;
     let query = supabase
       .from('debtors')
       .select('*')
+      .eq('user_id', req.user.id)
       .order('created_at', { ascending: false });
 
     if (search) {
@@ -94,8 +95,10 @@ router.get('/:id', async (req, res) => {
       .from('debtors')
       .select('*')
       .eq('id', req.params.id)
+      .eq('user_id', req.user.id)
       .single();
     if (error) throw error;
+    if (!data) return res.status(404).json({ error: 'Record not found' });
     res.json(data);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -149,6 +152,7 @@ router.post('/', async (req, res) => {
         date_borrowed,
         notes: notes || '',
         status: computeStatus(storedBalance, rawAdvance),
+        user_id: req.user.id
       }])
       .select()
       .single();
@@ -161,7 +165,6 @@ router.post('/', async (req, res) => {
   }
 });
 
-// PUT update debtor
 router.put('/:id', async (req, res) => {
   try {
     const {
@@ -179,9 +182,11 @@ router.put('/:id', async (req, res) => {
       .from('debtors')
       .select('*')
       .eq('id', req.params.id)
+      .eq('user_id', req.user.id)
       .single();
 
     if (fetchError) throw fetchError;
+    if (!current) return res.status(404).json({ error: 'Record not found' });
 
     const newOriginalDebt = parseFloat(requestedOriginalDebt || balance) || current.original_debt;
     
@@ -212,6 +217,7 @@ router.put('/:id', async (req, res) => {
         updated_at: new Date().toISOString(),
       })
       .eq('id', req.params.id)
+      .eq('user_id', req.user.id)
       .select()
       .single();
 
@@ -228,7 +234,8 @@ router.delete('/:id', async (req, res) => {
     const { error } = await supabase
       .from('debtors')
       .delete()
-      .eq('id', req.params.id);
+      .eq('id', req.params.id)
+      .eq('user_id', req.user.id);
 
     if (error) throw error;
     res.json({ message: 'Debtor deleted successfully' });
@@ -247,9 +254,11 @@ router.post('/:id/pay', async (req, res) => {
       .from('debtors')
       .select('balance, advance_payment, payment_history')
       .eq('id', req.params.id)
+      .eq('user_id', req.user.id)
       .single();
 
     if (fetchError) throw fetchError;
+    if (!current) return res.status(404).json({ error: 'Record not found' });
 
     const payAmount = parseFloat(amount);
     const currentBalance = parseFloat(current.balance);
@@ -285,6 +294,7 @@ router.post('/:id/pay', async (req, res) => {
           updated_at: new Date().toISOString(),
         })
         .eq('id', req.params.id)
+        .eq('user_id', req.user.id)
         .select()
         .single();
       
@@ -302,6 +312,7 @@ router.post('/:id/pay', async (req, res) => {
         updated_at: new Date().toISOString(),
       })
       .eq('id', req.params.id)
+      .eq('user_id', req.user.id)
       .select()
       .single();
 
@@ -321,9 +332,11 @@ router.post('/:id/edit-history', async (req, res) => {
       .from('debtors')
       .select('*')
       .eq('id', req.params.id)
+      .eq('user_id', req.user.id)
       .single();
 
     if (fetchError) throw fetchError;
+    if (!current) return res.status(404).json({ error: 'Record not found' });
 
     const history = [...(current.payment_history || [])];
     if (index < 0 || index >= history.length) {
@@ -376,6 +389,7 @@ router.post('/:id/edit-history', async (req, res) => {
         updated_at: new Date().toISOString(),
       })
       .eq('id', req.params.id)
+      .eq('user_id', req.user.id)
       .select()
       .single();
 
@@ -396,9 +410,11 @@ router.delete('/:id/history/:index', async (req, res) => {
       .from('debtors')
       .select('*')
       .eq('id', req.params.id)
+      .eq('user_id', req.user.id)
       .single();
 
     if (fetchError) throw fetchError;
+    if (!current) return res.status(404).json({ error: 'Record not found' });
 
     const history = [...(current.payment_history || [])];
 
@@ -443,6 +459,7 @@ router.delete('/:id/history/:index', async (req, res) => {
         updated_at: new Date().toISOString(),
       })
       .eq('id', req.params.id)
+      .eq('user_id', req.user.id)
       .select()
       .single();
 

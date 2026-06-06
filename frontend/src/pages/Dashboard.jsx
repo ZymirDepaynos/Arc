@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, UserX, Search, Download, Bell, Calendar as CalendarIcon, ArrowUpDown, Check, CheckSquare, FileText, FileSpreadsheet, X, Settings } from 'lucide-react';
+import { Plus, UserX, Search, Download, Bell, Calendar as CalendarIcon, ArrowUpDown, Check, CheckSquare, FileText, FileSpreadsheet, X, LogOut } from 'lucide-react';
 
 import SearchOverlay from '../components/SearchOverlay';
 import toast from 'react-hot-toast';
@@ -14,13 +14,13 @@ import DebtorModal from '../components/DebtorModal';
 import PayModal from '../components/PayModal';
 import ConfirmModal from '../components/ConfirmModal';
 import ThemeToggle from '../components/ThemeToggle';
-import PasswordModal from '../components/PasswordModal';
-import SettingsModal from '../components/SettingsModal';
 import { parseNaturalDate } from '../utils/dateUtils';
-import { addAuditLog } from '../utils/auth';
+import { useAuth } from '../contexts/AuthContext';
+import api from '../lib/api';
 
 export default function Dashboard() {
   const navigate = useNavigate();
+  const { signOut } = useAuth();
   const {
     debtors, loading, error, search, setSearch,
     createDebtor, bulkCreateDebtors, updateDebtor, deleteDebtor, recordPayment, totals
@@ -49,11 +49,6 @@ export default function Dashboard() {
   const [wholeWord, setWholeWord] = useState(false);
   const itemsPerPage = 10;
 
-
-  const [pwOpen, setPwOpen] = useState(false);
-  const [pwAction, setPwAction] = useState(null);
-  const [settingsOpen, setSettingsOpen] = useState(false);
-
   const SEARCH_PLACEHOLDER = 'Search by name or date (e.g. May, May 4, 2026, May 2026).';
 
   useEffect(() => {
@@ -66,6 +61,22 @@ export default function Dashboard() {
     setSelectedIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
   };
 
+
+  const addAuditLog = async (newLogs) => {
+    try {
+      let existing = [];
+      try {
+        const res = await api.get('/api/settings/arc_deleted_logs');
+        if (Array.isArray(res.data.value)) existing = res.data.value;
+      } catch (e) {
+        if (e.response?.status !== 404) throw e;
+      }
+      const updated = [...existing, ...(Array.isArray(newLogs) ? newLogs : [newLogs])];
+      await api.put('/api/settings/arc_deleted_logs', { value: updated });
+    } catch (err) {
+      console.error('Failed to save audit logs', err);
+    }
+  };
 
   const handleBulkDelete = async () => {
     try {
@@ -752,13 +763,13 @@ export default function Dashboard() {
             <ThemeToggle />
             <button
               className="btn btn-outline"
-              onClick={() => setSettingsOpen(true)}
-              title="Settings"
+              onClick={signOut}
+              title="Sign Out"
               style={{ width: 44, height: 44, padding: 0, borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
             >
-              <Settings size={18} />
+              <LogOut size={18} />
             </button>
-            <button className="btn btn-primary" onClick={() => { setPwAction({ type: 'add' }); setPwOpen(true); }}>
+            <button className="btn btn-primary" onClick={() => setAddOpen(true)}>
               <Plus size={18} />
               <span>Add New Customer</span>
             </button>
@@ -1004,10 +1015,10 @@ export default function Dashboard() {
                     index={i}
                     selected={selectedIds.includes(debtor.id)}
                     onToggleSelect={() => toggleSelect(debtor.id)}
-                    onEdit={() => { setPwAction({ type: 'edit', data: debtor }); setPwOpen(true); }}
-                    onDelete={() => { setPwAction({ type: 'delete', data: debtor }); setPwOpen(true); }}
-                    onPay={() => { setPwAction({ type: 'pay', data: debtor }); setPwOpen(true); }}
-                    onSettle={() => { setPwAction({ type: 'settle', data: debtor }); setPwOpen(true); }}
+                    onEdit={() => setEditDebtor(debtor)}
+                    onDelete={() => setDeleteData(debtor)}
+                    onPay={() => setPayDebtor(debtor)}
+                    onSettle={() => setConfirmData(debtor)}
                     isSelectionMode={isSelectionMode}
                   />
                 ))}
@@ -1139,33 +1150,7 @@ export default function Dashboard() {
         message={`Are you sure you want to permanently delete the record for ${deleteData?.name}? This cannot be undone.`}
       />
 
-      { }
-      <PasswordModal
-        open={pwOpen}
-        onClose={() => { setPwOpen(false); setPwAction(null); }}
-        action={
-          pwAction?.type === 'add' ? 'add a new customer' :
-            pwAction?.type === 'edit' ? `edit ${pwAction?.data?.name}'s profile` :
-              pwAction?.type === 'settle' ? `fully settle ${pwAction?.data?.name}'s debt` :
-                pwAction?.type === 'pay' ? `record a payment for ${pwAction?.data?.name}` :
-                  pwAction?.type === 'bulk_paid' ? 'mark selected customers as paid' :
-                    pwAction?.type === 'bulk_delete' ? 'delete selected customers' :
-                      `delete ${pwAction?.data?.name}'s record`
-        }
-        onSuccess={() => {
-          if (pwAction?.type === 'add') setAddOpen(true);
-          if (pwAction?.type === 'edit') setEditDebtor(pwAction.data);
-          if (pwAction?.type === 'delete') setDeleteData(pwAction.data);
-          if (pwAction?.type === 'settle') setConfirmData(pwAction.data);
-          if (pwAction?.type === 'pay') setPayDebtor(pwAction.data);
-          if (pwAction?.type === 'bulk_paid') setBulkConfirm({ type: 'paid' });
-          if (pwAction?.type === 'bulk_delete') setBulkConfirm({ type: 'delete' });
-          setPwAction(null);
-        }}
-      />
 
-      { }
-      <SettingsModal open={settingsOpen} onClose={() => setSettingsOpen(false)} />
 
 
       <SearchOverlay
@@ -1185,9 +1170,9 @@ export default function Dashboard() {
             <div className="bulk-count">{selectedIds.length} Selected</div>
             <div className="bulk-btns">
               {selectedIds.some(id => debtors.find(d => d.id === id)?.status !== 'paid') && (
-                <button className="btn btn-primary btn-sm" onClick={() => { setPwAction({ type: 'bulk_paid' }); setPwOpen(true); }}>Mark as Paid</button>
+                <button className="btn btn-primary btn-sm" onClick={() => setBulkConfirm({ type: 'paid' })}>Mark as Paid</button>
               )}
-              <button className="btn btn-outline btn-sm" style={{ borderColor: '#FF4D4D', color: '#FF4D4D' }} onClick={() => { setPwAction({ type: 'bulk_delete' }); setPwOpen(true); }}>Delete All</button>
+              <button className="btn btn-outline btn-sm" style={{ borderColor: '#FF4D4D', color: '#FF4D4D' }} onClick={() => setBulkConfirm({ type: 'delete' })}>Delete All</button>
               <button className="btn" style={{ background: 'var(--accent)', color: '#FFFFFF', width: 42, height: 42, borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 }} onClick={() => setSelectedIds([])}><X size={20} /></button>
             </div>
           </motion.div>

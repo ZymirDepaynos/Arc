@@ -15,6 +15,7 @@ router.get('/:key', async (req, res) => {
       .from('app_settings')
       .select('value')
       .eq('key', req.params.key)
+      .eq('user_id', req.user.id)
       .single();
 
     if (error) {
@@ -36,7 +37,7 @@ router.put('/:key', async (req, res) => {
 
     const { data, error } = await supabase
       .from('app_settings')
-      .upsert({ key: req.params.key, value: value })
+      .upsert({ key: req.params.key, value: value, user_id: req.user.id })
       .select()
       .single();
 

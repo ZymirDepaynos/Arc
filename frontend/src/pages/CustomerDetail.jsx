@@ -10,17 +10,14 @@ import {
   Search as SearchIcon,
   Download
 } from 'lucide-react';
-import axios from 'axios';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import toast from 'react-hot-toast';
 import DebtorModal from '../components/DebtorModal';
 import PayModal from '../components/PayModal';
 import ConfirmModal from '../components/ConfirmModal';
-
 import SearchOverlay from '../components/SearchOverlay';
-import PasswordModal from '../components/PasswordModal';
-import { addAuditLog } from '../utils/auth';
+import api from '../lib/api';
 
 
 const fmt = (n) =>
@@ -57,20 +54,14 @@ export default function CustomerDetail() {
   const [editingHistoryIndex, setEditingHistoryIndex] = useState(null);
   const [editHistoryAmount, setEditHistoryAmount] = useState('');
   const [confirmDeleteHistoryIndex, setConfirmDeleteHistoryIndex] = useState(null);
-  const [historyPwPending, setHistoryPwPending] = useState(null); // { type: 'edit'|'delete', index, amount? }
-
-  
-  const [pwOpen, setPwOpen] = useState(false);
-  const [pwAction, setPwAction] = useState(null); 
 
   const API_URL = import.meta.env.VITE_API_URL || '';
 
   const fetchDebtor = async () => {
     try {
-      const res = await axios.get(`${API_URL}/api/debtors/${id}`);
+      const res = await api.get(`/api/debtors/${id}`);
       setDebtor(res.data);
-      // Also fetch all for global search
-      const allRes = await axios.get(`${API_URL}/api/debtors`);
+      const allRes = await api.get('/api/debtors');
       setAllDebtors(allRes.data);
     } catch {
       toast.error('Could not load debtor');
@@ -94,7 +85,7 @@ export default function CustomerDetail() {
     
     if (rawBalance === 0 && debtor.status !== 'paid' && debtor.balance > 0) {
       await toast.promise(
-        axios.post(`${API_URL}/api/debtors/${id}/pay`, {
+        api.post(`/api/debtors/${id}/pay`, {
           amount: debtor.balance,
           date: new Date().toLocaleDateString('en-CA'),
         }).then((r) => setDebtor(r.data)),
@@ -150,15 +141,14 @@ export default function CustomerDetail() {
       current_balance: undefined,
     };
 
-    await toast.promise(axios.put(`${API_URL}/api/debtors/${id}`, payload).then((r) => setDebtor(r.data)), {
+    await toast.promise(api.put(`/api/debtors/${id}`, payload).then((r) => setDebtor(r.data)), {
       loading: 'Saving...', success: 'Saved!', error: 'Failed to save',
     });
   };
 
-
   const handleEditHistory = async (index, newAmount) => {
     await toast.promise(
-      axios.post(`${API_URL}/api/debtors/${id}/edit-history`, { index, newAmount }),
+      api.post(`/api/debtors/${id}/edit-history`, { index, newAmount }),
       {
         loading: 'Updating...',
         success: (res) => {
@@ -171,10 +161,9 @@ export default function CustomerDetail() {
     );
   };
 
-
   const handleDeleteHistory = async (index) => {
     await toast.promise(
-      axios.delete(`${API_URL}/api/debtors/${id}/history/${index}`),
+      api.delete(`/api/debtors/${id}/history/${index}`),
       {
         loading: 'Deleting entry...',
         success: (res) => {
@@ -186,11 +175,10 @@ export default function CustomerDetail() {
       }
     );
   };
-
   const handlePay = async (_, amount, date) => {
     const payDate = date || new Date().toLocaleDateString('en-CA');
     await toast.promise(
-      axios.post(`${API_URL}/api/debtors/${id}/pay`, { amount, date: payDate }),
+      api.post(`/api/debtors/${id}/pay`, { amount, date: payDate }),
       {
         loading: 'Recording...',
         success: (res) => {
@@ -211,18 +199,29 @@ export default function CustomerDetail() {
     const debtorBalance = debtor.balance;
     const debtorId = id;
 
-    await toast.promise(axios.delete(`${API_URL}/api/debtors/${id}`), {
+    await toast.promise(api.delete(`/api/debtors/${id}`), {
       loading: 'Deleting...', success: 'Record deleted', error: 'Failed to delete',
     });
 
-    
-    await addAuditLog({
-      id: `deleted-${debtorId}-${Date.now()}`,
-      date: new Date().toISOString(),
-      customerName: debtorName,
-      type: 'deleted',
-      amount: debtorBalance
-    });
+    try {
+      let existing = [];
+      try {
+        const res = await api.get('/api/settings/arc_deleted_logs');
+        if (Array.isArray(res.data.value)) existing = res.data.value;
+      } catch (e) {
+        if (e.response?.status !== 404) throw e;
+      }
+      const updated = [...existing, {
+        id: `deleted-${debtorId}-${Date.now()}`,
+        date: new Date().toISOString(),
+        customerName: debtorName,
+        type: 'deleted',
+        amount: debtorBalance
+      }];
+      await api.put('/api/settings/arc_deleted_logs', { value: updated });
+    } catch (err) {
+      console.error('Failed to save audit logs', err);
+    }
 
     navigate('/');
   };
@@ -527,10 +526,10 @@ export default function CustomerDetail() {
           <button className="btn btn-outline" onClick={handleExport} style={{ height: 48, padding: '0 24px', borderRadius: 24 }}>
             <Download size={16} style={{ marginRight: 8 }} /> Save PDF
           </button>
-          <button className="btn btn-outline" onClick={() => { setPwAction('edit'); setPwOpen(true); }} style={{ height: 48, padding: '0 24px', borderRadius: 24 }}>
+          <button className="btn btn-outline" onClick={() => setEditOpen(true)} style={{ height: 48, padding: '0 24px', borderRadius: 24 }}>
             <Edit2 size={16} style={{ marginRight: 8 }} /> Edit Profile
           </button>
-          <button className="btn" onClick={() => { setPwAction('delete'); setPwOpen(true); }} style={{ height: 48, padding: '0 24px', borderRadius: 24, color: '#FFFFFF', border: 'none', background: '#EF4444', display: 'flex', alignItems: 'center' }}>
+          <button className="btn" onClick={() => setConfirmDelete(true)} style={{ height: 48, padding: '0 24px', borderRadius: 24, color: '#FFFFFF', border: 'none', background: '#EF4444', display: 'flex', alignItems: 'center' }}>
             <Trash2 size={16} style={{ marginRight: 8 }} /> Delete
           </button>
         </div>
@@ -555,10 +554,10 @@ export default function CustomerDetail() {
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               <div style={{ display: 'flex', gap: 12 }}>
-                <button className="btn btn-primary" onClick={() => { setPwAction('pay'); setPwOpen(true); }} style={{ flex: 1, height: 44, borderRadius: 12, fontSize: 14 }}>
+                <button className="btn btn-primary" onClick={() => setPayOpen(true)} style={{ flex: 1, height: 44, borderRadius: 12, fontSize: 14 }}>
                   Add Payment
                 </button>
-                <button className="btn btn-outline" onClick={() => { setPwAction('settle'); setPwOpen(true); }} style={{ flex: 1, height: 44, borderRadius: 12, fontSize: 14, background: 'var(--bg-page)' }}>
+                <button className="btn btn-outline" onClick={() => setConfirmSettle(true)} style={{ flex: 1, height: 44, borderRadius: 12, fontSize: 14, background: 'var(--bg-page)' }}>
                   Settle Full
                 </button>
               </div>
@@ -837,9 +836,7 @@ export default function CustomerDetail() {
                                     style={{ height: 28, padding: '0 8px', borderRadius: 6, fontSize: 12, color: '#EF4444', borderColor: 'rgba(239,68,68,0.2)', background: 'rgba(239,68,68,0.05)' }}
                                     title="Delete this entry and rollback balance"
                                     onClick={() => {
-                                      setHistoryPwPending({ type: 'delete', index: ev.index });
-                                      setPwAction('history-delete');
-                                      setPwOpen(true);
+                                      setConfirmDeleteHistoryIndex(ev.index);
                                     }}
                                   >
                                     <Trash2 size={12} />
@@ -886,9 +883,7 @@ export default function CustomerDetail() {
                                           return;
                                         }
                                         const capped = raw;
-                                        setHistoryPwPending({ type: 'edit', index: ev.index, amount: capped });
-                                        setPwAction('history-edit');
-                                        setPwOpen(true);
+                                        handleEditHistory(ev.index, capped);
                                       }}
                                     >
                                       Save
@@ -937,46 +932,11 @@ export default function CustomerDetail() {
         message={`Are you sure you want to permanently delete the record for ${debtor.name}? This cannot be undone.`}
       />
 
-      {}
-      <PasswordModal
-        open={pwOpen}
-        onClose={() => { setPwOpen(false); setPwAction(null); setHistoryPwPending(null); }}
-        action={
-          pwAction === 'edit' ? `edit ${debtor.name}'s profile` :
-            pwAction === 'settle' ? `fully settle ${debtor.name}'s debt` :
-              pwAction === 'pay' ? `record a payment for ${debtor.name}` :
-                pwAction === 'history-edit' ? 'edit this payment entry' :
-                  pwAction === 'history-delete' ? 'delete this payment entry' :
-                    `delete ${debtor.name}'s record`
-        }
-        onSuccess={() => {
-          if (pwAction === 'edit') setEditOpen(true);
-          if (pwAction === 'delete') setConfirmDelete(true);
-          if (pwAction === 'settle') setConfirmSettle(true);
-          if (pwAction === 'pay') setPayOpen(true);
-          if (pwAction === 'history-edit' && historyPwPending) {
-            if (historyPwPending.type === 'open-edit') {
-              setEditingHistoryIndex(historyPwPending.index);
-              setEditHistoryAmount(historyPwPending.amount.toString());
-              setConfirmDeleteHistoryIndex(null);
-            } else {
-              handleEditHistory(historyPwPending.index, historyPwPending.amount);
-            }
-          }
-          if (pwAction === 'history-delete' && historyPwPending) {
-            setConfirmDeleteHistoryIndex(historyPwPending.index);
-            setEditingHistoryIndex(null);
-          }
-          setPwAction(null);
-          setHistoryPwPending(null);
-        }}
-      />
-
       <div className="hide-desktop" style={{ position: 'fixed', bottom: 100, left: 24, right: 24, zIndex: 900 }}>
         <button
           className="btn btn-primary"
           style={{ width: '100%', height: 56, borderRadius: 16, fontSize: 16, fontWeight: 700 }}
-          onClick={() => { setPwAction('settle'); setPwOpen(true); }}
+          onClick={() => setConfirmSettle(true)}
         >
           Settle Full
         </button>

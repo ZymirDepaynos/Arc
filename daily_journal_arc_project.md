@@ -6,9 +6,9 @@ This journal provides a detailed, day-by-day record of the Arc Debt Tracker proj
 ---
 
 ## 📊 Development Summary
-- **Total Development Duration:** ~6 Weeks (April 25, 2026 – June 4, 2026)
+- **Total Development Duration:** ~7 Weeks (April 25, 2026 – June 6, 2026)
 - **Active Coding Days:** 20 Days
-- **Total Commit Count:** 84 Commits
+- **Total Commit Count:** 98 Commits
 - **Key Modules Developed:**
   - 🏠 [Dashboard.jsx](file:///C:/Users/Zymir/OneDrive/Desktop/Bakla romel/Arc/frontend/src/pages/Dashboard.jsx) - Main stats, customer lists, pagination, filters, and activity feed.
   - 👤 [CustomerDetail.jsx](file:///C:/Users/Zymir/OneDrive/Desktop/Bakla romel/Arc/frontend/src/pages/CustomerDetail.jsx) - Individual ledger, purchase timelines, export tools, and payments.
@@ -212,8 +212,29 @@ Focus: Password gating critical actions, alphabetizing lists, Supabase data migr
     - Restored full badge texts after testing dot-only statuses.
   - **Validation Guardrails:** Blocked attempts to record payments exceeding current unpaid balances. Disabled submits when payment fields remain unchanged.
 
-#### Day 6: June 4, 2026 (Today)
-* **Category:** `🔧 Infrastructure`, `📝 Documentation`
+#### Day 6: June 4, 2026
+* **Category:** `⚙️ Refactor`, `🔧 Infrastructure`, `🐛 Bug Fix`, `🎨 Style`
+* **Commits:** `2576ce7`, `c2a2acc`, `9eb9289`, `d320d1d`, `d8ade16`, `d8f37f6`, `0365b55`, `f719bd8`, `731ae1d`, `7084e38`, `be231e7`, `22bfa5c`, `95e6192`, `ee3fed0`
+* **Details:**
+  - **Database & Route Cleanup:** Fully removed unused `due_date` and `advance_payment_date` database column references from all API routes (`api/routes/debtors.js`, `backend/routes/debtors.js`) and frontend components.
+  - **Codebase Modernization:** Removed legacy mobile view components (`MobileNav.jsx`, `Navbar.jsx`, `Sidebar.jsx`, `SearchBar.jsx`, `StatusBadge.jsx`) and their styling declarations to establish a clean tablet/desktop design system.
+  - **Unification of Utility Formatter:** Created a central formatter library [format.js](file:///C:/Users/Zymir/OneDrive/Desktop/Bakla romel/Arc/frontend/src/utils/format.js) to standardize currency, dates, and statuses across the application; added a unified `computeStatus` helper.
+  - **jsPDF Export encoding fix:** Replaced UTF-8 Peso signs with plain letter "P" inside individual and business report PDF export routes to resolve document generation encoding crashes.
+  - **Layout Wrap & Render Fixes:**
+    - Restored the missing `CalendarIcon` import in `CalendarView.jsx` preventing page rendering.
+    - Prevented top-bar components wrapping on narrow views by enforcing inline `flexWrap: nowrap`.
+    - Removed `display: revert` from `hide-mobile` utility to prevent flexbox container compression.
+  - **Housekeeping:** Removed deprecated database seeding scripts (`seed_customers.js`) and temporary root backup files.
+
+#### Day 7: June 5, 2026
+* **Category:** `🔍 Verification`, `📝 Documentation`
 * **Commits:** None (Working tree clean)
 * **Details:**
-  - Initialized a comprehensive Daily Development Journal mapping all historical modifications since Day 1 (April 25, 2026) to everyday.
+  - Performed comprehensive system validation testing across both light and dark modes.
+  - Inspected the Supabase database migrations to ensure table schema consistency.
+
+#### Day 8: June 6, 2026 (Today)
+* **Category:** `📝 Documentation`
+* **Commits:** None (Working tree clean)
+* **Details:**
+  - Updated the Daily Development Journal and Weekly Journal to match the actual commit logs and codebase improvements.

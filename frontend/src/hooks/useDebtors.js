@@ -1,8 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import axios from 'axios';
-
-
-const API_URL = import.meta.env.VITE_API_URL || '';
+import api from '../lib/api';
 
 export function useDebtors() {
   const [debtors, setDebtors] = useState([]);
@@ -13,12 +10,12 @@ export function useDebtors() {
   const fetchDebtors = useCallback(async () => {
     try {
       setLoading(true);
-      const res = await axios.get(`${API_URL}/api/debtors`);
+      const res = await api.get('/api/debtors');
       if (Array.isArray(res.data)) {
         setDebtors(res.data);
         setError(null);
       } else {
-        throw new Error('API returned invalid data format. Did you forget to set VITE_API_URL?');
+        throw new Error('API returned invalid data format.');
       }
     } catch (err) {
       setError(err.message || err.response?.data?.error || 'Failed to fetch debtors');
@@ -32,31 +29,31 @@ export function useDebtors() {
   }, [fetchDebtors]);
 
   const createDebtor = async (data) => {
-    const res = await axios.post(`${API_URL}/api/debtors`, data);
+    const res = await api.post('/api/debtors', data);
     await fetchDebtors();
     return res.data;
   };
 
   const bulkCreateDebtors = async (customers) => {
-    const res = await axios.post(`${API_URL}/api/debtors/import-all`, customers);
+    const res = await api.post('/api/debtors/import-all', customers);
     await fetchDebtors();
     return res.data;
   };
 
   const updateDebtor = async (id, data) => {
-    const res = await axios.put(`${API_URL}/api/debtors/${id}`, data);
+    const res = await api.put(`/api/debtors/${id}`, data);
     await fetchDebtors();
     return res.data;
   };
 
   const deleteDebtor = async (id) => {
-    await axios.delete(`${API_URL}/api/debtors/${id}`);
+    await api.delete(`/api/debtors/${id}`);
     await fetchDebtors();
   };
 
   const recordPayment = async (id, amount, customDate = null) => {
     const localDate = customDate || new Date().toLocaleDateString('en-CA');
-    const res = await axios.post(`${API_URL}/api/debtors/${id}/pay`, { amount, date: localDate });
+    const res = await api.post(`/api/debtors/${id}/pay`, { amount, date: localDate });
     await fetchDebtors();
     return res.data;
   };

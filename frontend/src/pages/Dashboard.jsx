@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, UserX, Search, Download, Bell, Calendar as CalendarIcon, ArrowUpDown, Check, CheckSquare, FileText, FileSpreadsheet, X, LogOut } from 'lucide-react';
+import { Plus, UserX, Search, Download, Bell, Calendar as CalendarIcon, ArrowUpDown, Check, CheckSquare, FileText, FileSpreadsheet, X, LogOut, Timer } from 'lucide-react';
 
 import SearchOverlay from '../components/SearchOverlay';
 import toast from 'react-hot-toast';
@@ -14,13 +14,17 @@ import DebtorModal from '../components/DebtorModal';
 import PayModal from '../components/PayModal';
 import ConfirmModal from '../components/ConfirmModal';
 import ThemeToggle from '../components/ThemeToggle';
+import SessionSettingsModal from '../components/SessionSettingsModal';
 import { parseNaturalDate } from '../utils/dateUtils';
 import { useAuth } from '../contexts/AuthContext';
+import { useSession } from '../App';
 import api from '../lib/api';
 
 export default function Dashboard() {
   const navigate = useNavigate();
   const { signOut } = useAuth();
+  const { updateTimeout } = useSession();
+  const [sessionSettingsOpen, setSessionSettingsOpen] = useState(false);
   const {
     debtors, loading, error, search, setSearch,
     createDebtor, bulkCreateDebtors, updateDebtor, deleteDebtor, recordPayment, totals
@@ -763,6 +767,14 @@ export default function Dashboard() {
             <ThemeToggle />
             <button
               className="btn btn-outline"
+              onClick={() => setSessionSettingsOpen(true)}
+              title="Session Timeout Settings"
+              style={{ width: 44, height: 44, padding: 0, borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+            >
+              <Timer size={18} />
+            </button>
+            <button
+              className="btn btn-outline"
               onClick={signOut}
               title="Sign Out"
               style={{ width: 44, height: 44, padding: 0, borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
@@ -1121,6 +1133,11 @@ export default function Dashboard() {
 
       { }
       <DebtorModal open={addOpen} onClose={() => setAddOpen(false)} onSubmit={handleAdd} />
+      <SessionSettingsModal
+        open={sessionSettingsOpen}
+        onClose={() => setSessionSettingsOpen(false)}
+        onUpdate={updateTimeout}
+      />
       <DebtorModal
         open={!!editDebtor}
         onClose={() => setEditDebtor(null)}

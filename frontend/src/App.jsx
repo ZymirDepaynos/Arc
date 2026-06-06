@@ -1,11 +1,26 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { useInactivityTimer } from './hooks/useInactivityTimer';
+import { createContext, useContext } from 'react';
+
+export const SessionContext = createContext({ updateTimeout: async () => {} });
 
 import Dashboard from './pages/Dashboard';
 import CustomerDetail from './pages/CustomerDetail';
 import CalendarView from './pages/CalendarView';
 import LoginPage from './pages/LoginPage';
+
+function InactivityGuard({ children }) {
+  const { updateTimeout } = useInactivityTimer();
+  return (
+    <SessionContext.Provider value={{ updateTimeout }}>
+      {children}
+    </SessionContext.Provider>
+  );
+}
+
+export const useSession = () => useContext(SessionContext);
 
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth();
@@ -31,7 +46,7 @@ function ProtectedRoute({ children }) {
     return <Navigate to="/login" replace />;
   }
 
-  return children;
+  return <InactivityGuard>{children}</InactivityGuard>;
 }
 
 function AppRoutes() {

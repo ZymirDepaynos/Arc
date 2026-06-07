@@ -15,6 +15,27 @@ const processDate = (inputDate) => {
   return inputDate;
 };
 
+const checkDuplicateReceipt = async (receipt_numbers, excludeId, userId) => {
+  if (!receipt_numbers || receipt_numbers.length === 0) return null;
+  const num = receipt_numbers[0];
+  if (!num) return null;
+  
+  let query = supabase
+    .from('customers')
+    .select('id, name')
+    .eq('user_id', userId)
+    .contains('receipt_numbers', [num]);
+    
+  if (excludeId) {
+    query = query.neq('id', excludeId);
+  }
+  
+  const { data } = await query;
+  if (data && data.length > 0) {
+    return data[0];
+  }
+  return null;
+};
 
 const computeStatus = (balance, advance) =>
   balance <= 0 ? 'paid' : advance > 0 ? 'partial' : 'active';
@@ -127,6 +148,13 @@ router.post('/', async (req, res) => {
       return res.status(400).json({ error: 'Advance payment cannot be greater than the initial balance' });
     }
 
+    if (receipt_numbers && receipt_numbers.length > 0) {
+      const duplicate = await checkDuplicateReceipt(receipt_numbers, null, req.user.id);
+      if (duplicate) {
+        return res.status(400).json({ error: `Receipt #${receipt_numbers[0]} is already assigned to ${duplicate.name}.` });
+      }
+    }
+
     const storedBalance = Math.max(0, originalDebt - rawAdvance);
 
     
@@ -188,6 +216,13 @@ router.put('/:id', async (req, res) => {
 
     if (fetchError) throw fetchError;
     if (!current) return res.status(404).json({ error: 'Record not found' });
+
+    if (receipt_numbers && receipt_numbers.length > 0) {
+      const duplicate = await checkDuplicateReceipt(receipt_numbers, req.params.id, req.user.id);
+      if (duplicate) {
+        return res.status(400).json({ error: `Receipt #${receipt_numbers[0]} is already assigned to ${duplicate.name}.` });
+      }
+    }
 
     const newOriginalDebt = parseFloat(requestedOriginalDebt || balance) || current.original_debt;
     

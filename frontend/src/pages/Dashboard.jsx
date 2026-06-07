@@ -298,10 +298,10 @@ export default function Dashboard() {
   };
 
   const exportToCSV = (exportData = customers) => {
-    const headers = ['ID', 'Name', 'Initial Balance', 'Date of Purchase', 'Advance Payment', 'Balance', 'Status'];
+    const headers = ['Receipt No.', 'Name', 'Initial Balance', 'Date of Purchase', 'Advance Payment', 'Balance', 'Status'];
     const sortedData = [...exportData].sort((a, b) => a.name.localeCompare(b.name));
     const rows = sortedData.map(d => [
-      d.id,
+      d.receipt_numbers && d.receipt_numbers.length > 0 ? d.receipt_numbers[0] : '',
       `"${d.name.replace(/"/g, '""')}"`,
       d.original_debt || 0,
       d.date_borrowed,
@@ -326,10 +326,10 @@ export default function Dashboard() {
   };
 
   const downloadTemplate = () => {
-    const headers = ['Name', 'Balance', 'Advance Payment', 'Date of Purchase'];
+    const headers = ['Receipt No.', 'Name', 'Balance', 'Advance Payment', 'Date of Purchase'];
     const sampleData = [
-      ['Juan Dela Cruz', '1000', '200', new Date().toISOString().split('T')[0]],
-      ['Maria Clara', '500', '0', new Date().toISOString().split('T')[0]]
+      ['R-12345', 'Juan Dela Cruz', '1000', '200', new Date().toISOString().split('T')[0]],
+      ['R-12346', 'Maria Clara', '500', '0', new Date().toISOString().split('T')[0]]
     ];
     const csvContent = headers.join(",") + "\n" + sampleData.map(e => e.join(",")).join("\n");
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -361,11 +361,11 @@ export default function Dashboard() {
           const obj = {};
           headers.forEach((header, index) => {
             // Map common headers to our schema
+            if (header.includes('receipt') || header.includes('id')) obj.receipt_numbers = values[index] ? [values[index]] : [];
             if (header.includes('name')) obj.name = values[index];
             if (header.includes('balance')) obj.balance = values[index];
             if (header.includes('advance') && !header.includes('date')) obj.advance_payment = values[index];
             if (header.includes('date') && !header.includes('advance')) obj.date_borrowed = values[index];
-            if (header.includes('id')) obj.id = values[index];
           });
           return obj;
         }).filter(c => c.name);

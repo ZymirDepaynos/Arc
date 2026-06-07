@@ -1,64 +1,64 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import api from '../lib/api';
 
-export function useDebtors() {
-  const [debtors, setDebtors] = useState([]);
+export function useCustomers() {
+  const [customers, setCustomers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [search, setSearch] = useState('');
 
-  const fetchDebtors = useCallback(async () => {
+  const fetchCustomers = useCallback(async () => {
     try {
       setLoading(true);
       const res = await api.get('/api/customers');
       if (Array.isArray(res.data)) {
-        setDebtors(res.data);
+        setCustomers(res.data);
         setError(null);
       } else {
         throw new Error('API returned invalid data format.');
       }
     } catch (err) {
-      setError(err.message || err.response?.data?.error || 'Failed to fetch debtors');
+      setError(err.message || err.response?.data?.error || 'Failed to fetch customers');
     } finally {
       setLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    fetchDebtors();
-  }, [fetchDebtors]);
+    fetchCustomers();
+  }, [fetchCustomers]);
 
-  const createDebtor = async (data) => {
+  const createCustomer = async (data) => {
     const res = await api.post('/api/customers', data);
-    await fetchDebtors();
+    await fetchCustomers();
     return res.data;
   };
 
-  const bulkCreateDebtors = async (customers) => {
-    const res = await api.post('/api/customers/import-all', customers);
-    await fetchDebtors();
+  const bulkCreateCustomers = async (list) => {
+    const res = await api.post('/api/customers/import-all', list);
+    await fetchCustomers();
     return res.data;
   };
 
-  const updateDebtor = async (id, data) => {
+  const updateCustomer = async (id, data) => {
     const res = await api.put(`/api/customers/${id}`, data);
-    await fetchDebtors();
+    await fetchCustomers();
     return res.data;
   };
 
-  const deleteDebtor = async (id) => {
+  const deleteCustomer = async (id) => {
     await api.delete(`/api/customers/${id}`);
-    await fetchDebtors();
+    await fetchCustomers();
   };
 
   const recordPayment = async (id, amount, customDate = null) => {
     const localDate = customDate || new Date().toLocaleDateString('en-CA');
     const res = await api.post(`/api/customers/${id}/pay`, { amount, date: localDate });
-    await fetchDebtors();
+    await fetchCustomers();
     return res.data;
   };
 
-  const totals = useMemo(() => Array.isArray(debtors) ? debtors.reduce(
+  const totals = useMemo(() => Array.isArray(customers) ? customers.reduce(
     (acc, d) => {
       acc.totalBalance += parseFloat(d.balance) || 0;
       acc.totalAdvance += parseFloat(d.advance_payment) || 0;
@@ -68,20 +68,20 @@ export function useDebtors() {
       return acc;
     },
     { totalBalance: 0, totalAdvance: 0, activeCount: 0, partialCount: 0, paidCount: 0 }
-  ) : { totalBalance: 0, totalAdvance: 0, activeCount: 0, partialCount: 0, paidCount: 0 }, [debtors]);
+  ) : { totalBalance: 0, totalAdvance: 0, activeCount: 0, partialCount: 0, paidCount: 0 }, [customers]);
 
   return {
-    debtors,
+    customers,
     loading,
     error,
     search,
     setSearch,
-    createDebtor,
-    bulkCreateDebtors,
-    updateDebtor,
-    deleteDebtor,
+    createCustomer,
+    bulkCreateCustomers,
+    updateCustomer,
+    deleteCustomer,
     recordPayment,
-    refetch: fetchDebtors,
+    refetch: fetchCustomers,
     totals,
   };
 }

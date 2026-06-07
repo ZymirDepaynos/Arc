@@ -74,7 +74,8 @@ function AppRoutes() {
     <Routes>
       <Route path="/login" element={user ? <Navigate to="/" replace /> : <LoginPage />} />
       <Route path="/" element={<ProtectedRoute><div className="app-layout"><main className="main-content"><Dashboard /></main></div></ProtectedRoute>} />
-      <Route path="/debtor/:id" element={<ProtectedRoute><div className="app-layout"><main className="main-content"><CustomerDetail /></main></div></ProtectedRoute>} />
+      <Route path="/debtor/:id" element={<Navigate to="/customer/:id" replace />} />
+      <Route path="/customer/:id" element={<ProtectedRoute><div className="app-layout"><main className="main-content"><CustomerDetail /></main></div></ProtectedRoute>} />
       <Route path="/calendar" element={<ProtectedRoute><div className="app-layout"><main className="main-content"><CalendarView /></main></div></ProtectedRoute>} />
       <Route path="/archive" element={<ProtectedRoute><div className="app-layout"><main className="main-content"><ArchivePage /></main></div></ProtectedRoute>} />
     </Routes>

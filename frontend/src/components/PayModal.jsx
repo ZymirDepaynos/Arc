@@ -15,7 +15,7 @@ const parseNaturalDate = (input) => {
 };
 
 
-export default function PayModal({ open, onClose, debtor, onPay }) {
+export default function PayModal({ open, onClose, customer, onPay }) {
   const [amount, setAmount] = useState('');
   const [date, setDate] = useState(getToday());
   const [dateText, setDateText] = useState(formatDisplayDate(getToday()));
@@ -30,7 +30,7 @@ export default function PayModal({ open, onClose, debtor, onPay }) {
       setDateParsed(null);
       setLoading(false);
     }
-  }, [open, debtor]);
+  }, [open, customer]);
 
   const handlePay = async () => {
     const payAmt = parseFloat(amount);
@@ -38,7 +38,7 @@ export default function PayModal({ open, onClose, debtor, onPay }) {
       toast.error('Payment amount must be greater than ₱0');
       return;
     }
-    const currentBalance = parseFloat(debtor.balance || 0);
+    const currentBalance = parseFloat(customer.balance || 0);
     if (payAmt > currentBalance) {
       toast.error('Payment cannot exceed remaining balance (' + fmt(currentBalance) + ')');
       return;
@@ -49,7 +49,7 @@ export default function PayModal({ open, onClose, debtor, onPay }) {
     }
     setLoading(true);
     try {
-      await onPay(debtor.id, payAmt, date);
+      await onPay(customer.id, payAmt, date);
       onClose();
     } finally {
       setLoading(false);
@@ -67,7 +67,7 @@ export default function PayModal({ open, onClose, debtor, onPay }) {
       setDateParsed('future_error');
       setDate('');
     } else if (parsed) {
-      if (debtor.date_borrowed && parsed < debtor.date_borrowed) {
+      if (customer.date_borrowed && parsed < customer.date_borrowed) {
         setDateParsed('past_error');
         setDate('');
       } else {
@@ -108,7 +108,7 @@ export default function PayModal({ open, onClose, debtor, onPay }) {
 
   return (
     <AnimatePresence>
-      {open && debtor && (
+      {open && customer && (
         <motion.div
           className="modal-overlay"
           initial={{ opacity: 0 }}
@@ -134,9 +134,9 @@ export default function PayModal({ open, onClose, debtor, onPay }) {
               <div style={{ fontSize: 14, color: 'var(--text-secondary)', marginBottom: 4 }}>
                 Customer
               </div>
-              <div style={{ fontWeight: 700, fontSize: 16 }}>{debtor.name}</div>
+              <div style={{ fontWeight: 700, fontSize: 16 }}>{customer.name}</div>
               <div style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 2 }}>
-                Outstanding: <span style={{ color: '#DC2626', fontWeight: 700 }}>{fmt(debtor.balance)}</span>
+                Outstanding: <span style={{ color: '#DC2626', fontWeight: 700 }}>{fmt(customer.balance)}</span>
               </div>
             </div>
 
@@ -146,7 +146,7 @@ export default function PayModal({ open, onClose, debtor, onPay }) {
                 className="form-input"
                 type="number"
                 min="1"
-                max={debtor.balance}
+                max={customer.balance}
                 step="1"
                 placeholder="0"
                 onWheel={(e) => e.target.blur()}
@@ -179,7 +179,7 @@ export default function PayModal({ open, onClose, debtor, onPay }) {
                     if (val > getToday()) {
                       setDateParsed('future_error');
                       setDate('');
-                    } else if (debtor.date_borrowed && val < debtor.date_borrowed) {
+                    } else if (customer.date_borrowed && val < customer.date_borrowed) {
                       setDateParsed('past_error');
                       setDate('');
                     } else {

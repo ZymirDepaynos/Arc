@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { parseNaturalDate, formatDisplayDate } from '../utils/dateUtils';
 import { getStatusLabel } from '../utils/format';
 
-export default function SearchOverlay({ open, onClose, debtors }) {
+export default function SearchOverlay({ open, onClose, customers }) {
   const [query, setQuery] = useState('');
   const inputRef = useRef(null);
   const navigate = useNavigate();
@@ -18,7 +18,7 @@ export default function SearchOverlay({ open, onClose, debtors }) {
     }
   }, [open]);
 
-  const filtered = debtors.filter(d => {
+  const filtered = customers.filter(d => {
     const cleanSearch = query.toLowerCase().trim();
     if (!cleanSearch) return true;
     
@@ -76,23 +76,23 @@ export default function SearchOverlay({ open, onClose, debtors }) {
               <div className="no-results">No customers found for "{query}"</div>
             ) : (
               <div className="results-list">
-                {filtered.map(debtor => (
-                  <motion.div 
-                    key={debtor.id}
+                {filtered.map(customer => (
+                  <motion.div
+                    key={customer.id}
                     className="search-result-item"
                     whileTap={{ scale: 0.98 }}
                     onClick={() => {
-                      navigate(`/debtor/${debtor.id}`);
+                      navigate(`/customer/${customer.id}`);
                       onClose();
                     }}
                   >
                     <div className="result-avatar">
-                      {debtor.name.charAt(0).toUpperCase()}
+                      {customer.name.charAt(0).toUpperCase()}
                     </div>
                     <div className="result-info">
-                      <div className="result-name">{debtor.name}</div>
+                      <div className="result-name">{customer.name}</div>
                       <div className="result-status">
-                        {getStatusLabel(debtor.status)}
+                        {getStatusLabel(customer.status)}
                       </div>
                     </div>
                     <ChevronRight size={18} className="result-arrow" />

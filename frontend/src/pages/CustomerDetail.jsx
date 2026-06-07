@@ -13,7 +13,7 @@ import {
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import toast from 'react-hot-toast';
-import DebtorModal from '../components/DebtorModal';
+import CustomerModal from '../components/CustomerModal';
 import PayModal from '../components/PayModal';
 import ConfirmModal from '../components/ConfirmModal';
 import SearchOverlay from '../components/SearchOverlay';
@@ -41,7 +41,7 @@ const initials = (name) =>
 export default function CustomerDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const [debtor, setDebtor] = useState(null);
+  const [customer, setCustomer] = useState(null);
   const [loading, setLoading] = useState(true);
   const [editOpen, setEditOpen] = useState(false);
   const [payOpen, setPayOpen] = useState(false);
@@ -50,21 +50,21 @@ export default function CustomerDetail() {
   const [confirmSettle, setConfirmSettle] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
-  const [allDebtors, setAllDebtors] = useState([]);
+  const [allCustomers, setAllCustomers] = useState([]);
   const [editingHistoryIndex, setEditingHistoryIndex] = useState(null);
   const [editHistoryAmount, setEditHistoryAmount] = useState('');
   const [confirmDeleteHistoryIndex, setConfirmDeleteHistoryIndex] = useState(null);
 
   const API_URL = import.meta.env.VITE_API_URL || '';
 
-  const fetchDebtor = async () => {
+  const fetchCustomer = async () => {
     try {
-      const res = await api.get(`/api/debtors/${id}`);
-      setDebtor(res.data);
-      const allRes = await api.get('/api/debtors');
-      setAllDebtors(allRes.data);
+      const res = await api.get(`/api/customers/${id}`);
+      setCustomer(res.data);
+      const allRes = await api.get('/api/customers');
+      setAllCustomers(allRes.data);
     } catch {
-      toast.error('Could not load debtor');
+      toast.error('Could not load customer');
       navigate('/');
     } finally {
       setLoading(false);
@@ -77,25 +77,25 @@ export default function CustomerDetail() {
     return () => window.removeEventListener('trigger-search-focus', handleSearchTrigger);
   }, []);
 
-  useEffect(() => { fetchDebtor(); }, [id]);
+  useEffect(() => { fetchCustomer(); }, [id]);
 
   const handleEdit = async (form) => {
     const rawBalance = parseFloat(form.balance || 0);
 
     
-    if (rawBalance === 0 && debtor.status !== 'paid' && debtor.balance > 0) {
+    if (rawBalance === 0 && customer.status !== 'paid' && customer.balance > 0) {
       await toast.promise(
-        api.post(`/api/debtors/${id}/pay`, {
-          amount: debtor.balance,
+        api.post(`/api/customers/${id}/pay`, {
+          amount: customer.balance,
           date: new Date().toLocaleDateString('en-CA'),
-        }).then((r) => setDebtor(r.data)),
+        }).then((r) => setCustomer(r.data)),
         { loading: 'Settling account…', success: 'Account fully settled!', error: 'Failed to settle' }
       );
       return;
     }
 
     
-    const old = debtor;
+    const old = customer;
     const changes = [];
     const fmtD = (d) => d ? new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'N/A';
 
@@ -141,18 +141,18 @@ export default function CustomerDetail() {
       current_balance: undefined,
     };
 
-    await toast.promise(api.put(`/api/debtors/${id}`, payload).then((r) => setDebtor(r.data)), {
+    await toast.promise(api.put(`/api/customers/${id}`, payload).then((r) => setCustomer(r.data)), {
       loading: 'Saving...', success: 'Saved!', error: 'Failed to save',
     });
   };
 
   const handleEditHistory = async (index, newAmount) => {
     await toast.promise(
-      api.post(`/api/debtors/${id}/edit-history`, { index, newAmount }),
+      api.post(`/api/customers/${id}/edit-history`, { index, newAmount }),
       {
         loading: 'Updating...',
         success: (res) => {
-          setDebtor(res.data);
+          setCustomer(res.data);
           setEditingHistoryIndex(null);
           return 'Updated and recalculated!';
         },
@@ -163,11 +163,11 @@ export default function CustomerDetail() {
 
   const handleDeleteHistory = async (index) => {
     await toast.promise(
-      api.delete(`/api/debtors/${id}/history/${index}`),
+      api.delete(`/api/customers/${id}/history/${index}`),
       {
         loading: 'Deleting entry...',
         success: (res) => {
-          setDebtor(res.data);
+          setCustomer(res.data);
           setConfirmDeleteHistoryIndex(null);
           return 'Entry deleted and balance restored!';
         },
@@ -178,7 +178,7 @@ export default function CustomerDetail() {
   const handlePay = async (_, amount, date) => {
     const payDate = date || new Date().toLocaleDateString('en-CA');
     await toast.promise(
-      api.post(`/api/debtors/${id}/pay`, { amount, date: payDate }),
+      api.post(`/api/customers/${id}/pay`, { amount, date: payDate }),
       {
         loading: 'Recording...',
         success: (res) => {
@@ -186,7 +186,7 @@ export default function CustomerDetail() {
             navigate('/');
             return 'Settled and marked as paid!';
           }
-          setDebtor(res.data);
+          setCustomer(res.data);
           return 'Payment recorded!';
         },
         error: (err) => err.response?.data?.error || 'Failed to record payment',
@@ -195,7 +195,7 @@ export default function CustomerDetail() {
   };
 
   const handleDelete = async () => {
-    await toast.promise(api.delete(`/api/debtors/${id}`), {
+    await toast.promise(api.delete(`/api/customers/${id}`), {
       loading: 'Archiving...', success: 'Moved to archive', error: 'Failed to archive',
     });
 
@@ -223,26 +223,26 @@ export default function CustomerDetail() {
       lineBorder: [220, 225, 230],
     };
 
-    const totalPaid = (debtor.payment_history || [])
+    const totalPaid = (customer.payment_history || [])
       .filter(p => p.type !== 'edit' && p.type !== 'manual_adjustment' && p.amount > 0)
       .reduce((sum, p) => sum + parseFloat(p.amount || 0), 0);
 
-    const isSettled = debtor.status === 'paid';
+    const isSettled = customer.status === 'paid';
     const generatedDate = new Date().toLocaleDateString('en-US', {
       year: 'numeric', month: 'short', day: 'numeric'
     });
 
     let items = [];
-    if (debtor.notes) {
+    if (customer.notes) {
       try {
-        const parsed = JSON.parse(debtor.notes);
+        const parsed = JSON.parse(customer.notes);
         if (Array.isArray(parsed)) items = parsed;
       } catch (_) {
-        items = debtor.notes.split('\n').map(l => l.replace(/^\d+\.\s*/, '').trim()).filter(Boolean);
+        items = customer.notes.split('\n').map(l => l.replace(/^\d+\.\s*/, '').trim()).filter(Boolean);
       }
     }
-    const receiptText = debtor.receipt_numbers?.length
-      ? debtor.receipt_numbers.map(r => `# ${r}`).join(', ') : 'N/A (Pending)';
+    const receiptText = customer.receipt_numbers?.length
+      ? customer.receipt_numbers.map(r => `# ${r}`).join(', ') : 'N/A (Pending)';
 
     const headerH = 26;
     doc.setFillColor(...C.primaryBlue);
@@ -272,8 +272,8 @@ export default function CustomerDetail() {
     y += 5;
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(...C.textBody);
-    doc.text(debtor.name, margin, y);
-    doc.text(fmtDate(debtor.date_borrowed), margin + 100, y);
+    doc.text(customer.name, margin, y);
+    doc.text(fmtDate(customer.date_borrowed), margin + 100, y);
 
     
     y += 10;
@@ -324,7 +324,7 @@ export default function CustomerDetail() {
     const mY1 = y + 16;
     doc.text('Initial Balance:', margin + 10, mY1);
     doc.setFont('helvetica', 'bold');
-    doc.text(fmtPDF(debtor.original_debt || debtor.balance), margin + 38, mY1);
+    doc.text(fmtPDF(customer.original_debt || customer.balance), margin + 38, mY1);
 
     doc.setFont('helvetica', 'normal');
     doc.text('Total Paid:', margin + 100, mY1);
@@ -339,24 +339,24 @@ export default function CustomerDetail() {
 
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(isSettled ? C.green[0] : C.textBody[0], isSettled ? C.green[1] : C.textBody[1], isSettled ? C.green[2] : C.textBody[2]);
-    doc.text(isSettled ? 'P0.00 (Paid)' : fmtPDF(debtor.balance), margin + 38, mY2);
+    doc.text(isSettled ? 'P0.00 (Paid)' : fmtPDF(customer.balance), margin + 38, mY2);
 
     const tableTop = y + boxH + 8;
     const events = [];
 
     events.push({
       type: 'created',
-      timestamp: debtor.date_borrowed
-        ? new Date(debtor.date_borrowed + 'T12:00:00').getTime()
-        : new Date(debtor.created_at).getTime(),
-      dateStr: (debtor.date_borrowed
-        ? new Date(debtor.date_borrowed + 'T12:00:00')
-        : new Date(debtor.created_at)
+      timestamp: customer.date_borrowed
+        ? new Date(customer.date_borrowed + 'T12:00:00').getTime()
+        : new Date(customer.created_at).getTime(),
+      dateStr: (customer.date_borrowed
+        ? new Date(customer.date_borrowed + 'T12:00:00')
+        : new Date(customer.created_at)
       ).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
     });
 
-    if (debtor.payment_history) {
-      debtor.payment_history.forEach((payment) => {
+    if (customer.payment_history) {
+      customer.payment_history.forEach((payment) => {
         if (payment.type === 'edit') return;
         const isDateOnly = payment.date && (payment.date.length === 10 || !payment.date.includes('T'));
         const pDate = isDateOnly ? new Date(payment.date + 'T12:00:00') : new Date(payment.date);
@@ -372,8 +372,8 @@ export default function CustomerDetail() {
     if (isSettled) {
       events.push({
         type: 'settled',
-        timestamp: new Date(debtor.updated_at).getTime(),
-        dateStr: new Date(debtor.updated_at).toLocaleDateString('en-US', {
+        timestamp: new Date(customer.updated_at).getTime(),
+        dateStr: new Date(customer.updated_at).toLocaleDateString('en-US', {
           month: 'short', day: 'numeric', year: 'numeric'
         }),
       });
@@ -391,7 +391,7 @@ export default function CustomerDetail() {
 
     events.forEach(ev => {
       if (ev.type === 'created') {
-        tableData.push([`${rowNum++}`, ev.dateStr, 'Record Started', '', fmtPDF(debtor.original_debt || debtor.balance)]);
+        tableData.push([`${rowNum++}`, ev.dateStr, 'Record Started', '', fmtPDF(customer.original_debt || customer.balance)]);
       } else if (ev.type === 'settled') {
         tableData.push([`${rowNum++}`, ev.dateStr, 'Account Paid', '', '']);
       } else {
@@ -463,7 +463,7 @@ export default function CustomerDetail() {
       }
     });
 
-    doc.save(`${debtor.name.replace(/\s+/g, '_')}_Transaction_Report.pdf`);
+    doc.save(`${customer.name.replace(/\s+/g, '_')}_Transaction_Report.pdf`);
     toast.success('Transaction report downloaded!');
   };
 
@@ -477,7 +477,7 @@ export default function CustomerDetail() {
     );
   }
 
-  if (!debtor) return null;
+  if (!customer) return null;
 
   return (
     <div style={{ minHeight: '100vh', paddingBottom: 80, padding: '40px 32px', maxWidth: '100%' }}>
@@ -493,11 +493,11 @@ export default function CustomerDetail() {
             <ArrowLeft size={20} />
           </button>
           <div style={{ width: 80, height: 80, borderRadius: 24, background: 'var(--accent-light)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 32, fontWeight: 900, color: 'var(--accent)' }}>
-            {initials(debtor.name)}
+            {initials(customer.name)}
           </div>
           <div>
             <h1 style={{ fontSize: 32, fontWeight: 900, color: 'var(--text-primary)', margin: '0 0 4px 0', letterSpacing: '-0.5px' }}>
-              {debtor.name}
+              {customer.name}
             </h1>
 
           </div>
@@ -525,10 +525,10 @@ export default function CustomerDetail() {
             Current Balance
           </div>
           <div style={{ fontSize: 40, fontWeight: 900, color: 'var(--accent)', letterSpacing: '-1px', lineHeight: 1, marginBottom: 20 }}>
-            {fmt(debtor.balance)}
+            {fmt(customer.balance)}
           </div>
 
-          {debtor.status === 'paid' ? (
+          {customer.status === 'paid' ? (
             <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'var(--status-paid-bg)', color: 'var(--status-paid-text)', padding: '6px 12px', borderRadius: 10, fontSize: 14, fontWeight: 800 }}>
               Paid
             </div>
@@ -553,7 +553,7 @@ export default function CustomerDetail() {
             Initial Balance
           </div>
           <div style={{ fontSize: 32, fontWeight: 800, color: 'var(--accent)', letterSpacing: '-0.5px' }}>
-            {fmt(debtor.original_debt || debtor.balance)}
+            {fmt(customer.original_debt || customer.balance)}
           </div>
         </div>
 
@@ -563,7 +563,7 @@ export default function CustomerDetail() {
             Receipt Number
           </div>
           <div style={{ fontSize: 24, fontWeight: 800, color: 'var(--accent)', wordBreak: 'break-all' }}>
-            {debtor.receipt_numbers?.length ? debtor.receipt_numbers.map(r => `#${r}`).join(', ') : '—'}
+            {customer.receipt_numbers?.length ? customer.receipt_numbers.map(r => `#${r}`).join(', ') : '—'}
           </div>
         </div>
       </div>
@@ -576,7 +576,7 @@ export default function CustomerDetail() {
             <div style={{ marginBottom: 24, paddingBottom: 24, borderBottom: '1px solid var(--border)' }}>
               <h3 style={{ fontSize: 17, fontWeight: 800, color: 'var(--text-primary)', marginBottom: 12, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Purchase Date</h3>
               <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary)' }}>
-                {fmtDate(debtor.date_borrowed)}
+                {fmtDate(customer.date_borrowed)}
               </div>
             </div>
 
@@ -585,12 +585,12 @@ export default function CustomerDetail() {
               <h3 style={{ fontSize: 15, fontWeight: 800, color: 'var(--text-primary)', marginBottom: 12, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Items Purchased</h3>
               {(() => {
                 let items = [];
-                if (debtor.notes) {
+                if (customer.notes) {
                   try {
-                    const parsed = JSON.parse(debtor.notes);
+                    const parsed = JSON.parse(customer.notes);
                     if (Array.isArray(parsed)) items = parsed;
                   } catch (_) {
-                    items = debtor.notes.split('\n').map(l => l.replace(/^\d+\.\s*/, '').trim()).filter(Boolean);
+                    items = customer.notes.split('\n').map(l => l.replace(/^\d+\.\s*/, '').trim()).filter(Boolean);
                   }
                 }
                 return items.length > 0 ? (
@@ -659,7 +659,7 @@ export default function CustomerDetail() {
             </div>
             <div className="timeline-container">
               {(() => {
-                const isSettled = debtor.status === 'paid';
+                const isSettled = customer.status === 'paid';
                 const events = [];
 
                 if (activeTab === 'transactions') {
@@ -667,17 +667,17 @@ export default function CustomerDetail() {
                   events.push({
                     id: 'created',
                     type: 'created',
-                    timestamp: debtor.date_borrowed
-                      ? new Date(debtor.date_borrowed + 'T12:00:00').getTime()
-                      : new Date(debtor.created_at).getTime(),
-                    dateStr: debtor.date_borrowed
-                      ? new Date(debtor.date_borrowed + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-                      : new Date(debtor.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+                    timestamp: customer.date_borrowed
+                      ? new Date(customer.date_borrowed + 'T12:00:00').getTime()
+                      : new Date(customer.created_at).getTime(),
+                    dateStr: customer.date_borrowed
+                      ? new Date(customer.date_borrowed + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+                      : new Date(customer.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
                   });
 
                   
-                  if (debtor.payment_history) {
-                    debtor.payment_history.forEach((payment, idx) => {
+                  if (customer.payment_history) {
+                    customer.payment_history.forEach((payment, idx) => {
                       if (payment.type !== 'edit' && payment.type !== 'manual_adjustment') {
                         const isDateOnly = payment.date && (payment.date.length === 10 || !payment.date.includes('T'));
                         const pDate = isDateOnly
@@ -701,14 +701,14 @@ export default function CustomerDetail() {
                     events.push({
                       id: 'settled',
                       type: 'settled',
-                      timestamp: new Date(debtor.updated_at).getTime(),
-                      dateStr: new Date(debtor.updated_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+                      timestamp: new Date(customer.updated_at).getTime(),
+                      dateStr: new Date(customer.updated_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
                     });
                   }
                 } else {
                   
-                  if (debtor.payment_history) {
-                    debtor.payment_history.forEach((payment, idx) => {
+                  if (customer.payment_history) {
+                    customer.payment_history.forEach((payment, idx) => {
                       if (payment.type === 'edit' || payment.type === 'manual_adjustment') {
                         const isDateOnly = payment.date && (payment.date.length === 10 || !payment.date.includes('T'));
                         const pDate = isDateOnly
@@ -747,7 +747,7 @@ export default function CustomerDetail() {
                         <div className="timeline-content">
                           <div className="timeline-time">{ev.dateStr}</div>
                           <div className="timeline-title">Record Started</div>
-                          <div className="timeline-desc">Initial balance of <span className="timeline-money">{fmt(debtor.original_debt || (debtor.balance + (debtor.payment_history?.filter(p => p.amount && p.type !== 'manual_adjustment').reduce((acc, p) => acc + p.amount, 0) || 0)))}</span> was recorded.</div>
+                          <div className="timeline-desc">Initial balance of <span className="timeline-money">{fmt(customer.original_debt || (customer.balance + (customer.payment_history?.filter(p => p.amount && p.type !== 'manual_adjustment').reduce((acc, p) => acc + p.amount, 0) || 0)))}</span> was recorded.</div>
                         </div>
                       </div>
                     );
@@ -863,7 +863,7 @@ export default function CustomerDetail() {
                                           return;
                                         }
                                         
-                                        const maxAllowed = parseFloat(debtor.balance) + parseFloat(p.amount);
+                                        const maxAllowed = parseFloat(customer.balance) + parseFloat(p.amount);
                                         if (raw > maxAllowed) {
                                           toast.error('Payment cannot exceed remaining balance (' + fmt(maxAllowed) + ')');
                                           return;
@@ -898,16 +898,16 @@ export default function CustomerDetail() {
       </div>
 
       {}
-      <DebtorModal open={editOpen} onClose={() => setEditOpen(false)} onSubmit={handleEdit} initial={debtor} />
-      <PayModal open={payOpen} onClose={() => setPayOpen(false)} debtor={debtor} onPay={handlePay} />
+      <CustomerModal open={editOpen} onClose={() => setEditOpen(false)} onSubmit={handleEdit} initial={customer} />
+      <PayModal open={payOpen} onClose={() => setPayOpen(false)} customer={customer} onPay={handlePay} />
 
 
       <ConfirmModal
         open={confirmSettle}
         onClose={() => setConfirmSettle(false)}
-        onConfirm={() => handlePay(debtor.id, debtor.balance)}
+        onConfirm={() => handlePay(customer.id, customer.balance)}
         title="Settle Full?"
-        message={`This will pay the remaining ${fmt(debtor.balance)} and mark this record as fully paid. Continue?`}
+        message={`This will pay the remaining ${fmt(customer.balance)} and mark this record as fully paid. Continue?`}
       />
 
       <ConfirmModal
@@ -915,7 +915,7 @@ export default function CustomerDetail() {
         onClose={() => setConfirmDelete(false)}
         onConfirm={handleDelete}
         title="Move to Archive?"
-        message={`This will move ${debtor.name}'s record to the archive. You can restore it later from the Archive page.`}
+        message={`This will move ${customer.name}'s record to the archive. You can restore it later from the Archive page.`}
       />
 
       <div className="hide-desktop" style={{ position: 'fixed', bottom: 100, left: 24, right: 24, zIndex: 900 }}>
@@ -933,7 +933,7 @@ export default function CustomerDetail() {
       <SearchOverlay
         open={searchOpen}
         onClose={() => setSearchOpen(false)}
-        debtors={allDebtors}
+        customers={allCustomers}
       />
     </div>
   );

@@ -24,7 +24,7 @@ export default function CalendarView() {
   useEffect(() => {
     const fetchAll = async () => {
       try {
-        const res = await api.get('/api/debtors');
+        const res = await api.get('/api/customers');
         setDebtors(res.data);
       } catch (err) {
         console.error('Failed to fetch debtors for calendar', err);
@@ -149,7 +149,7 @@ export default function CalendarView() {
               <div className="history-empty">No payments yet.</div>
             )}
             {allHistoryEvents.map((ev, i) => (
-              <div key={i} className="history-item" onClick={() => navigate(`/debtor/${ev.debtorId}`)}>
+              <div key={i} className="history-item" onClick={() => navigate(`/customer/${ev.debtorId}`)}>
                 <div className="history-item-header">
                   <span className="history-name">{ev.name}</span>
                   <span className="history-date">{new Date(ev.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
@@ -298,7 +298,7 @@ export default function CalendarView() {
                   <div
                     key={i}
                     className={`detail-event-item ${ev.type}`}
-                    onClick={() => navigate(`/debtor/${ev.debtor.id}`)}
+                    onClick={() => navigate(`/customer/${ev.debtor.id}`)}
                   >
                     <div className="event-info">
                       <span className="event-name">{ev.name}</span>

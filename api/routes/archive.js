@@ -11,7 +11,7 @@ const supabase = createClient(
 router.get('/', async (req, res) => {
   try {
     const { data, error } = await supabase
-      .from('debtors')
+      .from('customers')
       .select('*')
       .eq('user_id', req.user.id)
       .not('archived_at', 'is', null)
@@ -28,7 +28,7 @@ router.get('/', async (req, res) => {
 router.post('/:id/restore', async (req, res) => {
   try {
     const { data, error } = await supabase
-      .from('debtors')
+      .from('customers')
       .update({ archived_at: null })
       .eq('id', req.params.id)
       .eq('user_id', req.user.id)
@@ -46,7 +46,7 @@ router.post('/:id/restore', async (req, res) => {
 router.delete('/:id', async (req, res) => {
   try {
     const { error } = await supabase
-      .from('debtors')
+      .from('customers')
       .delete()
       .eq('id', req.params.id)
       .eq('user_id', req.user.id)

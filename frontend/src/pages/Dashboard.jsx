@@ -7,10 +7,10 @@ import SearchOverlay from '../components/SearchOverlay';
 import toast from 'react-hot-toast';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import { useDebtors } from '../hooks/useDebtors';
+import { useCustomers } from '../hooks/useCustomers';
 import SummaryStats from '../components/SummaryStats';
-import DebtorCard from '../components/DebtorCard';
-import DebtorModal from '../components/DebtorModal';
+import CustomerCard from '../components/CustomerCard';
+import CustomerModal from '../components/CustomerModal';
 import PayModal from '../components/PayModal';
 import ConfirmModal from '../components/ConfirmModal';
 import ThemeToggle from '../components/ThemeToggle';
@@ -26,17 +26,17 @@ export default function Dashboard() {
   const { updateTimeout } = useSession();
   const [sessionSettingsOpen, setSessionSettingsOpen] = useState(false);
   const {
-    debtors, loading, error, search, setSearch,
-    createDebtor, bulkCreateDebtors, updateDebtor, deleteDebtor, recordPayment, totals
-  } = useDebtors();
+    customers, loading, error, search, setSearch,
+    createCustomer, bulkCreateCustomers, updateCustomer, deleteCustomer, recordPayment, totals
+  } = useCustomers();
 
   const [dataMenuOpen, setDataMenuOpen] = useState(false);
   const [sortMenuOpen, setSortMenuOpen] = useState(false);
   const [settingsMenuOpen, setSettingsMenuOpen] = useState(false);
 
   const [addOpen, setAddOpen] = useState(false);
-  const [editDebtor, setEditDebtor] = useState(null);
-  const [payDebtor, setPayDebtor] = useState(null);
+  const [editCustomer, setEditCustomer] = useState(null);
+  const [payCustomer, setPayCustomer] = useState(null);
   const [filterStatus, setFilterStatus] = useState('All');
   const [confirmData, setConfirmData] = useState(null);
   const [deleteData, setDeleteData] = useState(null);
@@ -87,19 +87,19 @@ export default function Dashboard() {
     try {
       const newLogs = [];
       selectedIds.forEach(id => {
-        const debtor = debtors.find(d => d.id === id);
-        if (debtor) {
+        const customer = customers.find(d => d.id === id);
+        if (customer) {
           newLogs.push({
             id: `deleted-${id}-${Date.now()}`,
             date: new Date().toISOString(),
-            customerName: debtor.name,
+            customerName: customer.name,
             type: 'deleted',
-            amount: debtor.balance
+            amount: customer.balance
           });
         }
       });
       await addAuditLog(newLogs);
-      await Promise.all(selectedIds.map(id => deleteDebtor(id)));
+      await Promise.all(selectedIds.map(id => deleteCustomer(id)));
       setSelectedIds([]);
       setIsSelectionMode(false);
       toast.success(`Deleted ${selectedIds.length} records`);
@@ -111,7 +111,7 @@ export default function Dashboard() {
   const handleBulkPaid = async () => {
     try {
       await Promise.all(selectedIds.map(id => {
-        const d = debtors.find(x => x.id === id);
+        const d = customers.find(x => x.id === id);
         return recordPayment(id, d.balance);
       }));
       setSelectedIds([]);
@@ -136,7 +136,7 @@ export default function Dashboard() {
 
 
 
-  const exportToPDF = (exportData = debtors) => {
+  const exportToPDF = (exportData = customers) => {
     const data = [...exportData].sort((a, b) => a.name.localeCompare(b.name));
     const doc = new jsPDF();
     const pageW = doc.internal.pageSize.getWidth();
@@ -297,7 +297,7 @@ export default function Dashboard() {
     toast.success('PDF Report Generated');
   };
 
-  const exportToCSV = (exportData = debtors) => {
+  const exportToCSV = (exportData = customers) => {
     const headers = ['ID', 'Name', 'Initial Balance', 'Date of Purchase', 'Advance Payment', 'Balance', 'Status'];
     const sortedData = [...exportData].sort((a, b) => a.name.localeCompare(b.name));
     const rows = sortedData.map(d => [
@@ -372,7 +372,7 @@ export default function Dashboard() {
 
         if (data.length === 0) throw new Error('No valid customer data found in CSV');
 
-        await toast.promise(bulkCreateDebtors(data), {
+        await toast.promise(bulkCreateCustomers(data), {
           loading: `Importing ${data.length} customers...`,
           success: `Successfully imported ${data.length} customers!`,
           error: 'Failed to import CSV'
@@ -397,7 +397,7 @@ export default function Dashboard() {
       adjustment_date_text: undefined,
       current_balance: undefined,
     };
-    await toast.promise(createDebtor(payload), {
+    await toast.promise(createCustomer(payload), {
       loading: 'Adding customer...',
       success: 'Customer added!',
       error: (e) => e?.response?.data?.error || 'Failed to add customer',
@@ -408,17 +408,17 @@ export default function Dashboard() {
     const rawBalance = parseFloat(form.balance || 0);
 
 
-    if (rawBalance === 0 && editDebtor && editDebtor.status !== 'paid' && editDebtor.balance > 0) {
-      await toast.promise(recordPayment(editDebtor.id, editDebtor.balance), {
+    if (rawBalance === 0 && editCustomer && editCustomer.status !== 'paid' && editCustomer.balance > 0) {
+      await toast.promise(recordPayment(editCustomer.id, editCustomer.balance), {
         loading: 'Settling account…',
-        success: `${editDebtor.name} has been fully settled!`,
+        success: `${editCustomer.name} has been fully settled!`,
         error: 'Failed to settle',
       });
       return;
     }
 
 
-    const old = editDebtor;
+    const old = editCustomer;
     const changes = [];
     const fmtD = (d) => d ? new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'N/A';
 
@@ -450,7 +450,7 @@ export default function Dashboard() {
       date_borrowed_text: undefined,
       current_balance: undefined,
     };
-    await toast.promise(updateDebtor(editDebtor.id, payload), {
+    await toast.promise(updateCustomer(editCustomer.id, payload), {
       loading: 'Saving changes...',
       success: 'Changes saved!',
       error: (e) => e?.response?.data?.error || 'Failed to save',
@@ -458,19 +458,19 @@ export default function Dashboard() {
   };
 
   const handleDelete = async (id) => {
-    const debtor = debtors.find(d => d.id === id) || deleteData;
-    await toast.promise(deleteDebtor(id), {
+    const customer = customers.find(d => d.id === id) || deleteData;
+    await toast.promise(deleteCustomer(id), {
       loading: 'Deleting...',
       success: 'Customer removed.',
       error: (err) => err.response?.data?.error || 'Failed to delete',
     });
-    if (debtor) {
+    if (customer) {
       await addAuditLog({
         id: `deleted-${id}-${Date.now()}`,
         date: new Date().toISOString(),
-        customerName: debtor.name,
+        customerName: customer.name,
         type: 'deleted',
-        amount: debtor.balance
+        amount: customer.balance
       });
     }
   };
@@ -533,7 +533,7 @@ export default function Dashboard() {
     return false;
   };
 
-  const filteredCustomers = debtors
+  const filteredCustomers = customers
     .filter(d => {
 
       if (filterStatus === 'Paid' && d.status !== 'paid') return false;
@@ -1090,17 +1090,17 @@ export default function Dashboard() {
                 </tr>
               </thead>
               <motion.tbody initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-                {currentCustomers.map((debtor, i) => (
-                  <DebtorCard
-                    key={debtor.id}
-                    debtor={debtor}
+                {currentCustomers.map((customer, i) => (
+                  <CustomerCard
+                    key={customer.id}
+                    customer={customer}
                     index={i}
-                    selected={selectedIds.includes(debtor.id)}
-                    onToggleSelect={() => toggleSelect(debtor.id)}
-                    onEdit={() => setEditDebtor(debtor)}
-                    onDelete={() => setDeleteData(debtor)}
-                    onPay={() => setPayDebtor(debtor)}
-                    onSettle={() => setConfirmData(debtor)}
+                    selected={selectedIds.includes(customer.id)}
+                    onToggleSelect={() => toggleSelect(customer.id)}
+                    onEdit={() => setEditCustomer(customer)}
+                    onDelete={() => setDeleteData(customer)}
+                    onPay={() => setPayCustomer(customer)}
+                    onSettle={() => setConfirmData(customer)}
                     isSelectionMode={isSelectionMode}
                   />
                 ))}
@@ -1202,22 +1202,22 @@ export default function Dashboard() {
       </div>
 
       { }
-      <DebtorModal open={addOpen} onClose={() => setAddOpen(false)} onSubmit={handleAdd} />
+      <CustomerModal open={addOpen} onClose={() => setAddOpen(false)} onSubmit={handleAdd} />
       <SessionSettingsModal
         open={sessionSettingsOpen}
         onClose={() => setSessionSettingsOpen(false)}
         onUpdate={updateTimeout}
       />
-      <DebtorModal
-        open={!!editDebtor}
-        onClose={() => setEditDebtor(null)}
+      <CustomerModal
+        open={!!editCustomer}
+        onClose={() => setEditCustomer(null)}
         onSubmit={handleEdit}
-        initial={editDebtor}
+        initial={editCustomer}
       />
       <PayModal
-        open={!!payDebtor}
-        onClose={() => setPayDebtor(null)}
-        debtor={payDebtor}
+        open={!!payCustomer}
+        onClose={() => setPayCustomer(null)}
+        customer={payCustomer}
         onPay={handlePay}
       />
 
@@ -1243,7 +1243,7 @@ export default function Dashboard() {
       <SearchOverlay
         open={searchOpen}
         onClose={() => setSearchOpen(false)}
-        debtors={debtors}
+        customers={customers}
       />
 
       <AnimatePresence>
@@ -1256,7 +1256,7 @@ export default function Dashboard() {
           >
             <div className="bulk-count">{selectedIds.length} Selected</div>
             <div className="bulk-btns">
-              {selectedIds.some(id => debtors.find(d => d.id === id)?.status !== 'paid') && (
+              {selectedIds.some(id => customers.find(d => d.id === id)?.status !== 'paid') && (
                 <button className="btn btn-primary btn-sm" onClick={() => setBulkConfirm({ type: 'paid' })}>Mark as Paid</button>
               )}
               <button className="btn btn-outline btn-sm" style={{ borderColor: '#FF4D4D', color: '#FF4D4D' }} onClick={() => setBulkConfirm({ type: 'delete' })}>Delete All</button>
@@ -1308,17 +1308,17 @@ export default function Dashboard() {
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 24 }}>
                 {[
-                  { label: 'All Records', value: 'all', desc: `${debtors.length} records` },
-                  { label: 'Outstanding Only', value: 'active', desc: `${debtors.filter(d => d.status === 'active').length} records` },
-                  { label: 'Partial Only', value: 'partial', desc: `${debtors.filter(d => d.status === 'partial').length} records` },
-                  { label: 'Paid', value: 'paid', desc: `${debtors.filter(d => d.status === 'paid').length} records` },
+                  { label: 'All Records', value: 'all', desc: `${customers.length} records` },
+                  { label: 'Outstanding Only', value: 'active', desc: `${customers.filter(d => d.status === 'active').length} records` },
+                  { label: 'Partial Only', value: 'partial', desc: `${customers.filter(d => d.status === 'partial').length} records` },
+                  { label: 'Paid', value: 'paid', desc: `${customers.filter(d => d.status === 'paid').length} records` },
                 ].map(opt => (
                   <button
                     key={opt.value}
                     className="btn btn-outline"
                     style={{ justifyContent: 'space-between', padding: '14px 18px', textAlign: 'left' }}
                     onClick={() => {
-                      const filtered = opt.value === 'all' ? debtors : debtors.filter(d => d.status === opt.value);
+                      const filtered = opt.value === 'all' ? customers : customers.filter(d => d.status === opt.value);
                       if (exportFilterType === 'pdf') exportToPDF(filtered);
                       else exportToCSV(filtered);
                       setExportFilterOpen(false);

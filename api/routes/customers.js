@@ -28,7 +28,7 @@ router.post('/import-all', async (req, res) => {
     }
 
     const { data, error } = await supabase
-      .from('debtors')
+      .from('customers')
       .insert(customers.map(c => {
         const rawBalance = parseFloat(c.balance) || 0;
         const rawAdvance = parseFloat(c.advance_payment) || 0;
@@ -70,7 +70,7 @@ router.get('/', async (req, res) => {
   try {
     const { search } = req.query;
     let query = supabase
-      .from('debtors')
+      .from('customers')
       .select('*')
       .eq('user_id', req.user.id)
       .is('archived_at', null)
@@ -93,7 +93,7 @@ router.get('/', async (req, res) => {
 router.get('/:id', async (req, res) => {
   try {
     const { data, error } = await supabase
-      .from('debtors')
+      .from('customers')
       .select('*')
       .eq('id', req.params.id)
       .eq('user_id', req.user.id)
@@ -142,7 +142,7 @@ router.post('/', async (req, res) => {
     }
 
     const { data, error } = await supabase
-      .from('debtors')
+      .from('customers')
       .insert([{
         name,
         original_debt: originalDebt,
@@ -180,7 +180,7 @@ router.put('/:id', async (req, res) => {
 
     
     const { data: current, error: fetchError } = await supabase
-      .from('debtors')
+      .from('customers')
       .select('*')
       .eq('id', req.params.id)
       .eq('user_id', req.user.id)
@@ -204,7 +204,7 @@ router.put('/:id', async (req, res) => {
     const newStatus = computeStatus(newBalance, newAdvance);
 
     const { data, error } = await supabase
-      .from('debtors')
+      .from('customers')
       .update({
         name,
         original_debt: newOriginalDebt,
@@ -233,7 +233,7 @@ router.put('/:id', async (req, res) => {
 router.delete('/:id', async (req, res) => {
   try {
     const { error } = await supabase
-      .from('debtors')
+      .from('customers')
       .update({ archived_at: new Date().toISOString() })
       .eq('id', req.params.id)
       .eq('user_id', req.user.id);
@@ -252,7 +252,7 @@ router.post('/:id/pay', async (req, res) => {
 
     
     const { data: current, error: fetchError } = await supabase
-      .from('debtors')
+      .from('customers')
       .select('balance, advance_payment, payment_history')
       .eq('id', req.params.id)
       .eq('user_id', req.user.id)
@@ -286,7 +286,7 @@ router.post('/:id/pay', async (req, res) => {
 
     if (newBalance <= 0) {
       const { data, error: updateError } = await supabase
-        .from('debtors')
+        .from('customers')
         .update({
           balance: 0,
           advance_payment: newAdvance,
@@ -304,7 +304,7 @@ router.post('/:id/pay', async (req, res) => {
     }
 
     const { data, error } = await supabase
-      .from('debtors')
+      .from('customers')
       .update({
         balance: newBalance,
         advance_payment: newAdvance,
@@ -330,7 +330,7 @@ router.post('/:id/edit-history', async (req, res) => {
     const { index, newAmount } = req.body;
     
     const { data: current, error: fetchError } = await supabase
-      .from('debtors')
+      .from('customers')
       .select('*')
       .eq('id', req.params.id)
       .eq('user_id', req.user.id)
@@ -381,7 +381,7 @@ router.post('/:id/edit-history', async (req, res) => {
     const newStatus = computeStatus(newBalance, newAdvance);
 
     const { data, error } = await supabase
-      .from('debtors')
+      .from('customers')
       .update({
         balance: newBalance,
         advance_payment: newAdvance,
@@ -408,7 +408,7 @@ router.delete('/:id/history/:index', async (req, res) => {
     const index = parseInt(req.params.index, 10);
 
     const { data: current, error: fetchError } = await supabase
-      .from('debtors')
+      .from('customers')
       .select('*')
       .eq('id', req.params.id)
       .eq('user_id', req.user.id)
@@ -451,7 +451,7 @@ router.delete('/:id/history/:index', async (req, res) => {
     const newStatus = computeStatus(newBalance, newAdvance);
 
     const { data, error } = await supabase
-      .from('debtors')
+      .from('customers')
       .update({
         balance: newBalance,
         advance_payment: newAdvance,

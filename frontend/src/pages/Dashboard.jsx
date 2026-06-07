@@ -398,9 +398,9 @@ export default function Dashboard() {
       current_balance: undefined,
     };
     await toast.promise(createDebtor(payload), {
-      loading: 'Adding debtor...',
-      success: 'Debtor added!',
-      error: (e) => e?.response?.data?.error || 'Failed to add debtor',
+      loading: 'Adding customer...',
+      success: 'Customer added!',
+      error: (e) => e?.response?.data?.error || 'Failed to add customer',
     });
   };
 
@@ -461,7 +461,7 @@ export default function Dashboard() {
     const debtor = debtors.find(d => d.id === id) || deleteData;
     await toast.promise(deleteDebtor(id), {
       loading: 'Deleting...',
-      success: 'Debtor removed.',
+      success: 'Customer removed.',
       error: (err) => err.response?.data?.error || 'Failed to delete',
     });
     if (debtor) {

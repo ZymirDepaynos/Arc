@@ -6,14 +6,16 @@ This journal provides a detailed, day-by-day record of the Arc Debt Tracker proj
 ---
 
 ## 📊 Development Summary
-- **Total Development Duration:** ~7 Weeks (April 25, 2026 – June 6, 2026)
-- **Active Coding Days:** 20 Days
-- **Total Commit Count:** 98 Commits
+- **Total Development Duration:** ~7 Weeks (April 25, 2026 – June 7, 2026)
+- **Active Coding Days:** 22 Days
+- **Total Commit Count:** 113 Commits
 - **Key Modules Developed:**
   - 🏠 [Dashboard.jsx](file:///C:/Users/Zymir/OneDrive/Desktop/Bakla romel/Arc/frontend/src/pages/Dashboard.jsx) - Main stats, customer lists, pagination, filters, and activity feed.
   - 👤 [CustomerDetail.jsx](file:///C:/Users/Zymir/OneDrive/Desktop/Bakla romel/Arc/frontend/src/pages/CustomerDetail.jsx) - Individual ledger, purchase timelines, export tools, and payments.
   - 📅 [CalendarView.jsx](file:///C:/Users/Zymir/OneDrive/Desktop/Bakla romel/Arc/frontend/src/pages/CalendarView.jsx) - Monthly calendar tracker displaying recent settlements.
-  - 🔒 [PasswordModal.jsx](file:///C:/Users/Zymir/OneDrive/Desktop/Bakla romel/Arc/frontend/src/components/PasswordModal.jsx) & [SettingsModal.jsx](file:///C:/Users/Zymir/OneDrive/Desktop/Bakla romel/Arc/frontend/src/components/SettingsModal.jsx) - Encryption gates and credential management.
+  - 🔒 [LoginPage.jsx](file:///C:/Users/Zymir/OneDrive/Desktop/Bakla romel/Arc/frontend/src/pages/LoginPage.jsx) & [AuthContext.jsx](file:///C:/Users/Zymir/OneDrive/Desktop/Bakla romel/Arc/frontend/src/contexts/AuthContext.jsx) - Supabase User Authentication gate, logins/logouts, and session management.
+  - 🗄️ [ArchivePage.jsx](file:///C:/Users/Zymir/OneDrive/Desktop/Bakla romel/Arc/frontend/src/pages/ArchivePage.jsx) - Soft delete recovery interface with soft-deleting, restoration, and purging controls.
+  - ⏳ [SessionSettingsModal.jsx](file:///C:/Users/Zymir/OneDrive/Desktop/Bakla romel/Arc/frontend/src/components/SessionSettingsModal.jsx) & [useInactivityTimer.js](file:///C:/Users/Zymir/OneDrive/Desktop/Bakla romel/Arc/frontend/src/hooks/useInactivityTimer.js) - Configurable inactivity session logout settings with quick-select pills and custom unit inputs.
 
 ---
 
@@ -175,8 +177,8 @@ Focus: Landscape PDF conversions, component renaming, form improvements, and tim
 
 ---
 
-### 🔒 Week 6: Security, Refinement & Layout Overhaul (May 30 – June 4)
-Focus: Password gating critical actions, alphabetizing lists, Supabase data migration, and responsive component adaptations.
+### 🔒 Week 6: Security, Refinement & Layout Overhaul (May 30 – June 5)
+Focus: Password gating critical actions, alphabetizing lists, Supabase data migration, responsive component adaptations, and verification testing.
 
 #### Day 2: May 31, 2026
 * **Category:** `🐛 Bug Fix`, `🚀 Feature`
@@ -233,8 +235,28 @@ Focus: Password gating critical actions, alphabetizing lists, Supabase data migr
   - Performed comprehensive system validation testing across both light and dark modes.
   - Inspected the Supabase database migrations to ensure table schema consistency.
 
-#### Day 8: June 6, 2026 (Today)
-* **Category:** `📝 Documentation`
-* **Commits:** None (Working tree clean)
+---
+
+### 🛡️ Week 7: Supabase Authentication, Session Controls & Archive System (June 6 – June 12)
+Focus: Transitioning to full Supabase authentication, implementing configurable inactivity session timeouts, developing a customer archiving system, and consolidating settings navigation.
+
+#### Day 8: June 6, 2026
+* **Category:** `🚀 Feature`, `🔒 Security`, `⚙️ Refactor`
+* **Commits:** `0b3a03e`, `c4c153f`, `f7861bf`, `3b589f4`, `dc4fe13`
 * **Details:**
-  - Updated the Daily Development Journal and Weekly Journal to match the actual commit logs and codebase improvements.
+  - **Supabase Authentication integration:** Implemented full authentication using Supabase Auth, creating [LoginPage.jsx](file:///C:/Users/Zymir/OneDrive/Desktop/Bakla romel/Arc/frontend/src/pages/LoginPage.jsx) and [AuthContext.jsx](file:///C:/Users/Zymir/OneDrive/Desktop/Bakla romel/Arc/frontend/src/contexts/AuthContext.jsx) to secure app routes and manage token sessions.
+  - **Backend Directory Purge:** Completely removed the deprecated `backend` directory (including `backend/index.js`, `backend/routes/`, `backend/package.json`, and its dependencies) to eliminate environment confusion and maintain single-root API structure under `api/`.
+  - **Inactivity Session Auto-Logout:** Built a configurable auto-logout session timer using a custom React hook [useInactivityTimer.js](file:///C:/Users/Zymir/OneDrive/Desktop/Bakla romel/Arc/frontend/src/hooks/useInactivityTimer.js).
+  - **Session Settings Interface:** Developed the [SessionSettingsModal.jsx](file:///C:/Users/Zymir/OneDrive/Desktop/Bakla romel/Arc/frontend/src/components/SessionSettingsModal.jsx) with quick preset pills (e.g. 5m, 15m, 30m, 1h) and a custom input supporting minute/hour unit conversions.
+  - **Archive soft delete system:** Created a dedicated archive router `api/routes/archive.js` and frontend UI [ArchivePage.jsx](file:///C:/Users/Zymir/OneDrive/Desktop/Bakla romel/Arc/frontend/src/pages/ArchivePage.jsx) allowing soft-deleting, restoring, or permanently purging customer records.
+
+#### Day 9: June 7, 2026 (Today)
+* **Category:** `🚀 Feature`, `🎨 Style`, `🐛 Bug Fix`
+* **Commits:** `85370b2`, `f5932bc`, `5a7a9ac`, `37371aa`, `136b55a`, `05a9ba6`, `5d74907`, `285a0db`, `856145b`, `1b7635e`
+* **Details:**
+  - **Settings Dropdown Consolidation:** Cleaned up the main dashboard header by moving the standalone "Data Actions" and "Calendar" buttons, "Archive Page", "Session Timeout Settings", and "Sign Out" actions into a consolidated Settings dropdown menu.
+  - **Archive View Redesign:** Restyled the soft-deleted list page to match the core design language (adding avatars, status dots, and pure-CSS table layouts).
+  - **Archive Table Optimization:** Clipped long customer names in the archive list, removed the redundant "Status" column to maximize text space, and applied explicit column percentage widths to prevent table layout shifts.
+  - **Calendar Client Security:** Resolved Axios request failures (401 errors) on the calendar view by migrating requests to the centralized authenticated API instance [api.js](file:///C:/Users/Zymir/OneDrive/Desktop/Bakla romel/Arc/frontend/src/lib/api.js).
+  - **Timeline Sorting Adjustments:** Enforced chronological consistency in customer ledger histories by ensuring the "Record Started" creation event always sorts below same-day payment/purchase activities.
+  - **Inactivity Timer Robustness:** Added tab-focus and visibilitychange listeners so the timeout countdown state updates correctly when the user switches tabs or returns to the application.

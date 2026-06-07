@@ -73,7 +73,7 @@ export default function SearchOverlay({ open, onClose, debtors }) {
 
           <div className="search-results-area">
             {query.length > 0 && filtered.length === 0 ? (
-              <div className="no-results">No debtors found for "{query}"</div>
+              <div className="no-results">No customers found for "{query}"</div>
             ) : (
               <div className="results-list">
                 {filtered.map(debtor => (

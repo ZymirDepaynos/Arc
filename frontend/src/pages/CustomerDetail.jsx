@@ -516,73 +516,69 @@ export default function CustomerDetail() {
         </div>
       </div>
 
-      {}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 24, marginBottom: 24 }}>
-
-        {}
-        <div className="stat-box" style={{ padding: 24, borderRadius: 24, background: 'var(--bg-card)', display: 'flex', flexDirection: 'column', justifyContent: 'center', border: '1px solid var(--border)' }}>
-          <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>
-            Current Balance
-          </div>
-          <div style={{ fontSize: 40, fontWeight: 900, color: 'var(--accent)', letterSpacing: '-1px', lineHeight: 1, marginBottom: 20 }}>
-            {fmt(customer.balance)}
-          </div>
-
-          {customer.status === 'paid' ? (
-            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'var(--status-paid-bg)', color: 'var(--status-paid-text)', padding: '6px 12px', borderRadius: 10, fontSize: 14, fontWeight: 800 }}>
-              Paid
-            </div>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              <div style={{ display: 'flex', gap: 12 }}>
-                <button className="btn btn-primary" onClick={() => setPayOpen(true)} style={{ flex: 1, height: 44, borderRadius: 12, fontSize: 14 }}>
-                  Add Payment
-                </button>
-                <button className="btn btn-outline" onClick={() => setConfirmSettle(true)} style={{ flex: 1, height: 44, borderRadius: 12, fontSize: 14, background: 'var(--bg-page)' }}>
-                  Settle Full
-                </button>
-              </div>
-
-            </div>
-          )}
-        </div>
-
-        {}
-        <div className="stat-box" style={{ padding: 24, borderRadius: 24, background: 'var(--bg-card)', border: '1px solid var(--border)', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-          <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>
-            Initial Balance
-          </div>
-          <div style={{ fontSize: 32, fontWeight: 800, color: 'var(--accent)', letterSpacing: '-0.5px' }}>
-            {fmt(customer.original_debt || customer.balance)}
-          </div>
-        </div>
-
-        {}
-        <div className="stat-box" style={{ padding: 24, borderRadius: 24, background: 'var(--bg-card)', border: '1px solid var(--border)', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-          <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>
-            Receipt Number
-          </div>
-          <div style={{ fontSize: 24, fontWeight: 800, color: 'var(--accent)', wordBreak: 'break-all' }}>
-            {customer.receipt_numbers?.length ? customer.receipt_numbers.map(r => `#${r}`).join(', ') : '—'}
-          </div>
-        </div>
-      </div>
-
-      {}
+      {/* Grid Layout inspired by Wireframe */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Left Column: Balances and Purchase Info */}
         <div className="lg:col-span-1 flex flex-col gap-8">
+          
+          {/* Initial Balance */}
+          <div className="stat-box" style={{ padding: 24, borderRadius: 24, background: 'var(--bg-card)', border: '1px solid var(--border)', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+            <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>
+              Initial Balance
+            </div>
+            <div style={{ fontSize: 32, fontWeight: 800, color: 'var(--accent)', letterSpacing: '-0.5px' }}>
+              {fmt(customer.original_debt || customer.balance)}
+            </div>
+          </div>
+
+          {/* Current Balance */}
+          <div className="stat-box" style={{ padding: 24, borderRadius: 24, background: 'var(--bg-card)', display: 'flex', flexDirection: 'column', justifyContent: 'center', border: '1px solid var(--border)' }}>
+            <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>
+              Current Balance
+            </div>
+            <div style={{ fontSize: 40, fontWeight: 900, color: 'var(--accent)', letterSpacing: '-1px', lineHeight: 1, marginBottom: 20 }}>
+              {fmt(customer.balance)}
+            </div>
+
+            {customer.status === 'paid' ? (
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'var(--status-paid-bg)', color: 'var(--status-paid-text)', padding: '6px 12px', borderRadius: 10, fontSize: 14, fontWeight: 800 }}>
+                Paid
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                <div style={{ display: 'flex', gap: 12 }}>
+                  <button className="btn btn-primary" onClick={() => setPayOpen(true)} style={{ flex: 1, height: 44, borderRadius: 12, fontSize: 14 }}>
+                    Add Payment
+                  </button>
+                  <button className="btn btn-outline" onClick={() => setConfirmSettle(true)} style={{ flex: 1, height: 44, borderRadius: 12, fontSize: 14, background: 'var(--bg-page)' }}>
+                    Settle Full
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Purchase Details Consolidated */}
           <div className="stat-box" style={{ padding: 24, borderRadius: 24, background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
-            {}
+            {/* Purchase Date */}
             <div style={{ marginBottom: 24, paddingBottom: 24, borderBottom: '1px solid var(--border)' }}>
-              <h3 style={{ fontSize: 17, fontWeight: 800, color: 'var(--text-primary)', marginBottom: 12, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Purchase Date</h3>
+              <h3 style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Date of Purchased</h3>
               <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary)' }}>
                 {fmtDate(customer.date_borrowed)}
               </div>
             </div>
 
-            {}
+            {/* Receipt Number */}
+            <div style={{ marginBottom: 24, paddingBottom: 24, borderBottom: '1px solid var(--border)' }}>
+              <h3 style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Receipt Number</h3>
+              <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary)', wordBreak: 'break-all' }}>
+                {customer.receipt_numbers?.length ? customer.receipt_numbers.map(r => `#${r}`).join(', ') : '—'}
+              </div>
+            </div>
+
+            {/* Items Purchased */}
             <div>
-              <h3 style={{ fontSize: 15, fontWeight: 800, color: 'var(--text-primary)', marginBottom: 12, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Items Purchased</h3>
+              <h3 style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 12, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Items Purchased</h3>
               {(() => {
                 let items = [];
                 if (customer.notes) {
@@ -607,11 +603,12 @@ export default function CustomerDetail() {
               })()}
             </div>
           </div>
+
         </div>
 
-        {}
+        {/* Right Column: Timeline & History */}
         <div className="lg:col-span-2">
-          <div className="stat-box" style={{ padding: 32, borderRadius: 24, background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
+          <div className="stat-box" style={{ padding: 32, borderRadius: 24, background: 'var(--bg-card)', border: '1px solid var(--border)', height: '100%' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24, paddingBottom: 16, borderBottom: '1px solid var(--border)', flexWrap: 'wrap', gap: 16 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                 <div className="row-avatar" style={{ background: 'var(--accent-light)', color: 'var(--accent)', width: 44, height: 44, borderRadius: 12 }}>
@@ -745,9 +742,9 @@ export default function CustomerDetail() {
                       <div key={ev.id} className="timeline-item">
                         <div className="timeline-dot created"></div>
                         <div className="timeline-content">
-                          <div className="timeline-time">{ev.dateStr}</div>
-                          <div className="timeline-title">Record Started</div>
-                          <div className="timeline-desc">Initial balance of <span className="timeline-money">{fmt(customer.original_debt || (customer.balance + (customer.payment_history?.filter(p => p.amount && p.type !== 'manual_adjustment').reduce((acc, p) => acc + p.amount, 0) || 0)))}</span> was recorded.</div>
+                           <div className="timeline-time">{ev.dateStr}</div>
+                           <div className="timeline-title">Record Started</div>
+                           <div className="timeline-desc">Initial balance of <span className="timeline-money">{fmt(customer.original_debt || (customer.balance + (customer.payment_history?.filter(p => p.amount && p.type !== 'manual_adjustment').reduce((acc, p) => acc + p.amount, 0) || 0)))}</span> was recorded.</div>
                         </div>
                       </div>
                     );
@@ -777,7 +774,7 @@ export default function CustomerDetail() {
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
                           <div className="timeline-title">{p.type === 'edit' ? 'Profile Updated' : (p.note || 'Advance Payment')}</div>
 
-                          {}
+                          
                           {!isSettled && !p.type && (
                             <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexShrink: 0 }}>
 

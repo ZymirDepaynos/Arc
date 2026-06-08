@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, UserX, Search, Download, Bell, Calendar as CalendarIcon, ArrowUpDown, Check, CheckSquare, FileText, FileSpreadsheet, X, LogOut, Timer, Archive, Settings, ChevronDown } from 'lucide-react';
+import { Plus, UserX, Search, Download, Bell, Calendar as CalendarIcon, ArrowUpDown, Check, CheckSquare, FileText, FileSpreadsheet, X, LogOut, Timer, Archive, Settings, ChevronDown, Eye, EyeOff } from 'lucide-react';
 
 import SearchOverlay from '../components/SearchOverlay';
 import toast from 'react-hot-toast';
@@ -15,6 +15,7 @@ import PayModal from '../components/PayModal';
 import ConfirmModal from '../components/ConfirmModal';
 import ThemeToggle from '../components/ThemeToggle';
 import SessionSettingsModal from '../components/SessionSettingsModal';
+import RevealAuthModal from '../components/RevealAuthModal';
 import { parseNaturalDate } from '../utils/dateUtils';
 import { useAuth } from '../contexts/AuthContext';
 import { useSession } from '../App';
@@ -52,6 +53,8 @@ export default function Dashboard() {
   const [searchMode, setSearchMode] = useState('all');
   const [matchCase, setMatchCase] = useState(false);
   const [wholeWord, setWholeWord] = useState(false);
+  const [showStats, setShowStats] = useState(false);
+  const [isRevealAuthOpen, setIsRevealAuthOpen] = useState(false);
   const itemsPerPage = 10;
 
   const SEARCH_PLACEHOLDER = 'Search by name or date (e.g. May, May 4, 2026, May 2026).';
@@ -933,6 +936,9 @@ export default function Dashboard() {
           { totalBalance: 0, totalAdvance: 0, activeCount: 0, partialCount: 0, paidCount: 0 }
         ) : null}
         searchLabel={search.trim() || null}
+        showStats={showStats}
+        onRevealClick={() => setIsRevealAuthOpen(true)}
+        onLockClick={() => setShowStats(false)}
       />
 
       { }
@@ -1055,153 +1061,160 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {loading ? (
-          <div style={{ textAlign: 'center', padding: '60px 0', color: 'var(--text-muted)' }}>Loading records...</div>
-        ) : error ? (
-          <div style={{ textAlign: 'center', padding: '60px 0', color: 'var(--danger)' }}>{error}</div>
-        ) : filteredCustomers.length === 0 ? (
-          <div className="empty-state">
-            <UserX size={32} className="empty-state-icon" style={{ margin: '0 auto 16px' }} />
-            <div className="empty-state-title">{search ? 'No results found' : 'No customers yet'}</div>
-            <div className="empty-state-sub">Click "Add new customer" to get started</div>
-          </div>
-        ) : (
-          <div style={{ overflowX: 'auto' }}>
-            <table className="data-table">
-              <thead>
-                <tr>
-                  {isSelectionMode && (
-                    <th className="col-selection">
-                      <div
-                        className={`checkbox-custom ${currentCustomers.length > 0 && currentCustomers.every(d => selectedIds.includes(d.id)) ? 'checked' : ''}`}
-                        onClick={toggleAll}
-                      >
-                        {currentCustomers.length > 0 && currentCustomers.every(d => selectedIds.includes(d.id)) && <Check size={14} />}
+
+              {loading ? (
+                <div style={{ textAlign: 'center', padding: '60px 0', color: 'var(--text-muted)' }}>Loading records...</div>
+              ) : error ? (
+                <div style={{ textAlign: 'center', padding: '60px 0', color: 'var(--danger)' }}>{error}</div>
+              ) : filteredCustomers.length === 0 ? (
+                <div className="empty-state">
+                  <UserX size={32} className="empty-state-icon" style={{ margin: '0 auto 16px' }} />
+                  <div className="empty-state-title">{search ? 'No results found' : 'No customers yet'}</div>
+                  <div className="empty-state-sub">Click "Add new customer" to get started</div>
+                </div>
+              ) : (
+                <div style={{ overflowX: 'auto' }}>
+                  <table className="data-table">
+                    <thead>
+                      <tr>
+                        {isSelectionMode && (
+                          <th className="col-selection">
+                            <div
+                              className={`checkbox-custom ${currentCustomers.length > 0 && currentCustomers.every(d => selectedIds.includes(d.id)) ? 'checked' : ''}`}
+                              onClick={toggleAll}
+                            >
+                              {currentCustomers.length > 0 && currentCustomers.every(d => selectedIds.includes(d.id)) && <Check size={14} />}
+                            </div>
+                          </th>
+                        )}
+                        <th className="col-receipt hide-mobile">Receipt No.</th>
+                        <th className="col-name">Full Name</th>
+                        <th className="col-date">Date of Purchase</th>
+                        <th className="col-init-balance hide-mobile">Initial Balance</th>
+                        <th className="col-balance">Balance</th>
+                        <th className="col-status hide-tablet">Status</th>
+                        <th className="col-actions"></th>
+                      </tr>
+                    </thead>
+                    <motion.tbody initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                      {currentCustomers.map((customer, i) => (
+                        <CustomerCard
+                          key={customer.id}
+                          customer={customer}
+                          index={i}
+                          selected={selectedIds.includes(customer.id)}
+                          onToggleSelect={() => toggleSelect(customer.id)}
+                          onEdit={() => setEditCustomer(customer)}
+                          onDelete={() => setDeleteData(customer)}
+                          onPay={() => setPayCustomer(customer)}
+                          onSettle={() => setConfirmData(customer)}
+                          isSelectionMode={isSelectionMode}
+                        />
+                      ))}
+                    </motion.tbody>
+                  </table>
+
+                  { }
+                  {totalPages > 1 && (
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 24, padding: '0 8px', flexWrap: 'wrap', gap: 12 }}>
+                      <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>
+                        Showing {indexOfFirstItem + 1}–{Math.min(indexOfLastItem, filteredCustomers.length)} of {filteredCustomers.length} customers
                       </div>
-                    </th>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        { }
+                        <button
+                          className="btn btn-outline btn-sm"
+                          disabled={currentPage === 1}
+                          onClick={() => {
+                            const next = Math.max(1, currentPage - 1);
+                            setCurrentPage(next);
+                            setPageInputVal(String(next));
+                          }}
+                          style={{ borderRadius: 10, padding: '6px 14px', minWidth: 'unset' }}
+                        >
+                          ‹ Prev
+                        </button>
+
+                        { }
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <input
+                            id="pagination-page-input"
+                            type="number"
+                            min={1}
+                            max={totalPages}
+                            value={pageInputVal}
+                            onChange={(e) => setPageInputVal(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                const parsed = parseInt(pageInputVal, 10);
+                                if (!isNaN(parsed)) {
+                                  const clamped = Math.min(totalPages, Math.max(1, parsed));
+                                  setCurrentPage(clamped);
+                                  setPageInputVal(String(clamped));
+                                } else {
+                                  setPageInputVal(String(currentPage));
+                                }
+                                e.target.blur();
+                              }
+                            }}
+                            onBlur={() => {
+                              const parsed = parseInt(pageInputVal, 10);
+                              if (!isNaN(parsed)) {
+                                const clamped = Math.min(totalPages, Math.max(1, parsed));
+                                setCurrentPage(clamped);
+                                setPageInputVal(String(clamped));
+                              } else {
+                                setPageInputVal(String(currentPage));
+                              }
+                            }}
+                            style={{
+                              width: 52,
+                              height: 34,
+                              textAlign: 'center',
+                              fontSize: 13,
+                              fontWeight: 700,
+                              fontFamily: 'inherit',
+                              background: 'var(--glass-bg)',
+                              color: 'var(--text-primary)',
+                              border: '1px solid var(--accent)',
+                              borderRadius: 10,
+                              outline: 'none',
+                              boxShadow: '0 0 0 3px var(--accent-light)',
+                              MozAppearance: 'textfield',
+                            }}
+                          />
+                          <span style={{ fontSize: 13, color: 'var(--text-muted)', fontWeight: 600, whiteSpace: 'nowrap' }}>
+                            / {totalPages}
+                          </span>
+                        </div>
+
+                        { }
+                        <button
+                          className="btn btn-outline btn-sm"
+                          disabled={currentPage === totalPages}
+                          onClick={() => {
+                            const next = Math.min(totalPages, currentPage + 1);
+                            setCurrentPage(next);
+                            setPageInputVal(String(next));
+                          }}
+                          style={{ borderRadius: 10, padding: '6px 14px', minWidth: 'unset' }}
+                        >
+                          Next ›
+                        </button>
+                      </div>
+                    </div>
                   )}
-                  <th className="col-receipt hide-mobile">Receipt No.</th>
-                  <th className="col-name">Full Name</th>
-                  <th className="col-date">Date of Purchase</th>
-                  <th className="col-init-balance hide-mobile">Initial Balance</th>
-                  <th className="col-balance">Balance</th>
-                  <th className="col-status hide-tablet">Status</th>
-                  <th className="col-actions"></th>
-                </tr>
-              </thead>
-              <motion.tbody initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-                {currentCustomers.map((customer, i) => (
-                  <CustomerCard
-                    key={customer.id}
-                    customer={customer}
-                    index={i}
-                    selected={selectedIds.includes(customer.id)}
-                    onToggleSelect={() => toggleSelect(customer.id)}
-                    onEdit={() => setEditCustomer(customer)}
-                    onDelete={() => setDeleteData(customer)}
-                    onPay={() => setPayCustomer(customer)}
-                    onSettle={() => setConfirmData(customer)}
-                    isSelectionMode={isSelectionMode}
-                  />
-                ))}
-              </motion.tbody>
-            </table>
-
-            { }
-            {totalPages > 1 && (
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 24, padding: '0 8px', flexWrap: 'wrap', gap: 12 }}>
-                <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>
-                  Showing {indexOfFirstItem + 1}–{Math.min(indexOfLastItem, filteredCustomers.length)} of {filteredCustomers.length} customers
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  { }
-                  <button
-                    className="btn btn-outline btn-sm"
-                    disabled={currentPage === 1}
-                    onClick={() => {
-                      const next = Math.max(1, currentPage - 1);
-                      setCurrentPage(next);
-                      setPageInputVal(String(next));
-                    }}
-                    style={{ borderRadius: 10, padding: '6px 14px', minWidth: 'unset' }}
-                  >
-                    ‹ Prev
-                  </button>
+              )}
 
-                  { }
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <input
-                      id="pagination-page-input"
-                      type="number"
-                      min={1}
-                      max={totalPages}
-                      value={pageInputVal}
-                      onChange={(e) => setPageInputVal(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                          const parsed = parseInt(pageInputVal, 10);
-                          if (!isNaN(parsed)) {
-                            const clamped = Math.min(totalPages, Math.max(1, parsed));
-                            setCurrentPage(clamped);
-                            setPageInputVal(String(clamped));
-                          } else {
-                            setPageInputVal(String(currentPage));
-                          }
-                          e.target.blur();
-                        }
-                      }}
-                      onBlur={() => {
-                        const parsed = parseInt(pageInputVal, 10);
-                        if (!isNaN(parsed)) {
-                          const clamped = Math.min(totalPages, Math.max(1, parsed));
-                          setCurrentPage(clamped);
-                          setPageInputVal(String(clamped));
-                        } else {
-                          setPageInputVal(String(currentPage));
-                        }
-                      }}
-                      style={{
-                        width: 52,
-                        height: 34,
-                        textAlign: 'center',
-                        fontSize: 13,
-                        fontWeight: 700,
-                        fontFamily: 'inherit',
-                        background: 'var(--glass-bg)',
-                        color: 'var(--text-primary)',
-                        border: '1px solid var(--accent)',
-                        borderRadius: 10,
-                        outline: 'none',
-                        boxShadow: '0 0 0 3px var(--accent-light)',
-                        MozAppearance: 'textfield',
-                      }}
-                    />
-                    <span style={{ fontSize: 13, color: 'var(--text-muted)', fontWeight: 600, whiteSpace: 'nowrap' }}>
-                      / {totalPages}
-                    </span>
-                  </div>
-
-                  { }
-                  <button
-                    className="btn btn-outline btn-sm"
-                    disabled={currentPage === totalPages}
-                    onClick={() => {
-                      const next = Math.min(totalPages, currentPage + 1);
-                      setCurrentPage(next);
-                      setPageInputVal(String(next));
-                    }}
-                    style={{ borderRadius: 10, padding: '6px 14px', minWidth: 'unset' }}
-                  >
-                    Next ›
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-        )}
       </div>
 
       { }
+      <RevealAuthModal
+        open={isRevealAuthOpen}
+        onClose={() => setIsRevealAuthOpen(false)}
+        onSuccess={() => setShowStats(true)}
+      />
       <CustomerModal open={addOpen} onClose={() => setAddOpen(false)} onSubmit={handleAdd} />
       <SessionSettingsModal
         open={sessionSettingsOpen}

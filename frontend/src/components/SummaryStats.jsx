@@ -1,14 +1,123 @@
-import { TrendingDown, CheckCircle, Search } from 'lucide-react';
+import { TrendingDown, CheckCircle, Search, Lock, Eye, EyeOff } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const fmt = (n) =>
   '₱' + parseFloat(n || 0).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
-export default function SummaryStats({ totals, filteredTotals, searchLabel }) {
+export default function SummaryStats({ totals, filteredTotals, searchLabel, showStats, onRevealClick, onLockClick }) {
   const isFiltered = !!(searchLabel && filteredTotals);
 
   return (
-    <>
+    <div style={{ position: 'relative', borderRadius: 24, marginBottom: 16 }}>
+      {/* Absolute overlay when stats are locked */}
+      {!showStats && (
+        <div style={{
+          position: 'absolute',
+          inset: 0,
+          background: 'rgba(0, 0, 0, 0.4)',
+          backdropFilter: 'blur(16px)',
+          WebkitBackdropFilter: 'blur(16px)',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 10,
+          borderRadius: 24,
+          border: '1px solid var(--border)',
+          padding: 24,
+          textAlign: 'center',
+          boxShadow: 'inset 0 0 40px rgba(0, 0, 0, 0.4)',
+        }}>
+          <div style={{
+            width: 52,
+            height: 52,
+            borderRadius: '50%',
+            background: 'var(--accent-light)',
+            color: 'var(--accent)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            marginBottom: 16,
+            boxShadow: '0 0 25px var(--accent-light)'
+          }}>
+            <Lock size={22} />
+          </div>
+          <h3 style={{ fontSize: 16, fontWeight: 800, color: 'var(--text-primary)', marginBottom: 6, letterSpacing: '-0.3px' }}>
+            Financial Statistics Locked
+          </h3>
+          <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 20, maxWidth: 320, lineHeight: 1.4 }}>
+            Please verify your account credentials to reveal the outstanding and collected balances.
+          </p>
+          <button
+            className="btn btn-primary btn-sm"
+            onClick={onRevealClick}
+            style={{
+              padding: '8px 24px',
+              borderRadius: 12,
+              fontSize: 13,
+              fontWeight: 700,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+              cursor: 'pointer'
+            }}
+          >
+            <Eye size={14} />
+            <span>Reveal Financials</span>
+          </button>
+        </div>
+      )}
+
+      {/* Elegant Header with Lock Button if revealed */}
+      {showStats && (
+        <div style={{
+          display: 'flex',
+          justifyContent: 'flex-end',
+          position: 'absolute',
+          top: 12,
+          right: 12,
+          zIndex: 5
+        }}>
+          <button
+            onClick={onLockClick}
+            style={{
+              background: 'var(--glass-bg)',
+              border: '1px solid var(--border)',
+              color: 'var(--text-muted)',
+              padding: '6px 12px',
+              borderRadius: 10,
+              fontSize: 11,
+              fontWeight: 700,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6,
+              cursor: 'pointer',
+              transition: 'all 0.2s ease',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.color = 'var(--accent)';
+              e.currentTarget.style.borderColor = 'var(--accent)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.color = 'var(--text-muted)';
+              e.currentTarget.style.borderColor = 'var(--border)';
+            }}
+            title="Lock Financial Stats"
+          >
+            <EyeOff size={12} />
+            <span>Lock Stats</span>
+          </button>
+        </div>
+      )}
+
+      {/* Main Component Content (Blurred if showStats is false) */}
+      <div style={{
+        filter: showStats ? 'none' : 'blur(10px)',
+        pointerEvents: showStats ? 'auto' : 'none',
+        transition: 'filter 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+        paddingTop: showStats ? 48 : 0 /* Add spacing for lock button if stats revealed */
+      }}>
+        <>
       {}
       <AnimatePresence>
         {isFiltered && (
@@ -98,15 +207,15 @@ export default function SummaryStats({ totals, filteredTotals, searchLabel }) {
       {}
       <div className="stats-container">
         {}
-        <div className="stat-box">
-          <div className="stat-box-header">
+        <div className="stat-box" style={{ display: 'flex', flexDirection: 'column' }}>
+          <div className="stat-box-header" style={{ marginBottom: 20 }}>
             <span className="stat-box-title">Total Outstanding</span>
             <div className="row-avatar" style={{ background: 'var(--status-active-bg)', color: 'var(--status-active-text)' }}>
               <TrendingDown size={16} />
             </div>
           </div>
           
-          <div>
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', paddingBottom: 16 }}>
             <div className="stat-box-value">
               {fmt(totals?.totalBalance || 0)}
             </div>
@@ -114,23 +223,6 @@ export default function SummaryStats({ totals, filteredTotals, searchLabel }) {
               <span className="stat-sub-value" style={{ marginLeft: 0, background: 'var(--status-paid-bg)', color: 'var(--status-paid-text)' }}>
                 Outstanding Customers
               </span>
-            </div>
-            
-            {}
-            <div style={{ display: 'flex', alignItems: 'flex-end', gap: 4, height: 40, marginTop: 24, opacity: 0.8 }}>
-              {[30, 45, 35, 60, 45, 55, 80, 45, 70, 35, 50, 40, 60, 30].map((h, i) => (
-                <div 
-                  key={i} 
-                  style={{ 
-                    flex: 1, 
-                    background: i === 6 ? 'var(--accent)' : 'var(--border)', 
-                    height: `${h}%`, 
-                    borderRadius: '3px 3px 0 0',
-                    boxShadow: i === 6 ? '0 0 15px var(--accent)' : 'none',
-                    transition: 'all 0.3s ease'
-                  }}
-                ></div>
-              ))}
             </div>
           </div>
         </div>
@@ -174,6 +266,8 @@ export default function SummaryStats({ totals, filteredTotals, searchLabel }) {
           </div>
         </div>
       </div>
-    </>
+      </>
+      </div>
+    </div>
   );
 }

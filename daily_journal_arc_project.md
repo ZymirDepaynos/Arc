@@ -6,9 +6,9 @@ This journal provides a detailed, day-by-day record of the Arc Debt Tracker proj
 ---
 
 ## 📊 Development Summary
-- **Total Development Duration:** ~7 Weeks (April 25, 2026 – June 7, 2026)
+- **Total Development Duration:** ~7 Weeks (April 25, 2026 – June 9, 2026)
 - **Active Coding Days:** 22 Days
-- **Total Commit Count:** 113 Commits
+- **Total Commit Count:** 118 Commits
 - **Key Modules Developed:**
   - 🏠 [Dashboard.jsx](file:///C:/Users/Zymir/OneDrive/Desktop/Bakla romel/Arc/frontend/src/pages/Dashboard.jsx) - Main stats, customer lists, pagination, filters, and activity feed.
   - 👤 [CustomerDetail.jsx](file:///C:/Users/Zymir/OneDrive/Desktop/Bakla romel/Arc/frontend/src/pages/CustomerDetail.jsx) - Individual ledger, purchase timelines, export tools, and payments.
@@ -250,13 +250,33 @@ Focus: Transitioning to full Supabase authentication, implementing configurable 
   - **Session Settings Interface:** Developed the [SessionSettingsModal.jsx](file:///C:/Users/Zymir/OneDrive/Desktop/Bakla romel/Arc/frontend/src/components/SessionSettingsModal.jsx) with quick preset pills (e.g. 5m, 15m, 30m, 1h) and a custom input supporting minute/hour unit conversions.
   - **Archive soft delete system:** Created a dedicated archive router `api/routes/archive.js` and frontend UI [ArchivePage.jsx](file:///C:/Users/Zymir/OneDrive/Desktop/Bakla romel/Arc/frontend/src/pages/ArchivePage.jsx) allowing soft-deleting, restoring, or permanently purging customer records.
 
-#### Day 9: June 7, 2026 (Today)
-* **Category:** `🚀 Feature`, `🎨 Style`, `🐛 Bug Fix`
-* **Commits:** `85370b2`, `f5932bc`, `5a7a9ac`, `37371aa`, `136b55a`, `05a9ba6`, `5d74907`, `285a0db`, `856145b`, `1b7635e`
+#### Day 9: June 7, 2026
+* **Category:** `🚀 Feature`, `🎨 Style`, `🐛 Bug Fix`, `⚙️ Refactor`
+* **Commits:** `da8e0ce`, `24ae478`, `c2df2fe`, `490a72a`, `85370b2`, `f5932bc`, `5a7a9ac`, `37371aa`, `136b55a`, `05a9ba6`, `5d74907`, `285a0db`, `856145b`, `1b7635e`
 * **Details:**
+  - **Term Refactoring (Debtor to Customer):** Completed renaming throughout backend routes, components ([CustomerCard.jsx](file:///C:/Users/Zymir/OneDrive/Desktop/Bakla romel/Arc/frontend/src/components/CustomerCard.jsx), [CustomerModal.jsx](file:///C:/Users/Zymir/OneDrive/Desktop/Bakla romel/Arc/frontend/src/components/CustomerModal.jsx)), hooks ([useCustomers.js](file:///C:/Users/Zymir/OneDrive/Desktop/Bakla romel/Arc/frontend/src/hooks/useCustomers.js)), pages, and user-facing terminology to fully adopt "Customer" instead of "Debtor".
+  - **Unique Receipt Numbers:** Enforced strict backend validation on [customers.js](file:///C:/Users/Zymir/OneDrive/Desktop/Bakla romel/Arc/api/routes/customers.js) to ensure receipt numbers are unique during customer creation and updates, preventing duplicate records.
+  - **Receipt Number Identifiers:** Replaced internal/placeholder CSV ID references with user-facing "Receipt No" across CSV import templates, backend parsers, and data exports.
   - **Settings Dropdown Consolidation:** Cleaned up the main dashboard header by moving the standalone "Data Actions" and "Calendar" buttons, "Archive Page", "Session Timeout Settings", and "Sign Out" actions into a consolidated Settings dropdown menu.
   - **Archive View Redesign:** Restyled the soft-deleted list page to match the core design language (adding avatars, status dots, and pure-CSS table layouts).
   - **Archive Table Optimization:** Clipped long customer names in the archive list, removed the redundant "Status" column to maximize text space, and applied explicit column percentage widths to prevent table layout shifts.
   - **Calendar Client Security:** Resolved Axios request failures (401 errors) on the calendar view by migrating requests to the centralized authenticated API instance [api.js](file:///C:/Users/Zymir/OneDrive/Desktop/Bakla romel/Arc/frontend/src/lib/api.js).
   - **Timeline Sorting Adjustments:** Enforced chronological consistency in customer ledger histories by ensuring the "Record Started" creation event always sorts below same-day payment/purchase activities.
   - **Inactivity Timer Robustness:** Added tab-focus and visibilitychange listeners so the timeout countdown state updates correctly when the user switches tabs or returns to the application.
+
+#### Day 10: June 8, 2026
+* **Category:** `📝 Documentation`
+* **Commits:** None (Working tree clean)
+* **Details:**
+  - Synchronized and updated the Daily Development Journal and Weekly Journal to fully document the codebase renaming refactor, unique receipt number validation, and CSV formatting fixes.
+  - Aligned commit count metrics to reflect the complete project history.
+
+#### Day 11: June 9, 2026 (Today)
+* **Category:** `🚀 Feature`, `🎨 Style`, `🔒 Security`
+* **Commits:** `3e8f6e4`, `4b91a9f`
+* **Details:**
+  - **Customer Detail Layout Restructure:** Restructured the individual customer detail layout to match the responsive two-column grid wireframe (Initial Balance, Current Balance, and consolidated Purchase Details cards vertically stacked on the left, Timeline & History on the right).
+  - **Financial Statistics Lock Gate:** Secured the "Total Outstanding" and "Total Collected" metrics on the main dashboard behind a password lock gate. When locked, the stats display as blurred text beneath a glassmorphic Lock overlay.
+  - **Customer List Immediate Display:** Reverted the customer table visibility logic so the records list is always visible immediately on page load, removing the old records toggle button.
+  - **Manual Lock Controls:** Added a "Lock Stats" action button to the dashboard stats section when revealed, allowing manual re-locking.
+  - **Outstanding Balance Layout Balancing:** Centered the outstanding amount vertically and removed the vertical bar chart from the outstanding card to balance the empty space.

@@ -11,23 +11,7 @@ export default function SummaryStats({ totals, filteredTotals, searchLabel, show
     <div style={{ position: 'relative', borderRadius: 24, marginBottom: 16 }}>
       {/* Absolute overlay when stats are locked */}
       {!showStats && (
-        <div style={{
-          position: 'absolute',
-          inset: 0,
-          background: 'rgba(0, 0, 0, 0.4)',
-          backdropFilter: 'blur(16px)',
-          WebkitBackdropFilter: 'blur(16px)',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 10,
-          borderRadius: 24,
-          border: '1px solid var(--border)',
-          padding: 24,
-          textAlign: 'center',
-          boxShadow: 'inset 0 0 40px rgba(0, 0, 0, 0.4)',
-        }}>
+        <div className="stats-lock-overlay">
           <div style={{
             width: 52,
             height: 52,
@@ -42,10 +26,10 @@ export default function SummaryStats({ totals, filteredTotals, searchLabel, show
           }}>
             <Lock size={22} />
           </div>
-          <h3 style={{ fontSize: 16, fontWeight: 800, color: 'var(--text-primary)', marginBottom: 6, letterSpacing: '-0.3px' }}>
+          <h3 style={{ fontSize: 16, fontWeight: 800, marginBottom: 6, letterSpacing: '-0.3px' }}>
             Financial Statistics Locked
           </h3>
-          <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 20, maxWidth: 320, lineHeight: 1.4 }}>
+          <p style={{ fontSize: 13, marginBottom: 20, maxWidth: 320, lineHeight: 1.4 }}>
             Please verify your account credentials to reveal the outstanding and collected balances.
           </p>
           <button

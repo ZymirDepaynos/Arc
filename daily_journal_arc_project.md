@@ -273,10 +273,10 @@ Focus: Transitioning to full Supabase authentication, implementing configurable 
 
 #### Day 11: June 9, 2026 (Today)
 * **Category:** `🚀 Feature`, `🎨 Style`, `🔒 Security`
-* **Commits:** `3e8f6e4`, `4b91a9f`
+* **Commits:** `3e8f6e4`, `4b91a9f`, `2b7c6d9`
 * **Details:**
   - **Customer Detail Layout Restructure:** Restructured the individual customer detail layout to match the responsive two-column grid wireframe (Initial Balance, Current Balance, and consolidated Purchase Details cards vertically stacked on the left, Timeline & History on the right).
-  - **Financial Statistics Lock Gate:** Secured the "Total Outstanding" and "Total Collected" metrics on the main dashboard behind a password lock gate. When locked, the stats display as blurred text beneath a glassmorphic Lock overlay.
+  - **Collapsible Financial Overview Tab:** Replaced the stats card blur overlay with a collapsible tab panel. When locked, the statistics cards are completely removed from the DOM/layout flow, replaced by a single low-profile header tab bar `🔒 Financial Overview (Locked)`. When unlocked via authentication, the panel dynamically expands to reveal the full outstanding and collected cards.
   - **Customer List Immediate Display:** Reverted the customer table visibility logic so the records list is always visible immediately on page load, removing the old records toggle button.
-  - **Manual Lock Controls:** Added a "Lock Stats" action button to the dashboard stats section when revealed, allowing manual re-locking.
+  - **Light Mode Style & Contrast Fixes:** Resolved text readability issues under Light Mode by moving the glass overlay styles into `.stats-lock-overlay` (and later `.stats-tab-panel`) classes in `index.css`, enforcing high-contrast text colors and light translucent overlays for Light Mode, and dark translucent overlays for Dark Mode.
   - **Outstanding Balance Layout Balancing:** Centered the outstanding amount vertically and removed the vertical bar chart from the outstanding card to balance the empty space.

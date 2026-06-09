@@ -805,7 +805,9 @@ body.light-mode #pagination-page-input {
 
 /* Wide Stats Modal specific override */
 .modal-stats {
-  max-width: 800px;
+  max-width: 1000px;
+  width: 95%;
+  padding: 48px;
 }
 
 .stat-box::before {

@@ -8,7 +8,7 @@ This journal provides a detailed, day-by-day record of the Arc Debt Tracker proj
 ## 📊 Development Summary
 - **Total Development Duration:** ~7 Weeks (April 25, 2026 – June 9, 2026)
 - **Active Coding Days:** 22 Days
-- **Total Commit Count:** 122 Commits
+- **Total Commit Count:** 125 Commits
 - **Key Modules Developed:**
   - 🏠 [Dashboard.jsx](file:///C:/Users/Zymir/OneDrive/Desktop/Bakla romel/Arc/frontend/src/pages/Dashboard.jsx) - Main stats, customer lists, pagination, filters, and activity feed.
   - 👤 [CustomerDetail.jsx](file:///C:/Users/Zymir/OneDrive/Desktop/Bakla romel/Arc/frontend/src/pages/CustomerDetail.jsx) - Individual ledger, purchase timelines, export tools, and payments.

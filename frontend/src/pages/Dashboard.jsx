@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, UserX, Search, Download, Bell, Calendar as CalendarIcon, ArrowUpDown, Check, CheckSquare, FileText, FileSpreadsheet, X, LogOut, Timer, Archive, Settings, ChevronDown, Eye, EyeOff } from 'lucide-react';
+import { Plus, UserX, Search, Download, Bell, Calendar as CalendarIcon, ArrowUpDown, Check, CheckSquare, FileText, FileSpreadsheet, X, LogOut, Timer, Archive, Settings, ChevronDown, Eye, EyeOff, Lock } from 'lucide-react';
 
 import SearchOverlay from '../components/SearchOverlay';
 import toast from 'react-hot-toast';
@@ -54,6 +54,7 @@ export default function Dashboard() {
   const [matchCase, setMatchCase] = useState(false);
   const [wholeWord, setWholeWord] = useState(false);
   const [showStats, setShowStats] = useState(false);
+  const [isStatsModalOpen, setIsStatsModalOpen] = useState(false);
   const [isRevealAuthOpen, setIsRevealAuthOpen] = useState(false);
   const itemsPerPage = 10;
 
@@ -921,25 +922,58 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Stats Section */}
-      <SummaryStats
-        totals={totals}
-        filteredTotals={search.trim() ? filteredCustomers.reduce(
-          (acc, d) => {
-            acc.totalBalance += parseFloat(d.balance) || 0;
-            acc.totalAdvance += parseFloat(d.advance_payment) || 0;
-            if (d.status === 'active') acc.activeCount++;
-            if (d.status === 'partial') acc.partialCount++;
-            if (d.status === 'paid') acc.paidCount++;
-            return acc;
-          },
-          { totalBalance: 0, totalAdvance: 0, activeCount: 0, partialCount: 0, paidCount: 0 }
-        ) : null}
-        searchLabel={search.trim() || null}
-        showStats={showStats}
-        onRevealClick={() => setIsRevealAuthOpen(true)}
-        onLockClick={() => setShowStats(false)}
-      />
+      {/* Stats Trigger Widget */}
+      <div 
+        className="stats-trigger-bar" 
+        onClick={() => {
+          if (showStats) {
+            setIsStatsModalOpen(true);
+          } else {
+            setIsRevealAuthOpen(true);
+          }
+        }}
+      >
+        <div className="stats-trigger-left">
+          <div className="stats-trigger-icon">
+            {showStats ? <Eye size={16} /> : <Lock size={16} />}
+          </div>
+          <div className="stats-trigger-text">
+            <span className="stats-trigger-title">
+              {showStats ? 'Financial Overview' : 'Financial Overview (Locked)'}
+            </span>
+            <span className="stats-trigger-subtitle">
+              {showStats ? 'Click to open financial overview popup' : 'Click to authenticate and view statistics popup'}
+            </span>
+          </div>
+        </div>
+        <button className="stats-trigger-btn">
+          {showStats ? 'Open' : 'Unlock & View'}
+        </button>
+      </div>
+
+      {/* Stats Popup Modal */}
+      {showStats && isStatsModalOpen && (
+        <SummaryStats
+          totals={totals}
+          filteredTotals={search.trim() ? filteredCustomers.reduce(
+            (acc, d) => {
+              acc.totalBalance += parseFloat(d.balance) || 0;
+              acc.totalAdvance += parseFloat(d.advance_payment) || 0;
+              if (d.status === 'active') acc.activeCount++;
+              if (d.status === 'partial') acc.partialCount++;
+              if (d.status === 'paid') acc.paidCount++;
+              return acc;
+            },
+            { totalBalance: 0, totalAdvance: 0, activeCount: 0, partialCount: 0, paidCount: 0 }
+          ) : null}
+          searchLabel={search.trim() || null}
+          onClose={() => setIsStatsModalOpen(false)}
+          onLockClick={() => {
+            setShowStats(false);
+            setIsStatsModalOpen(false);
+          }}
+        />
+      )}
 
       { }
       <div className="table-section">
@@ -1213,7 +1247,10 @@ export default function Dashboard() {
       <RevealAuthModal
         open={isRevealAuthOpen}
         onClose={() => setIsRevealAuthOpen(false)}
-        onSuccess={() => setShowStats(true)}
+        onSuccess={() => {
+          setShowStats(true);
+          setIsStatsModalOpen(true);
+        }}
       />
       <CustomerModal open={addOpen} onClose={() => setAddOpen(false)} onSubmit={handleAdd} />
       <SessionSettingsModal

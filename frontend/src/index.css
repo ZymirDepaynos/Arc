@@ -804,10 +804,26 @@ body.light-mode #pagination-page-input {
 }
 
 /* Wide Stats Modal specific override */
-.modal-stats {
-  max-width: 1000px;
+.modal.modal-stats {
+  max-width: 1200px;
   width: 95%;
   padding: 48px;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+
+@media (max-width: 800px) {
+  .modal.modal-stats {
+    padding: 24px;
+  }
+  .stats-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
 }
 
 .stat-box::before {

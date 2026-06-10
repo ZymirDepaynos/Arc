@@ -1888,18 +1888,18 @@ body.light-mode .back-btn-static {
   }
 
   .col-name {
-    width: 28% !important;
+    width: 24% !important;
     min-width: 180px !important;
   }
 
   .col-date {
-    width: 18% !important;
-    min-width: 140px !important;
+    width: 16% !important;
+    min-width: 130px !important;
   }
 
   .col-init-balance {
-    width: 14% !important;
-    min-width: 120px !important;
+    width: 20% !important;
+    min-width: 200px !important;
   }
 
   .col-balance {

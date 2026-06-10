@@ -33,9 +33,7 @@ export default function SearchOverlay({ open, onClose, customers }) {
     const nameMatch = d.name.toLowerCase().startsWith(s) || 
                       d.name.toLowerCase().split(' ').some(word => word.startsWith(s));
                       
-    return nameMatch || 
-           d.id.toString().includes(s) ||
-           (d.receipt_numbers && d.receipt_numbers.some(r => r.toLowerCase().includes(s)));
+    return nameMatch || d.id.toString().includes(s);
   }).slice(0, 8);
 
   if (!open) return null;
@@ -55,7 +53,7 @@ export default function SearchOverlay({ open, onClose, customers }) {
               <input
                 ref={inputRef}
                 type="text"
-                placeholder="Search Name, Receipt, or Date..."
+                placeholder="Search Name or Date..."
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 className="overlay-search-input"

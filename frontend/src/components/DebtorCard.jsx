@@ -71,9 +71,7 @@ export default function DebtorCard({ debtor, onDelete, onPay, index, selected, o
         </td>
       )}
       {}
-      <td className="col-receipt hide-mobile" style={{ color: 'var(--text-secondary)', fontSize: 13, fontWeight: 600 }}>
-        {debtor.receipt_numbers && debtor.receipt_numbers.length > 0 ? `#${debtor.receipt_numbers[0]}` : '—'}
-      </td>
+
 
       {}
       <td className="col-name">

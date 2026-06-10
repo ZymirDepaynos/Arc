@@ -10,7 +10,6 @@ const EMPTY_FORM = {
   balance: '',
   advance_payment: '',
   current_balance: '',
-  receipt_numbers: '',
   date_borrowed: getToday(),
   date_borrowed_text: formatDisplayDate(getToday()),
   status: 'active',
@@ -38,7 +37,6 @@ export default function DebtorModal({ open, onClose, onSubmit, initial = null })
           balance: initial.original_debt || initial.balance || '',
           advance_payment: initial.advance_payment || '',
           current_balance: initial.balance || '',
-          receipt_numbers: (initial.receipt_numbers && initial.receipt_numbers[0]) || '',
           date_borrowed: initial.date_borrowed || '',
           date_borrowed_text: formatDisplayDate(initial.date_borrowed),
           status: initial.status || 'active',
@@ -121,7 +119,6 @@ export default function DebtorModal({ open, onClose, onSubmit, initial = null })
       await onSubmit({
         ...form,
         date_borrowed: pDate,
-        receipt_numbers: form.receipt_numbers ? [form.receipt_numbers] : [],
         notes: JSON.stringify(finalItems),
       });
       onClose();
@@ -332,20 +329,7 @@ export default function DebtorModal({ open, onClose, onSubmit, initial = null })
 
 
 
-                {}
-                <div className="form-group full floating-group">
-                  <input
-                    className="form-input"
-                    type="text"
-                    placeholder=" "
-                    value={form.receipt_numbers}
-                    onChange={(e) => {
-                      const onlyNumbers = e.target.value.replace(/\D/g, '');
-                      set('receipt_numbers', onlyNumbers);
-                    }}
-                  />
-                  <label className="floating-label">Receipt No.</label>
-                </div>
+
 
                 {}
                 <div className="form-group full" style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>

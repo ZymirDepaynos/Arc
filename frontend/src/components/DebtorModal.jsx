@@ -96,17 +96,17 @@ export default function DebtorModal({ open, onClose, onSubmit, initial = null })
       toast.error('Customer name is required'); return;
     }
     if (!form.balance && form.balance !== 0) {
-      toast.error('Initial balance is required'); return;
+      toast.error('Total amount of purchased is required'); return;
     }
 
     const rawBalance = parseFloat(form.balance || 0);
     const rawAdvance = parseFloat(form.advance_payment || 0);
 
     if (rawBalance <= 0) {
-      toast.error('Initial balance must be greater than ₱0'); return;
+      toast.error('Total amount of purchased must be greater than ₱0'); return;
     }
     if (rawAdvance > rawBalance) {
-      toast.error('Advance payment cannot be greater than the initial balance');
+      toast.error('Advance payment cannot be greater than the total amount of purchased');
       return;
     }
 
@@ -233,7 +233,7 @@ export default function DebtorModal({ open, onClose, onSubmit, initial = null })
                     readOnly={initial && parseFloat(initial.advance_payment || 0) > 0}
                     style={initial && parseFloat(initial.advance_payment || 0) > 0 ? { background: 'rgba(0,0,0,0.03)', color: 'var(--text-muted)' } : {}}
                   />
-                  <label className="floating-label">Initial Balance (₱) *</label>
+                  <label className="floating-label">Total Amount of Purchased (₱) *</label>
                   {initial && parseFloat(initial.advance_payment || 0) > 0 && (
                     <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4, position: 'absolute', bottom: -18, left: 4 }}>
                       Locked because an advance payment exists

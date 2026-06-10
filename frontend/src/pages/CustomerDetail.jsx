@@ -106,7 +106,7 @@ export default function CustomerDetail() {
       changes.push(`Purchase Date: ${fmtD(old.date_borrowed)} → ${fmtD(form.date_borrowed)}`);
     }
     if (parseFloat(old.original_debt || old.balance) !== rawBalance) {
-      changes.push(`Initial Balance: ${fmt(old.original_debt || old.balance)} → ${fmt(rawBalance)}`);
+      changes.push(`Total Amount of Purchased: ${fmt(old.original_debt || old.balance)} → ${fmt(rawBalance)}`);
     }
 
     
@@ -322,7 +322,7 @@ export default function CustomerDetail() {
     doc.setTextColor(...C.textBody);
 
     const mY1 = y + 16;
-    doc.text('Initial Balance:', margin + 10, mY1);
+    doc.text('Total Amount Purchased:', margin + 10, mY1);
     doc.setFont('helvetica', 'bold');
     doc.text(fmtPDF(customer.original_debt || customer.balance), margin + 38, mY1);
 
@@ -524,7 +524,7 @@ export default function CustomerDetail() {
           {/* Initial Balance */}
           <div className="stat-box" style={{ padding: 24, borderRadius: 24, background: 'var(--bg-card)', border: '1px solid var(--border)', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
             <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>
-              Initial Balance
+              Total Amount of Purchased
             </div>
             <div style={{ fontSize: 32, fontWeight: 800, color: 'var(--accent)', letterSpacing: '-0.5px' }}>
               {fmt(customer.original_debt || customer.balance)}
@@ -744,7 +744,7 @@ export default function CustomerDetail() {
                         <div className="timeline-content">
                            <div className="timeline-time">{ev.dateStr}</div>
                            <div className="timeline-title">Record Started</div>
-                           <div className="timeline-desc">Initial balance of <span className="timeline-money">{fmt(customer.original_debt || (customer.balance + (customer.payment_history?.filter(p => p.amount && p.type !== 'manual_adjustment').reduce((acc, p) => acc + p.amount, 0) || 0)))}</span> was recorded.</div>
+                           <div className="timeline-desc">Total amount of <span className="timeline-money">{fmt(customer.original_debt || (customer.balance + (customer.payment_history?.filter(p => p.amount && p.type !== 'manual_adjustment').reduce((acc, p) => acc + p.amount, 0) || 0)))}</span> was recorded.</div>
                         </div>
                       </div>
                     );

@@ -302,7 +302,7 @@ export default function Dashboard() {
   };
 
   const exportToCSV = (exportData = customers) => {
-    const headers = ['Receipt No.', 'Name', 'Initial Balance', 'Date of Purchase', 'Advance Payment', 'Balance', 'Status'];
+    const headers = ['Receipt No.', 'Name', 'Total Amount Purchased', 'Date of Purchase', 'Advance Payment', 'Balance', 'Status'];
     const sortedData = [...exportData].sort((a, b) => a.name.localeCompare(b.name));
     const rows = sortedData.map(d => [
       d.receipt_numbers && d.receipt_numbers.length > 0 ? d.receipt_numbers[0] : '',
@@ -330,7 +330,7 @@ export default function Dashboard() {
   };
 
   const downloadTemplate = () => {
-    const headers = ['Receipt No.', 'Name', 'Balance', 'Advance Payment', 'Date of Purchase'];
+    const headers = ['Receipt No.', 'Name', 'Total Amount Purchased', 'Advance Payment', 'Date of Purchase'];
     const sampleData = [
       ['R-12345', 'Juan Dela Cruz', '1000', '200', new Date().toISOString().split('T')[0]],
       ['R-12346', 'Maria Clara', '500', '0', new Date().toISOString().split('T')[0]]
@@ -367,7 +367,7 @@ export default function Dashboard() {
             // Map common headers to our schema
             if (header.includes('receipt') || header.includes('id')) obj.receipt_numbers = values[index] ? [values[index]] : [];
             if (header.includes('name')) obj.name = values[index];
-            if (header.includes('balance')) obj.balance = values[index];
+            if (header.includes('balance') || header.includes('total') || header.includes('amount')) obj.balance = values[index];
             if (header.includes('advance') && !header.includes('date')) obj.advance_payment = values[index];
             if (header.includes('date') && !header.includes('advance')) obj.date_borrowed = values[index];
           });
@@ -430,7 +430,7 @@ export default function Dashboard() {
       changes.push(`Purchase Date: ${fmtD(old.date_borrowed)} → ${fmtD(form.date_borrowed)}`);
     }
     if (parseFloat(old.original_debt || old.balance) !== rawBalance) {
-      changes.push(`Initial Balance: ₱${parseFloat(old.original_debt || old.balance).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} → ₱${rawBalance.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`);
+      changes.push(`Total Amount of Purchased: ₱${parseFloat(old.original_debt || old.balance).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} → ₱${rawBalance.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`);
     }
 
     let updatedHistory = [...(old.payment_history || [])];
@@ -1120,7 +1120,7 @@ export default function Dashboard() {
                         <th className="col-receipt hide-mobile">Receipt No.</th>
                         <th className="col-name">Full Name</th>
                         <th className="col-date">Date of Purchase</th>
-                        <th className="col-init-balance hide-mobile">Initial Balance</th>
+                        <th className="col-init-balance hide-mobile">Total Amount Purchased</th>
                         <th className="col-balance">Balance</th>
                         <th className="col-status hide-tablet">Status</th>
                         <th className="col-actions"></th>

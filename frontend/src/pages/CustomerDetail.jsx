@@ -110,6 +110,11 @@ export default function CustomerDetail() {
     }
 
     
+    const oldReceipts = old.receipt_numbers || [];
+    const newReceipts = form.receipt_numbers || [];
+    if (JSON.stringify([...oldReceipts].sort()) !== JSON.stringify([...newReceipts].sort())) {
+      changes.push(`Receipt Numbers updated`);
+    }
     if (old.notes !== form.notes) {
       changes.push(`Items Purchased updated`);
     }
@@ -236,7 +241,8 @@ export default function CustomerDetail() {
         items = customer.notes.split('\n').map(l => l.replace(/^\d+\.\s*/, '').trim()).filter(Boolean);
       }
     }
-
+    const receiptText = customer.receipt_numbers?.length
+      ? customer.receipt_numbers.map(r => `# ${r}`).join(', ') : 'N/A (Pending)';
 
     const headerH = 26;
     doc.setFillColor(...C.primaryBlue);
@@ -270,7 +276,15 @@ export default function CustomerDetail() {
     doc.text(fmtDate(customer.date_borrowed), margin + 100, y);
 
     
+    y += 10;
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(...C.primaryBlue);
+    doc.text('Receipt No', margin, y);
 
+    y += 5;
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(...C.textBody);
+    doc.text(receiptText, margin, y);
 
     
     y += 10;
@@ -554,7 +568,13 @@ export default function CustomerDetail() {
               </div>
             </div>
 
-
+            {/* Receipt Number */}
+            <div style={{ marginBottom: 24, paddingBottom: 24, borderBottom: '1px solid var(--border)' }}>
+              <h3 style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Receipt Number</h3>
+              <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary)', wordBreak: 'break-all' }}>
+                {customer.receipt_numbers?.length ? customer.receipt_numbers.map(r => `#${r}`).join(', ') : '—'}
+              </div>
+            </div>
 
             {/* Items Purchased */}
             <div>

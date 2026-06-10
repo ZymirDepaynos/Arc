@@ -70,7 +70,9 @@ export default function CustomerCard({ customer, onDelete, onPay, index, selecte
         </td>
       )}
       {}
-
+      <td className="col-receipt hide-mobile" style={{ color: 'var(--text-secondary)', fontSize: 13, fontWeight: 600 }}>
+        {customer.receipt_numbers && customer.receipt_numbers.length > 0 ? `#${customer.receipt_numbers[0]}` : '—'}
+      </td>
 
       {}
       <td className="col-name">

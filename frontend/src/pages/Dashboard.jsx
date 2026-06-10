@@ -302,9 +302,10 @@ export default function Dashboard() {
   };
 
   const exportToCSV = (exportData = customers) => {
-    const headers = ['Name', 'Initial Balance', 'Date of Purchase', 'Advance Payment', 'Balance', 'Status'];
+    const headers = ['Receipt No.', 'Name', 'Initial Balance', 'Date of Purchase', 'Advance Payment', 'Balance', 'Status'];
     const sortedData = [...exportData].sort((a, b) => a.name.localeCompare(b.name));
     const rows = sortedData.map(d => [
+      d.receipt_numbers && d.receipt_numbers.length > 0 ? d.receipt_numbers[0] : '',
       `"${d.name.replace(/"/g, '""')}"`,
       d.original_debt || 0,
       d.date_borrowed,
@@ -329,10 +330,10 @@ export default function Dashboard() {
   };
 
   const downloadTemplate = () => {
-    const headers = ['Name', 'Balance', 'Advance Payment', 'Date of Purchase'];
+    const headers = ['Receipt No.', 'Name', 'Balance', 'Advance Payment', 'Date of Purchase'];
     const sampleData = [
-      ['Juan Dela Cruz', '1000', '200', new Date().toISOString().split('T')[0]],
-      ['Maria Clara', '500', '0', new Date().toISOString().split('T')[0]]
+      ['R-12345', 'Juan Dela Cruz', '1000', '200', new Date().toISOString().split('T')[0]],
+      ['R-12346', 'Maria Clara', '500', '0', new Date().toISOString().split('T')[0]]
     ];
     const csvContent = headers.join(",") + "\n" + sampleData.map(e => e.join(",")).join("\n");
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -364,6 +365,7 @@ export default function Dashboard() {
           const obj = {};
           headers.forEach((header, index) => {
             // Map common headers to our schema
+            if (header.includes('receipt') || header.includes('id')) obj.receipt_numbers = values[index] ? [values[index]] : [];
             if (header.includes('name')) obj.name = values[index];
             if (header.includes('balance')) obj.balance = values[index];
             if (header.includes('advance') && !header.includes('date')) obj.advance_payment = values[index];
@@ -566,13 +568,19 @@ export default function Dashboard() {
         ? d.id.toString() === s
         : d.id.toString().includes(s);
 
+      const receiptMatch = d.receipt_numbers &&
+        d.receipt_numbers.some(r => {
+          const rComp = matchCase ? r : r.toLowerCase();
+          return wholeWord ? rComp === s : rComp.includes(s);
+        });
+
       let matchesSearch;
       if (searchMode === 'name') {
         matchesSearch = nameMatch;
       } else if (searchMode === 'date') {
         matchesSearch = dateMatch;
       } else {
-        matchesSearch = nameMatch || dateMatch || idMatch;
+        matchesSearch = nameMatch || dateMatch || idMatch || receiptMatch;
       }
 
       return matchesSearch;
@@ -1109,6 +1117,7 @@ export default function Dashboard() {
                             </div>
                           </th>
                         )}
+                        <th className="col-receipt hide-mobile">Receipt No.</th>
                         <th className="col-name">Full Name</th>
                         <th className="col-date">Date of Purchase</th>
                         <th className="col-init-balance hide-mobile">Initial Balance</th>

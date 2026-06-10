@@ -6,9 +6,9 @@ This journal provides a detailed, day-by-day record of the Arc Debt Tracker proj
 ---
 
 ## 📊 Development Summary
-- **Total Development Duration:** ~7 Weeks (April 25, 2026 – June 9, 2026)
-- **Active Coding Days:** 22 Days
-- **Total Commit Count:** 125 Commits
+- **Total Development Duration:** ~7 Weeks (April 25, 2026 – June 10, 2026)
+- **Active Coding Days:** 24 Days
+- **Total Commit Count:** 126 Commits
 - **Key Modules Developed:**
   - 🏠 [Dashboard.jsx](file:///C:/Users/Zymir/OneDrive/Desktop/Bakla romel/Arc/frontend/src/pages/Dashboard.jsx) - Main stats, customer lists, pagination, filters, and activity feed.
   - 👤 [CustomerDetail.jsx](file:///C:/Users/Zymir/OneDrive/Desktop/Bakla romel/Arc/frontend/src/pages/CustomerDetail.jsx) - Individual ledger, purchase timelines, export tools, and payments.
@@ -271,9 +271,9 @@ Focus: Transitioning to full Supabase authentication, implementing configurable 
   - Synchronized and updated the Daily Development Journal and Weekly Journal to fully document the codebase renaming refactor, unique receipt number validation, and CSV formatting fixes.
   - Aligned commit count metrics to reflect the complete project history.
 
-#### Day 11: June 9, 2026 (Today)
+#### Day 11: June 9, 2026
 * **Category:** `🚀 Feature`, `🎨 Style`, `🔒 Security`
-* **Commits:** `3e8f6e4`, `4b91a9f`, `2b7c6d9`, `c3d4166`, `5f6a7b8`
+* **Commits:** `1f0fce0`, `af411e9`, `12f2664`, `6901dcd`, `91b5724`, `c3d4166`, `fac54dd`, `47f7f96`
 * **Details:**
   - **Customer Detail Layout Restructure:** Restructured the individual customer detail layout to match the responsive two-column grid wireframe (Initial Balance, Current Balance, and consolidated Purchase Details cards vertically stacked on the left, Timeline & History on the right).
   - **Financial Overview Popup Modal:** Replaced the collapsible stats tab with a centralized popup modal dialog overlay. When locked, only a low-profile trigger bar is displayed. Clicking the bar prompts authentication (if locked) or immediately pops up a wide modal dialog (`max-width: 800px`) showing the outstanding and collected metrics cards side-by-side. Inside the popup, added a manual `Lock Overview` action button (locks and closes the modal) and a `Close (X)` button (closes without locking).
@@ -281,3 +281,10 @@ Focus: Transitioning to full Supabase authentication, implementing configurable 
   - **Light Mode Style & Contrast Fixes:** Resolved text readability issues under Light Mode by moving the glass overlay styles into `.stats-lock-overlay` (and later `.stats-trigger-bar` / `.modal`) classes in `index.css`, enforcing high-contrast text colors and light translucent overlays for Light Mode, and dark translucent overlays for Dark Mode.
   - **Outstanding Balance Layout Balancing:** Centered the outstanding amount vertically and removed the vertical bar chart from the outstanding card to balance the empty space.
   - **Codebase Clean-up (No crumbs):** Cleaned up all CSS and code references from the collapsible tab panel prototype to ensure zero crumbs remain.
+
+#### Day 12: June 10, 2026 (Today)
+* **Category:** `📝 Documentation`
+* **Commits:** `a99ab64`
+* **Details:**
+  - **docs:** Synchronized and updated the Daily Development Journal and Weekly Journal to align with the final Git history, correcting historical commit hashes.
+  - **docs:** Added an automatic journal update script under `scripts/update-journal.js` to parse commits and maintain documentation sync.

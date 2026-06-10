@@ -697,6 +697,8 @@ export default function Dashboard() {
 
 
           <div className="action-buttons-group">
+            <ThemeToggle />
+
             {/* Settings dropdown */}
             <div style={{ position: 'relative' }}>
               <button
@@ -733,6 +735,29 @@ export default function Dashboard() {
                         boxShadow: 'var(--shadow-lg)',
                       }}
                     >
+                      <button
+                        onClick={() => {
+                          setSettingsMenuOpen(false);
+                          if (showStats) {
+                            setIsStatsModalOpen(true);
+                          } else {
+                            setIsRevealAuthOpen(true);
+                          }
+                        }}
+                        style={{
+                          width: '100%', display: 'flex', alignItems: 'center', gap: 12,
+                          padding: '10px 14px', borderRadius: 10, border: 'none',
+                          background: 'transparent', color: 'var(--text-primary)',
+                          fontFamily: 'inherit', fontSize: 13, fontWeight: 600,
+                          cursor: 'pointer', transition: 'background 0.15s',
+                        }}
+                        onMouseEnter={e => e.currentTarget.style.background = 'var(--accent-light)'}
+                        onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                      >
+                        {showStats ? <Eye size={15} style={{ color: 'var(--accent)', flexShrink: 0 }} /> : <Lock size={15} style={{ color: 'var(--accent)', flexShrink: 0 }} />}
+                        <span>{showStats ? 'Financial Overview' : 'Unlock & View'}</span>
+                      </button>
+                      <div style={{ height: 1, background: 'var(--border)', margin: '4px 8px' }} />
                       <button
                         onClick={() => { setDataMenuOpen(true); setSettingsMenuOpen(false); }}
                         style={{
@@ -794,7 +819,6 @@ export default function Dashboard() {
                         <Timer size={15} style={{ color: 'var(--accent)', flexShrink: 0 }} />
                         Session Timeout
                       </button>
-                      <ThemeToggle asMenuItem onClick={() => setSettingsMenuOpen(false)} />
                       <div style={{ height: 1, background: 'var(--border)', margin: '4px 8px' }} />
                       <button
                         onClick={() => { signOut(); setSettingsMenuOpen(false); }}
@@ -913,34 +937,7 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Stats Trigger Widget */}
-      <div 
-        className="stats-trigger-bar" 
-        onClick={() => {
-          if (showStats) {
-            setIsStatsModalOpen(true);
-          } else {
-            setIsRevealAuthOpen(true);
-          }
-        }}
-      >
-        <div className="stats-trigger-left">
-          <div className="stats-trigger-icon">
-            {showStats ? <Eye size={16} /> : <Lock size={16} />}
-          </div>
-          <div className="stats-trigger-text">
-            <span className="stats-trigger-title">
-              {showStats ? 'Financial Overview' : 'Financial Overview (Locked)'}
-            </span>
-            <span className="stats-trigger-subtitle">
-              {showStats ? 'Click to open financial overview popup' : 'Click to authenticate and view statistics popup'}
-            </span>
-          </div>
-        </div>
-        <button className="stats-trigger-btn">
-          {showStats ? 'Open' : 'Unlock & View'}
-        </button>
-      </div>
+
 
       {/* Stats Popup Modal */}
       {showStats && isStatsModalOpen && (

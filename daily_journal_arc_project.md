@@ -6,9 +6,9 @@ This journal provides a detailed, day-by-day record of the Arc Debt Tracker proj
 ---
 
 ## 📊 Development Summary
-- **Total Development Duration:** ~7 Weeks (April 25, 2026 – June 10, 2026)
-- **Active Coding Days:** 24 Days
-- **Total Commit Count:** 131 Commits
+- **Total Development Duration:** ~7 Weeks (April 25, 2026 – June 11, 2026)
+- **Active Coding Days:** 25 Days
+- **Total Commit Count:** 132 Commits
 - **Key Modules Developed:**
   - 🏠 [Dashboard.jsx](file:///C:/Users/Zymir/OneDrive/Desktop/Bakla romel/Arc/frontend/src/pages/Dashboard.jsx) - Main stats, customer lists, pagination, filters, and activity feed.
   - 👤 [CustomerDetail.jsx](file:///C:/Users/Zymir/OneDrive/Desktop/Bakla romel/Arc/frontend/src/pages/CustomerDetail.jsx) - Individual ledger, purchase timelines, export tools, and payments.
@@ -294,7 +294,7 @@ Focus: Transitioning to full Supabase authentication, implementing configurable 
 
 #### Day 13: June 11, 2026 (Today)
 * **Category:** `📝 Documentation`, `⚙️ Refactor`
-* **Commits:** Pending (Documentation updates and script refactoring)
+* **Commits:** `c945b94`
 * **Details:**
   - **Smart Journal Sync Script:** Upgraded [update-journal.js](file:///c:/Users/Zymir/OneDrive/Desktop/Bakla%20romel/Arc/scripts/update-journal.js) to enable same-day commit delta updates, resolving a bug where new commits on an already-documented day were ignored. Included automated safeguards to protect human-polished historical logs.
   - **Weekly & Daily Documentation Sync:** Fully documented and aligned Week 7 and Week 8 progress records in [daily_journal_arc_project.md](file:///c:/Users/Zymir/OneDrive/Desktop/Bakla%20romel/Arc/daily_journal_arc_project.md) and [weekly_journal_arc_project.md](file:///c:/Users/Zymir/OneDrive/Desktop/Bakla%20romel/Arc/weekly_journal_arc_project.md).

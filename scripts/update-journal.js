@@ -158,7 +158,7 @@ ${detailsMarkup}
       const nextHeaderMatch = searchRest.match(/\r?\n(?:#### Day|### |---)/);
       const endIndex = nextHeaderMatch ? startIndex + match[0].length + nextHeaderMatch.index : journalContent.length;
       
-      const existingBlock = journalContent.slice(startIndex, endIndex);
+      let existingBlock = journalContent.slice(startIndex, endIndex);
       
       // Parse commits from existing block
       const commitsLineMatch = existingBlock.match(/\*\s+\*\*Commits:\*\*\s*(.+)/i);
@@ -170,20 +170,47 @@ ${detailsMarkup}
       const actualHashes = commits.map(c => c.hash);
       const matchAll = actualHashes.length === existingHashes.length && actualHashes.every(h => existingHashes.includes(h));
       
-      if (!matchAll || existingBlock.includes('(Today)')) {
+      const isLatestDate = (dateStr === dates[dates.length - 1]);
+      const hasTodaySuffix = match[0].includes('(Today)');
+      
+      if (!matchAll) {
         console.log(`Updating commits/details for existing day: ${dateStr}`);
-        journalContent = journalContent.slice(0, startIndex) + entryTemplate + (nextHeaderMatch ? '\n' : '') + journalContent.slice(endIndex);
+        let blockToInsert = entryTemplate;
+        if (isLatestDate) {
+          blockToInsert = blockToInsert.replace(formattedDate, `${formattedDate} (Today)`);
+        }
+        journalContent = journalContent.slice(0, startIndex) + blockToInsert + (nextHeaderMatch ? '\n' : '') + journalContent.slice(endIndex);
         updated = true;
+      } else {
+        // Commits match. Let's just fix the header's (Today) status if needed.
+        if (isLatestDate && !hasTodaySuffix) {
+          console.log(`Adding (Today) suffix to latest day: ${dateStr}`);
+          const newHeader = match[0].replace(formattedDate, `${formattedDate} (Today)`).trim();
+          existingBlock = existingBlock.replace(match[0].trim(), newHeader);
+          journalContent = journalContent.slice(0, startIndex) + existingBlock + journalContent.slice(endIndex);
+          updated = true;
+        } else if (!isLatestDate && hasTodaySuffix) {
+          console.log(`Removing (Today) suffix from older day: ${dateStr}`);
+          const newHeader = match[0].replace(/\s+\(Today\)/i, '').trim();
+          existingBlock = existingBlock.replace(match[0].trim(), newHeader);
+          journalContent = journalContent.slice(0, startIndex) + existingBlock + journalContent.slice(endIndex);
+          updated = true;
+        }
       }
     } else {
       console.log(`Documenting missing day: ${dateStr}`);
+      const isLatestDate = (dateStr === dates[dates.length - 1]);
+      let blockToInsert = entryTemplate;
+      if (isLatestDate) {
+        blockToInsert = blockToInsert.replace(formattedDate, `${formattedDate} (Today)`);
+      }
       
       let weekIndex = journalContent.indexOf(`Week ${weekNum}:`);
       if (weekIndex === -1) {
         const logStart = journalContent.indexOf('## 📅 Daily Log');
         if (logStart !== -1) {
           const weekHeader = `\n---\n\n### 🛡️ Week ${weekNum}: Week ${weekNum} Development\nFocus: Description of Week ${weekNum} work.\n`;
-          journalContent += weekHeader + '\n' + entryTemplate;
+          journalContent += weekHeader + '\n' + blockToInsert;
         }
       } else {
         let nextWeekIndex = journalContent.indexOf(`### 🛡️ Week ${weekNum + 1}:`);
@@ -192,9 +219,9 @@ ${detailsMarkup}
         }
         
         if (nextWeekIndex !== -1) {
-          journalContent = journalContent.slice(0, nextWeekIndex) + entryTemplate + '\n' + journalContent.slice(nextWeekIndex);
+          journalContent = journalContent.slice(0, nextWeekIndex) + blockToInsert + '\n' + journalContent.slice(nextWeekIndex);
         } else {
-          journalContent += '\n' + entryTemplate;
+          journalContent += '\n' + blockToInsert;
         }
       }
       updated = true;

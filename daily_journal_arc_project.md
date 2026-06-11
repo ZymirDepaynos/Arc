@@ -8,7 +8,7 @@ This journal provides a detailed, day-by-day record of the Arc Debt Tracker proj
 ## 📊 Development Summary
 - **Total Development Duration:** ~7 Weeks (April 25, 2026 – June 11, 2026)
 - **Active Coding Days:** 25 Days
-- **Total Commit Count:** 132 Commits
+- **Total Commit Count:** 133 Commits
 - **Key Modules Developed:**
   - 🏠 [Dashboard.jsx](file:///C:/Users/Zymir/OneDrive/Desktop/Bakla romel/Arc/frontend/src/pages/Dashboard.jsx) - Main stats, customer lists, pagination, filters, and activity feed.
   - 👤 [CustomerDetail.jsx](file:///C:/Users/Zymir/OneDrive/Desktop/Bakla romel/Arc/frontend/src/pages/CustomerDetail.jsx) - Individual ledger, purchase timelines, export tools, and payments.
@@ -293,8 +293,8 @@ Focus: Transitioning to full Supabase authentication, implementing configurable 
   - **Automatic Sync Script:** Created the automatic development journal synchronization utility [update-journal.js](file:///c:/Users/Zymir/OneDrive/Desktop/Bakla%20romel/Arc/scripts/update-journal.js) under the `scripts/` directory to calculate commit metrics and append new coding days.
 
 #### Day 13: June 11, 2026 (Today)
-* **Category:** `📝 Documentation`, `⚙️ Refactor`
-* **Commits:** `c945b94`
+* **Category:** `📝 Documentation`
+* **Commits:** `c945b94`, `1504d73`
 * **Details:**
-  - **Smart Journal Sync Script:** Upgraded [update-journal.js](file:///c:/Users/Zymir/OneDrive/Desktop/Bakla%20romel/Arc/scripts/update-journal.js) to enable same-day commit delta updates, resolving a bug where new commits on an already-documented day were ignored. Included automated safeguards to protect human-polished historical logs.
-  - **Weekly & Daily Documentation Sync:** Fully documented and aligned Week 7 and Week 8 progress records in [daily_journal_arc_project.md](file:///c:/Users/Zymir/OneDrive/Desktop/Bakla%20romel/Arc/daily_journal_arc_project.md) and [weekly_journal_arc_project.md](file:///c:/Users/Zymir/OneDrive/Desktop/Bakla%20romel/Arc/weekly_journal_arc_project.md).
+  - **docs:** Update daily and weekly journals for June 10 and 11, upgrade update-journal.js script
+  - **docs:** Refine update-journal.js today suffix logic and sync metrics

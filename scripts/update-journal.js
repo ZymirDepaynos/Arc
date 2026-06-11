@@ -81,31 +81,12 @@ function updateDailyJournal() {
   const commitsByDate = getGitCommits();
   const dates = Object.keys(commitsByDate).sort();
   
-  // Find which dates are already documented
-  // We search for headers like: #### Day 11: June 9, 2026
-  const existingDaysRegex = /#### Day (\d+): ([A-Za-z]+ \d+, \d{4})/g;
-  const documentedDates = new Set();
-  const allDates = [...dates];
-  let match;
-  while ((match = existingDaysRegex.exec(journalContent)) !== null) {
-    const parsedDate = new Date(match[2]);
-    const yyyy = parsedDate.getFullYear();
-    const mm = String(parsedDate.getMonth() + 1).padStart(2, '0');
-    const dd = String(parsedDate.getDate()).padStart(2, '0');
-    const dateStr = `${yyyy}-${mm}-${dd}`;
-    documentedDates.add(dateStr);
-    if (!allDates.includes(dateStr)) {
-      allDates.push(dateStr);
-    }
-  }
-
   // Update header metadata (Total Commits and Active Coding Days)
   const totalCommits = Object.values(commitsByDate).reduce((acc, curr) => acc + curr.length, 0);
   const activeCodingDays = dates.length;
   
-  // Sort all dates (commits + clean documented days) to find the absolute latest date
-  const sortedAllDates = allDates.sort();
-  const lastDate = sortedAllDates.length > 0 ? new Date(sortedAllDates[sortedAllDates.length - 1]) : new Date();
+  // Sort all dates to find the absolute latest date
+  const lastDate = dates.length > 0 ? new Date(dates[dates.length - 1]) : new Date();
   const formattedLastDate = formatDateString(lastDate);
   
   // Replace summary metrics in markdown
@@ -124,30 +105,16 @@ function updateDailyJournal() {
 
   console.log(`Synced metrics: Commits = ${totalCommits}, Coding Days = ${activeCodingDays}, End Date = ${formattedLastDate}`);
 
-  // Check for any dates in git history that are not yet documented
   let updated = false;
+
   dates.forEach(dateStr => {
-    if (documentedDates.has(dateStr)) {
-      return; // Already documented
-    }
-    
-    console.log(`Documenting missing day: ${dateStr}`);
     const commits = commitsByDate[dateStr];
     const dateObj = new Date(dateStr);
     const formattedDate = formatDateString(dateObj);
     const { weekNum, dayNumInWeek, totalDaysDiff } = getWeekAndDay(dateStr);
     
-    // Note: Week 7 had absolute numbering (Day 8, 9, 10, 11).
-    // Let's decide Day Number. If we are in Week 7 or later, we can keep the absolute count or relative.
-    // Let's compute absolute coding day sequence count based on the number of existing entries.
-    // To maintain compatibility with Week 7's Day 8-12 sequence, if week >= 7 we use the running count.
     let dayLabel;
     if (weekNum >= 7) {
-      // June 6 is Day 8 in the journal, June 7 is Day 9, June 8 is Day 10, June 9 is Day 11, June 10 is Day 12.
-      // Let's map it: June 6 is day 8 (since START_DATE is Apr 25, diff is 42 days, but June 5 is Day 7 of Week 6. Wait, May 30 was start of Week 6. May 31 is Day 2. June 5 is Day 7.
-      // So June 6 starts Week 7. If we continue absolute count from June 5 (Day 7): June 6 is Day 8.
-      // June 7 is Day 9. June 8 is Day 10. June 9 is Day 11. June 10 is Day 12.
-      // This matches totalDaysDiff - 34. Let's just do:
       dayLabel = totalDaysDiff - 34;
     } else {
       dayLabel = dayNumInWeek;
@@ -157,59 +124,89 @@ function updateDailyJournal() {
     const commitsList = commits.map(c => `\`${c.hash}\``).join(', ');
     
     // Format details based on commit messages
-    const detailsMarkup = commits.map(c => `  - **${c.subject.split(':')[0] || 'Update'}:** ${c.subject}`).join('\n');
+    const detailsMarkup = commits.map(c => {
+      let subject = c.subject;
+      const parts = subject.split(':');
+      let prefix = '';
+      let rest = subject;
+      if (parts.length > 1 && parts[0].length < 15) {
+        prefix = parts[0].trim();
+        rest = parts.slice(1).join(':').trim();
+      }
+      if (rest) {
+        rest = rest.charAt(0).toUpperCase() + rest.slice(1);
+      }
+      const prefixLabel = prefix ? `**${prefix}:** ` : '';
+      return `  - ${prefixLabel}${rest}`;
+    }).join('\n');
     
-    const entryTemplate = `
-#### Day ${dayLabel}: ${formattedDate}
+    const entryTemplate = `#### Day ${dayLabel}: ${formattedDate}
 * **Category:** ${category}
 * **Commits:** ${commitsList}
 * **Details:**
 ${detailsMarkup}
 `;
 
-    // Find the right week section to insert
-    const weekSectionHeader = `### 🛡️ Week ${weekNum}:`;
-    const nextWeekSectionHeader = `### 🛡️ Week ${weekNum + 1}:`;
-    
-    let weekIndex = journalContent.indexOf(`Week ${weekNum}:`);
-    if (weekIndex === -1) {
-      // If the week section doesn't exist, append it at the end of the daily log
-      const logStart = journalContent.indexOf('## 📅 Daily Log');
-      if (logStart !== -1) {
-        // Find end of file or create new week section
-        const weekHeader = `\n---\n\n### 🛡️ Week ${weekNum}: Week ${weekNum} Development\nFocus: Description of Week ${weekNum} work.\n`;
-        journalContent += weekHeader + entryTemplate;
-      }
-    } else {
-      // Insert before the next week section or at the end of the file
-      let nextWeekIndex = journalContent.indexOf(`### 🛡️ Week ${weekNum + 1}:`);
-      if (nextWeekIndex === -1) {
-        nextWeekIndex = journalContent.indexOf(`---`, weekIndex + 20);
+    // Escaped date string for regex
+    const escapedDate = formattedDate.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+    const dayRegex = new RegExp(`#### Day (\\d+): ${escapedDate}(?:\\s+\\(Today\\))?\\r?\\n`, 'i');
+    const match = journalContent.match(dayRegex);
+
+    if (match) {
+      const startIndex = match.index;
+      const searchRest = journalContent.slice(startIndex + match[0].length);
+      const nextHeaderMatch = searchRest.match(/\r?\n(?:#### Day|### |---)/);
+      const endIndex = nextHeaderMatch ? startIndex + match[0].length + nextHeaderMatch.index : journalContent.length;
+      
+      const existingBlock = journalContent.slice(startIndex, endIndex);
+      
+      // Parse commits from existing block
+      const commitsLineMatch = existingBlock.match(/\*\s+\*\*Commits:\*\*\s*(.+)/i);
+      let existingHashes = [];
+      if (commitsLineMatch) {
+        existingHashes = (commitsLineMatch[1].match(/`[a-f0-9]+`/g) || []).map(h => h.replace(/`/g, ''));
       }
       
-      if (nextWeekIndex !== -1) {
-        // Insert right before the separator or next week
-        journalContent = journalContent.slice(0, nextWeekIndex) + entryTemplate + '\n' + journalContent.slice(nextWeekIndex);
-      } else {
-        journalContent += entryTemplate;
+      const actualHashes = commits.map(c => c.hash);
+      const matchAll = actualHashes.length === existingHashes.length && actualHashes.every(h => existingHashes.includes(h));
+      
+      if (!matchAll || existingBlock.includes('(Today)')) {
+        console.log(`Updating commits/details for existing day: ${dateStr}`);
+        journalContent = journalContent.slice(0, startIndex) + entryTemplate + (nextHeaderMatch ? '\n' : '') + journalContent.slice(endIndex);
+        updated = true;
       }
+    } else {
+      console.log(`Documenting missing day: ${dateStr}`);
+      
+      let weekIndex = journalContent.indexOf(`Week ${weekNum}:`);
+      if (weekIndex === -1) {
+        const logStart = journalContent.indexOf('## 📅 Daily Log');
+        if (logStart !== -1) {
+          const weekHeader = `\n---\n\n### 🛡️ Week ${weekNum}: Week ${weekNum} Development\nFocus: Description of Week ${weekNum} work.\n`;
+          journalContent += weekHeader + '\n' + entryTemplate;
+        }
+      } else {
+        let nextWeekIndex = journalContent.indexOf(`### 🛡️ Week ${weekNum + 1}:`);
+        if (nextWeekIndex === -1) {
+          nextWeekIndex = journalContent.indexOf(`---`, weekIndex + 20);
+        }
+        
+        if (nextWeekIndex !== -1) {
+          journalContent = journalContent.slice(0, nextWeekIndex) + entryTemplate + '\n' + journalContent.slice(nextWeekIndex);
+        } else {
+          journalContent += '\n' + entryTemplate;
+        }
+      }
+      updated = true;
     }
-    
-    updated = true;
-  }
-  );
+  });
 
   if (updated) {
     fs.writeFileSync(DAILY_JOURNAL_PATH, journalContent, 'utf8');
     console.log('Daily journal updated successfully.');
   } else {
-    // If today is a clean coding day with no commits, ensure it lists June 10 (Today)
-    const todayStr = new Date().toISOString().split('T')[0];
-    if (!documentedDates.has(todayStr)) {
-      // If we don't have commits today, we already added Day 12 manually or via update
-      console.log('Daily journal is up to date.');
-    }
     fs.writeFileSync(DAILY_JOURNAL_PATH, journalContent, 'utf8');
+    console.log('Daily journal is up to date.');
   }
 }
 

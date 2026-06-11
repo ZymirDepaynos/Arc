@@ -8,7 +8,7 @@ This journal provides a detailed, day-by-day record of the Arc Debt Tracker proj
 ## 📊 Development Summary
 - **Total Development Duration:** ~7 Weeks (April 25, 2026 – June 10, 2026)
 - **Active Coding Days:** 24 Days
-- **Total Commit Count:** 126 Commits
+- **Total Commit Count:** 131 Commits
 - **Key Modules Developed:**
   - 🏠 [Dashboard.jsx](file:///C:/Users/Zymir/OneDrive/Desktop/Bakla romel/Arc/frontend/src/pages/Dashboard.jsx) - Main stats, customer lists, pagination, filters, and activity feed.
   - 👤 [CustomerDetail.jsx](file:///C:/Users/Zymir/OneDrive/Desktop/Bakla romel/Arc/frontend/src/pages/CustomerDetail.jsx) - Individual ledger, purchase timelines, export tools, and payments.
@@ -36,7 +36,7 @@ Focus: Establishing repository structure, setting up the Vercel deployment pipel
 
 #### Day 3: April 27, 2026
 * **Category:** `🚀 Feature`, `🎨 Style`, `🐛 Bug Fix`
-* **Commits:** `bd2d5ee`, `5052dba`, `4c45fa3`, `06f102c`, `de60b61`, `5bf3b99`, `a5e9350`
+* **Commits:** `bd2d5ee`, `5052dba`, `4c45fa3`, `06f1a02`, `de60b61`, `5bf3b99`, `a5e9350`
 * **Details:**
   - **Rebranding:** Completed a codebase-wide rebranding from "Debtors" to "Customers" to modernize interface terminology.
   - **Global History:** Implemented global history transaction feeds.
@@ -282,9 +282,19 @@ Focus: Transitioning to full Supabase authentication, implementing configurable 
   - **Outstanding Balance Layout Balancing:** Centered the outstanding amount vertically and removed the vertical bar chart from the outstanding card to balance the empty space.
   - **Codebase Clean-up (No crumbs):** Cleaned up all CSS and code references from the collapsible tab panel prototype to ensure zero crumbs remain.
 
-#### Day 12: June 10, 2026 (Today)
-* **Category:** `📝 Documentation`
-* **Commits:** `a99ab64`
+#### Day 12: June 10, 2026
+* **Category:** `🚀 Feature`, `📝 Documentation`, `🎨 Style`, `⚙️ Refactor`
+* **Commits:** `5bb774c`, `42a41b6`, `e07ca15`, `402d4a5`, `bb0f9b6`, `404d7bd`
 * **Details:**
-  - **docs:** Synchronized and updated the Daily Development Journal and Weekly Journal to align with the final Git history, correcting historical commit hashes.
-  - **docs:** Added an automatic journal update script under `scripts/update-journal.js` to parse commits and maintain documentation sync.
+  - **Rebranding Initial Balance:** Renamed "Initial Balance" to "Total Amount Purchased" (or "Total Amount of Purchased") across [CustomerModal.jsx](file:///c:/Users/Zymir/OneDrive/Desktop/Bakla%20romel/Arc/frontend/src/components/CustomerModal.jsx), [DebtorModal.jsx](file:///c:/Users/Zymir/OneDrive/Desktop/Bakla%20romel/Arc/frontend/src/components/DebtorModal.jsx), [CustomerDetail.jsx](file:///c:/Users/Zymir/OneDrive/Desktop/Bakla%20romel/Arc/frontend/src/pages/CustomerDetail.jsx), and [Dashboard.jsx](file:///c:/Users/Zymir/OneDrive/Desktop/Bakla%20romel/Arc/frontend/src/pages/Dashboard.jsx) to more accurately reflect transaction records.
+  - **Layout & Columns Width Fix:** Widened the `col-init-balance` styling class in [index.css](file:///c:/Users/Zymir/OneDrive/Desktop/Bakla%20romel/Arc/frontend/src/index.css) to prevent text wrapping or overlapping of the longer "Total Amount Purchased" labels.
+  - **Receipt Number Restoration:** Restored the "Receipt No" input fields and UI displays on [CustomerCard.jsx](file:///c:/Users/Zymir/OneDrive/Desktop/Bakla%20romel/Arc/frontend/src/components/CustomerCard.jsx), [DebtorCard.jsx](file:///c:/Users/Zymir/OneDrive/Desktop/Bakla%20romel/Arc/frontend/src/components/DebtorCard.jsx), and modal forms. Removed the backend database unique constraint validation in [customers.js](file:///c:/Users/Zymir/OneDrive/Desktop/Bakla%20romel/Arc/api/routes/customers.js) to allow flexible receipt numbering.
+  - **Theme Toggle & Overview Relocation:** Moved the "Theme Toggle" control back to the header bar, and relocated the sensitive "Financial Overview" metrics trigger to the settings dropdown menu in [Dashboard.jsx](file:///c:/Users/Zymir/OneDrive/Desktop/Bakla%20romel/Arc/frontend/src/pages/Dashboard.jsx).
+  - **Automatic Sync Script:** Created the automatic development journal synchronization utility [update-journal.js](file:///c:/Users/Zymir/OneDrive/Desktop/Bakla%20romel/Arc/scripts/update-journal.js) under the `scripts/` directory to calculate commit metrics and append new coding days.
+
+#### Day 13: June 11, 2026 (Today)
+* **Category:** `📝 Documentation`, `⚙️ Refactor`
+* **Commits:** Pending (Documentation updates and script refactoring)
+* **Details:**
+  - **Smart Journal Sync Script:** Upgraded [update-journal.js](file:///c:/Users/Zymir/OneDrive/Desktop/Bakla%20romel/Arc/scripts/update-journal.js) to enable same-day commit delta updates, resolving a bug where new commits on an already-documented day were ignored. Included automated safeguards to protect human-polished historical logs.
+  - **Weekly & Daily Documentation Sync:** Fully documented and aligned Week 7 and Week 8 progress records in [daily_journal_arc_project.md](file:///c:/Users/Zymir/OneDrive/Desktop/Bakla%20romel/Arc/daily_journal_arc_project.md) and [weekly_journal_arc_project.md](file:///c:/Users/Zymir/OneDrive/Desktop/Bakla%20romel/Arc/weekly_journal_arc_project.md).

@@ -209,7 +209,7 @@ export default function CustomerModal({ open, onClose, onSubmit, initial = null 
                 </div>
 
                 {}
-                <div className="form-group floating-group">
+                <div className="form-group full floating-group">
                   <input
                     className="form-input"
                     type="number"

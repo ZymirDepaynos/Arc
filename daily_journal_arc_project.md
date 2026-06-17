@@ -6,9 +6,9 @@ This journal provides a detailed, day-by-day record of the Arc Debt Tracker proj
 ---
 
 ## 📊 Development Summary
-- **Total Development Duration:** ~7 Weeks (April 25, 2026 – June 11, 2026)
-- **Active Coding Days:** 25 Days
-- **Total Commit Count:** 134 Commits
+- **Total Development Duration:** ~7 Weeks (April 25, 2026 – June 17, 2026)
+- **Active Coding Days:** 26 Days
+- **Total Commit Count:** 139 Commits
 - **Key Modules Developed:**
   - 🏠 [Dashboard.jsx](file:///C:/Users/Zymir/OneDrive/Desktop/Bakla romel/Arc/frontend/src/pages/Dashboard.jsx) - Main stats, customer lists, pagination, filters, and activity feed.
   - 👤 [CustomerDetail.jsx](file:///C:/Users/Zymir/OneDrive/Desktop/Bakla romel/Arc/frontend/src/pages/CustomerDetail.jsx) - Individual ledger, purchase timelines, export tools, and payments.
@@ -292,10 +292,25 @@ Focus: Transitioning to full Supabase authentication, implementing configurable 
   - **Theme Toggle & Overview Relocation:** Moved the "Theme Toggle" control back to the header bar, and relocated the sensitive "Financial Overview" metrics trigger to the settings dropdown menu in [Dashboard.jsx](file:///c:/Users/Zymir/OneDrive/Desktop/Bakla%20romel/Arc/frontend/src/pages/Dashboard.jsx).
   - **Automatic Sync Script:** Created the automatic development journal synchronization utility [update-journal.js](file:///c:/Users/Zymir/OneDrive/Desktop/Bakla%20romel/Arc/scripts/update-journal.js) under the `scripts/` directory to calculate commit metrics and append new coding days.
 
-#### Day 13: June 11, 2026 (Today)
-* **Category:** `📝 Documentation`
-* **Commits:** `c945b94`, `1504d73`, `b413b9b`
+#### Day 13: June 11, 2026
+* **Category:** `📝 Documentation`, `🎨 Style`
+* **Commits:** `c945b94`, `1504d73`, `b413b9b`, `2ee3040`
 * **Details:**
   - **docs:** Update daily and weekly journals for June 10 and 11, upgrade update-journal.js script
   - **docs:** Refine update-journal.js today suffix logic and sync metrics
   - **docs:** Finalize daily journal sync for June 11
+  - **style/layout:** Make Total Amount of Purchased field full-width in modals to prevent text overlap
+
+---
+
+### 🛡️ Week 8: Offline Migration & SQLite Integration (June 13 – June 17)
+Focus: Migrating the application architecture from cloud-based Supabase services to a self-contained offline system utilizing SQL.js (SQLite), local JWT authentication, and Express.
+
+#### Day 19: June 17, 2026 (Today)
+* **Category:** `🚀 Feature`, `🔧 Infrastructure`, `🔒 Security`
+* **Commits:** `3b23a0d`, `355292c`, `3e9d370`, `5f95760`
+* **Details:**
+  - **feat(db):** Migrate database to SQL.js offline SQLite engine and auto-provision schemas
+  - **feat(auth):** Implement offline JWT authentication middleware and unified local Express server
+  - **feat(api):** Migrate backend routes to use SQL.js prepared statements for customers, archive, and settings
+  - **feat(frontend):** Migrate frontend app to use local server API, clean up Supabase client dependencies and config files

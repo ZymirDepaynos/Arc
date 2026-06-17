@@ -1,24 +1,21 @@
-import { createClient } from '@supabase/supabase-js';
+import jwt from "jsonwebtoken";
 
-const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_ANON_KEY
-);
+const JWT_SECRET =
+  process.env.JWT_SECRET || "local-offline-secret-key-for-basic-ventures";
 
 export async function requireAuth(req, res, next) {
   const authHeader = req.headers.authorization;
-  const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null;
+  const token = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : null;
 
   if (!token) {
-    return res.status(401).json({ error: 'Authentication required' });
+    return res.status(401).json({ error: "Authentication required" });
   }
 
-  const { data: { user }, error } = await supabase.auth.getUser(token);
-
-  if (error || !user) {
-    return res.status(401).json({ error: 'Invalid or expired session' });
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    req.user = decoded; // { id, email }
+    next();
+  } catch (err) {
+    return res.status(401).json({ error: "Invalid or expired session" });
   }
-
-  req.user = user;
-  next();
 }

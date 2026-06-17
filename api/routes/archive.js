@@ -1,61 +1,76 @@
-import express from 'express';
-import { createClient } from '@supabase/supabase-js';
+import express from "express";
+import db from "../db.js";
 
 const router = express.Router();
 
-const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY
-);
+function parseCustomer(c) {
+  return {
+    ...c,
+    receipt_numbers: JSON.parse(c.receipt_numbers || "[]"),
+    payment_history: JSON.parse(c.payment_history || "[]"),
+  };
+}
 
-router.get('/', async (req, res) => {
+router.get("/", (req, res) => {
   try {
-    const { data, error } = await supabase
-      .from('customers')
-      .select('*')
-      .eq('user_id', req.user.id)
-      .not('archived_at', 'is', null)
-      .order('archived_at', { ascending: false });
+    const rows = db
+      .prepare(
+        `
+      SELECT * FROM customers 
+      WHERE user_id = ? AND archived_at IS NOT NULL 
+      ORDER BY archived_at DESC
+    `,
+      )
+      .all(req.user.id);
 
-    if (error) throw error;
-    res.json(data);
+    res.json(rows.map(parseCustomer));
   } catch (err) {
-    console.error('API Error [GET /archive]:', err);
+    console.error("API Error [GET /archive]:", err);
     res.status(500).json({ error: err.message });
   }
 });
 
-router.post('/:id/restore', async (req, res) => {
+router.post("/:id/restore", (req, res) => {
   try {
-    const { data, error } = await supabase
-      .from('customers')
-      .update({ archived_at: null })
-      .eq('id', req.params.id)
-      .eq('user_id', req.user.id)
-      .select()
-      .single();
+    db.prepare(
+      `
+      UPDATE customers SET archived_at = NULL 
+      WHERE id = ? AND user_id = ?
+    `,
+    ).run(req.params.id, req.user.id);
 
-    if (error) throw error;
-    res.json(data);
+    const data = db
+      .prepare("SELECT * FROM customers WHERE id = ?")
+      .get(req.params.id);
+    if (!data) return res.status(404).json({ error: "Record not found" });
+
+    res.json(parseCustomer(data));
   } catch (err) {
-    console.error('API Error [POST /archive/:id/restore]:', err);
+    console.error("API Error [POST /archive/:id/restore]:", err);
     res.status(500).json({ error: err.message });
   }
 });
 
-router.delete('/:id', async (req, res) => {
+router.delete("/:id", (req, res) => {
   try {
-    const { error } = await supabase
-      .from('customers')
-      .delete()
-      .eq('id', req.params.id)
-      .eq('user_id', req.user.id)
-      .not('archived_at', 'is', null);
+    const result = db
+      .prepare(
+        `
+      DELETE FROM customers 
+      WHERE id = ? AND user_id = ? AND archived_at IS NOT NULL
+    `,
+      )
+      .run(req.params.id, req.user.id);
 
-    if (error) throw error;
-    res.json({ message: 'Permanently deleted' });
+    if (result.changes === 0) {
+      return res
+        .status(404)
+        .json({ error: "Record not found or not archived" });
+    }
+
+    res.json({ message: "Permanently deleted" });
   } catch (err) {
-    console.error('API Error [DELETE /archive/:id]:', err);
+    console.error("API Error [DELETE /archive/:id]:", err);
     res.status(500).json({ error: err.message });
   }
 });

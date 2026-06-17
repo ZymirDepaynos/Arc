@@ -1,52 +1,65 @@
-import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { X, Trash2, Calendar as CalendarIcon } from 'lucide-react';
-import toast from 'react-hot-toast';
+import { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { X, Trash2, Calendar as CalendarIcon } from "lucide-react";
+import toast from "react-hot-toast";
 
-import { getToday, parseNaturalDate, formatDisplayDate } from '../utils/dateUtils';
+import {
+  getToday,
+  parseNaturalDate,
+  formatDisplayDate,
+} from "../utils/dateUtils";
 
 const EMPTY_FORM = {
-  name: '',
-  balance: '',
-  advance_payment: '',
-  current_balance: '',
-  receipt_numbers: '',
+  name: "",
+  balance: "",
+  advance_payment: "",
+  current_balance: "",
+  receipt_numbers: "",
   date_borrowed: getToday(),
   date_borrowed_text: formatDisplayDate(getToday()),
-  status: 'active',
+  status: "active",
 };
 
-import { parseItems } from '../utils/format';
+import { parseItems } from "../utils/format";
 
-export default function CustomerModal({ open, onClose, onSubmit, initial = null }) {
+export default function CustomerModal({
+  open,
+  onClose,
+  onSubmit,
+  initial = null,
+}) {
   const [form, setForm] = useState(EMPTY_FORM);
   const [items, setItems] = useState([]);
-  const [itemInput, setItemInput] = useState('');
+  const [itemInput, setItemInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [dateParsed, setDateParsed] = useState(null);
-  const [advDateParsed, setAdvDateParsed] = useState(null);
 
   useEffect(() => {
     if (open) {
       setError(null);
       setDateParsed(null);
-      setItemInput('');
+      setItemInput("");
       if (initial) {
         setForm({
-          name: initial.name || '',
-          balance: initial.original_debt || initial.balance || '',
-          advance_payment: initial.advance_payment || '',
-          current_balance: initial.balance || '',
-          receipt_numbers: (initial.receipt_numbers && initial.receipt_numbers[0]) || '',
-          date_borrowed: initial.date_borrowed || '',
+          name: initial.name || "",
+          balance: initial.original_debt || initial.balance || "",
+          advance_payment: initial.advance_payment || "",
+          current_balance: initial.balance || "",
+          receipt_numbers:
+            (initial.receipt_numbers && initial.receipt_numbers[0]) || "",
+          date_borrowed: initial.date_borrowed || "",
           date_borrowed_text: formatDisplayDate(initial.date_borrowed),
-          status: initial.status || 'active',
+          status: initial.status || "active",
         });
         setItems(parseItems(initial.notes));
       } else {
         const today = getToday();
-        setForm({ ...EMPTY_FORM, date_borrowed: today, date_borrowed_text: formatDisplayDate(today) });
+        setForm({
+          ...EMPTY_FORM,
+          date_borrowed: today,
+          date_borrowed_text: formatDisplayDate(today),
+        });
         setItems([]);
       }
     }
@@ -61,63 +74,70 @@ export default function CustomerModal({ open, onClose, onSubmit, initial = null 
     const val = e.target.value;
     set(fieldText, val);
     const parsed = parseNaturalDate(val);
-    if (val.trim() === '') {
+    if (val.trim() === "") {
       setParsedState(null);
-      set(fieldIso, '');
+      set(fieldIso, "");
     } else if (parsed) {
-      setParsedState('ok');
+      setParsedState("ok");
       set(fieldIso, parsed);
     } else {
-      setParsedState('error');
-      set(fieldIso, '');
+      setParsedState("error");
+      set(fieldIso, "");
     }
   };
 
-  // Items Purchased — Enter to add
   const handleItemKeyDown = (e) => {
-    if (e.key === 'Enter') {
+    if (e.key === "Enter") {
       e.preventDefault();
       const trimmed = itemInput.trim();
       if (!trimmed) return;
-      setItems(prev => [...prev, trimmed]);
-      setItemInput('');
+      setItems((prev) => [...prev, trimmed]);
+      setItemInput("");
     }
   };
 
   const removeItem = (idx) => {
-    setItems(prev => prev.filter((_, i) => i !== idx));
+    setItems((prev) => prev.filter((_, i) => i !== idx));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // — Required field checks —
     if (!form.name.trim()) {
-      toast.error('Customer name is required'); return;
+      toast.error("Customer name is required");
+      return;
     }
     if (!form.balance && form.balance !== 0) {
-      toast.error('Total amount of purchased is required'); return;
+      toast.error("Total amount of purchased is required");
+      return;
     }
 
     const rawBalance = parseFloat(form.balance || 0);
     const rawAdvance = parseFloat(form.advance_payment || 0);
 
     if (rawBalance <= 0) {
-      toast.error('Total amount of purchased must be greater than ₱0'); return;
+      toast.error("Total amount of purchased must be greater than ₱0");
+      return;
     }
     if (rawAdvance > rawBalance) {
-      toast.error('Advance payment cannot be greater than the total amount of purchased');
+      toast.error(
+        "Advance payment cannot be greater than the total amount of purchased",
+      );
       return;
     }
 
     const pDate = parseNaturalDate(form.date_borrowed_text);
-    if (!pDate) { toast.error('Invalid Date of Purchase'); return; }
+    if (!pDate) {
+      toast.error("Invalid Date of Purchase");
+      return;
+    }
 
     setLoading(true);
     setError(null);
     try {
-      
-      const finalItems = itemInput.trim() ? [...items, itemInput.trim()] : items;
+      const finalItems = itemInput.trim()
+        ? [...items, itemInput.trim()]
+        : items;
       await onSubmit({
         ...form,
         date_borrowed: pDate,
@@ -126,7 +146,9 @@ export default function CustomerModal({ open, onClose, onSubmit, initial = null 
       });
       onClose();
     } catch (err) {
-      setError(err.response?.data?.error || err.message || 'Something went wrong');
+      setError(
+        err.response?.data?.error || err.message || "Something went wrong",
+      );
     } finally {
       setLoading(false);
     }
@@ -135,20 +157,32 @@ export default function CustomerModal({ open, onClose, onSubmit, initial = null 
   const dateHint = (parsedState, isoVal) => {
     const baseStyle = {
       fontSize: 11,
-      position: 'absolute',
+      position: "absolute",
       bottom: -18,
       left: 4,
       fontWeight: 600,
-      whiteSpace: 'nowrap',
-      zIndex: 5
+      whiteSpace: "nowrap",
+      zIndex: 5,
     };
 
-    if (parsedState === 'ok' && isoVal)
-      return <div style={{ ...baseStyle, color: 'var(--accent)' }}>✓ {formatDisplayDate(isoVal)}</div>;
-    if (parsedState === 'past_error')
-      return <div style={{ ...baseStyle, color: '#ef4444' }}>Cannot be earlier than purchase date</div>;
-    if (parsedState === 'error')
-      return <div style={{ ...baseStyle, color: '#ef4444' }}>Could not detect date. Try "May 3, 2026"</div>;
+    if (parsedState === "ok" && isoVal)
+      return (
+        <div style={{ ...baseStyle, color: "var(--accent)" }}>
+          ✓ {formatDisplayDate(isoVal)}
+        </div>
+      );
+    if (parsedState === "past_error")
+      return (
+        <div style={{ ...baseStyle, color: "#ef4444" }}>
+          Cannot be earlier than purchase date
+        </div>
+      );
+    if (parsedState === "error")
+      return (
+        <div style={{ ...baseStyle, color: "#ef4444" }}>
+          Could not detect date. Try "May 3, 2026"
+        </div>
+      );
     return null;
   };
 
@@ -172,7 +206,7 @@ export default function CustomerModal({ open, onClose, onSubmit, initial = null 
           >
             <div className="modal-header">
               <h2 className="modal-title">
-                {initial ? 'Edit Customer' : 'Add New Customer'}
+                {initial ? "Edit Customer" : "Add New Customer"}
               </h2>
               <button className="btn-icon" onClick={onClose}>
                 <X size={18} />
@@ -181,15 +215,17 @@ export default function CustomerModal({ open, onClose, onSubmit, initial = null 
 
             <form onSubmit={handleSubmit}>
               {error && (
-                <div style={{
-                  background: 'rgba(239, 68, 68, 0.1)',
-                  color: '#ef4444',
-                  padding: '12px',
-                  borderRadius: '8px',
-                  marginBottom: '16px',
-                  fontSize: '14px',
-                  border: '1px solid rgba(239, 68, 68, 0.2)'
-                }}>
+                <div
+                  style={{
+                    background: "rgba(239, 68, 68, 0.1)",
+                    color: "#ef4444",
+                    padding: "12px",
+                    borderRadius: "8px",
+                    marginBottom: "16px",
+                    fontSize: "14px",
+                    border: "1px solid rgba(239, 68, 68, 0.2)",
+                  }}
+                >
                   Error: {error}
                 </div>
               )}
@@ -202,7 +238,7 @@ export default function CustomerModal({ open, onClose, onSubmit, initial = null 
                     type="text"
                     placeholder=" "
                     value={form.name}
-                    onChange={(e) => set('name', e.target.value)}
+                    onChange={(e) => set("name", e.target.value)}
                     required
                   />
                   <label className="floating-label">Full Name *</label>
@@ -217,25 +253,54 @@ export default function CustomerModal({ open, onClose, onSubmit, initial = null 
                     step="1"
                     placeholder=" "
                     onWheel={(e) => e.target.blur()}
-                    onKeyDown={(e) => ['e','E','+','-','.'].includes(e.key) && e.preventDefault()}
+                    onKeyDown={(e) =>
+                      ["e", "E", "+", "-", "."].includes(e.key) &&
+                      e.preventDefault()
+                    }
                     value={form.balance}
                     onChange={(e) => {
-                      const val = e.target.value.replace(/[^0-9]/g, '');
+                      const val = e.target.value.replace(/[^0-9]/g, "");
                       setError(null);
                       setForm((f) => ({
                         ...f,
                         balance: val,
-                        current_balance: Math.max(0, parseInt(val || 0) - parseInt(f.advance_payment || 0))
+                        current_balance: Math.max(
+                          0,
+                          parseInt(val || 0) - parseInt(f.advance_payment || 0),
+                        ),
                       }));
                     }}
-                    onBlur={(e) => { if (e.target.value) set('balance', parseInt(e.target.value)); }}
+                    onBlur={(e) => {
+                      if (e.target.value)
+                        set("balance", parseInt(e.target.value));
+                    }}
                     required
-                    readOnly={initial && parseFloat(initial.advance_payment || 0) > 0}
-                    style={initial && parseFloat(initial.advance_payment || 0) > 0 ? { background: 'rgba(0,0,0,0.03)', color: 'var(--text-muted)' } : {}}
+                    readOnly={
+                      initial && parseFloat(initial.advance_payment || 0) > 0
+                    }
+                    style={
+                      initial && parseFloat(initial.advance_payment || 0) > 0
+                        ? {
+                            background: "rgba(0,0,0,0.03)",
+                            color: "var(--text-muted)",
+                          }
+                        : {}
+                    }
                   />
-                  <label className="floating-label">Total Amount of Purchased (₱) *</label>
+                  <label className="floating-label">
+                    Total Amount of Purchased (₱) *
+                  </label>
                   {initial && parseFloat(initial.advance_payment || 0) > 0 && (
-                    <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4, position: 'absolute', bottom: -18, left: 4 }}>
+                    <div
+                      style={{
+                        fontSize: 11,
+                        color: "var(--text-muted)",
+                        marginTop: 4,
+                        position: "absolute",
+                        bottom: -18,
+                        left: 4,
+                      }}
+                    >
                       Locked because an advance payment exists
                     </div>
                   )}
@@ -243,47 +308,51 @@ export default function CustomerModal({ open, onClose, onSubmit, initial = null 
 
                 {}
                 <div className="form-group floating-group">
-                  <div style={{ position: 'relative' }}>
+                  <div style={{ position: "relative" }}>
                     <input
                       className="form-input"
                       type="text"
                       placeholder=" "
-                      value={form.date_borrowed_text || ''}
-                      onChange={handleDateText('date_borrowed_text', 'date_borrowed', setDateParsed)}
+                      value={form.date_borrowed_text || ""}
+                      onChange={handleDateText(
+                        "date_borrowed_text",
+                        "date_borrowed",
+                        setDateParsed,
+                      )}
                       style={{ paddingRight: 40 }}
                       required
                     />
                     <label className="floating-label">Date of Purchase *</label>
                     <input
                       type="date"
-                      value={form.date_borrowed || ''}
+                      value={form.date_borrowed || ""}
                       onChange={(e) => {
                         const val = e.target.value;
-                        set('date_borrowed', val);
-                        set('date_borrowed_text', formatDisplayDate(val));
-                        setDateParsed('ok');
+                        set("date_borrowed", val);
+                        set("date_borrowed_text", formatDisplayDate(val));
+                        setDateParsed("ok");
                       }}
                       style={{
-                        position: 'absolute',
+                        position: "absolute",
                         right: 12,
-                        top: '50%',
-                        transform: 'translateY(-50%)',
+                        top: "50%",
+                        transform: "translateY(-50%)",
                         opacity: 0,
                         width: 24,
                         height: 24,
-                        cursor: 'pointer',
-                        zIndex: 10
+                        cursor: "pointer",
+                        zIndex: 10,
                       }}
                     />
-                    <CalendarIcon 
-                      size={18} 
-                      color="var(--text-muted)" 
+                    <CalendarIcon
+                      size={18}
+                      color="var(--text-muted)"
                       style={{
-                        position: 'absolute',
+                        position: "absolute",
                         right: 15,
-                        top: '50%',
-                        transform: 'translateY(-50%)',
-                        pointerEvents: 'none'
+                        top: "50%",
+                        transform: "translateY(-50%)",
+                        pointerEvents: "none",
                       }}
                     />
                   </div>
@@ -300,37 +369,56 @@ export default function CustomerModal({ open, onClose, onSubmit, initial = null 
                       step="1"
                       placeholder=" "
                       onWheel={(e) => e.target.blur()}
-                      onKeyDown={(e) => ['e','E','+','-','.'].includes(e.key) && e.preventDefault()}
+                      onKeyDown={(e) =>
+                        ["e", "E", "+", "-", "."].includes(e.key) &&
+                        e.preventDefault()
+                      }
                       value={form.advance_payment}
                       onChange={(e) => {
-                        const val = e.target.value.replace(/[^0-9]/g, '');
+                        const val = e.target.value.replace(/[^0-9]/g, "");
                         setError(null);
                         setForm((f) => ({
                           ...f,
                           advance_payment: val,
-                          current_balance: Math.max(0, parseInt(f.balance || 0) - parseInt(val || 0))
+                          current_balance: Math.max(
+                            0,
+                            parseInt(f.balance || 0) - parseInt(val || 0),
+                          ),
                         }));
                       }}
-                      onBlur={(e) => { if (e.target.value) set('advance_payment', parseInt(e.target.value)); }}
+                      onBlur={(e) => {
+                        if (e.target.value)
+                          set("advance_payment", parseInt(e.target.value));
+                      }}
                     />
-                    <label className="floating-label">Advance Payment (₱)</label>
+                    <label className="floating-label">
+                      Advance Payment (₱)
+                    </label>
                     {parseFloat(form.advance_payment || 0) > 0 && (
-                      <div style={{
-                        fontSize: 12,
-                        color: 'var(--accent)',
-                        position: 'absolute',
-                        bottom: -18,
-                        left: 4,
-                        fontWeight: 600,
-                        whiteSpace: 'nowrap'
-                      }}>
-                        Balance: ₱{Math.max(0, parseFloat(form.balance || 0) - parseFloat(form.advance_payment || 0)).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      <div
+                        style={{
+                          fontSize: 12,
+                          color: "var(--accent)",
+                          position: "absolute",
+                          bottom: -18,
+                          left: 4,
+                          fontWeight: 600,
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        Balance: ₱
+                        {Math.max(
+                          0,
+                          parseFloat(form.balance || 0) -
+                            parseFloat(form.advance_payment || 0),
+                        ).toLocaleString("en-PH", {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2,
+                        })}
                       </div>
                     )}
                   </div>
                 )}
-
-
 
                 {}
                 <div className="form-group full floating-group">
@@ -340,18 +428,28 @@ export default function CustomerModal({ open, onClose, onSubmit, initial = null 
                     placeholder=" "
                     value={form.receipt_numbers}
                     onChange={(e) => {
-                      const onlyNumbers = e.target.value.replace(/\D/g, '');
-                      set('receipt_numbers', onlyNumbers);
+                      const onlyNumbers = e.target.value.replace(/\D/g, "");
+                      set("receipt_numbers", onlyNumbers);
                     }}
                   />
                   <label className="floating-label">Receipt No.</label>
                 </div>
 
                 {}
-                <div className="form-group full" style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <div
+                  className="form-group full"
+                  style={{ display: "flex", flexDirection: "column", gap: 8 }}
+                >
                   <label className="form-label" style={{ marginBottom: 0 }}>
                     Items Purchased
-                    <span style={{ color: 'var(--text-muted)', fontWeight: 400, fontSize: 11, marginLeft: 8 }}>
+                    <span
+                      style={{
+                        color: "var(--text-muted)",
+                        fontWeight: 400,
+                        fontSize: 11,
+                        marginLeft: 8,
+                      }}
+                    >
                       type an item then press Enter
                     </span>
                   </label>
@@ -368,8 +466,8 @@ export default function CustomerModal({ open, onClose, onSubmit, initial = null 
                     onBlur={() => {
                       const trimmed = itemInput.trim();
                       if (trimmed) {
-                        setItems(prev => [...prev, trimmed]);
-                        setItemInput('');
+                        setItems((prev) => [...prev, trimmed]);
+                        setItemInput("");
                       }
                     }}
                     autoComplete="off"
@@ -380,17 +478,23 @@ export default function CustomerModal({ open, onClose, onSubmit, initial = null 
                     {items.length > 0 && (
                       <motion.div
                         initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: 'auto' }}
+                        animate={{ opacity: 1, height: "auto" }}
                         exit={{ opacity: 0, height: 0 }}
                         style={{
-                          background: 'rgba(255,255,255,0.03)',
-                          border: '1px solid var(--border)',
+                          background: "rgba(255,255,255,0.03)",
+                          border: "1px solid var(--border)",
                           borderRadius: 12,
-                          padding: '12px 16px',
-                          overflow: 'hidden',
+                          padding: "12px 16px",
+                          overflow: "hidden",
                         }}
                       >
-                        <ul style={{ margin: 0, paddingLeft: 20, listStyleType: 'disc' }}>
+                        <ul
+                          style={{
+                            margin: 0,
+                            paddingLeft: 20,
+                            listStyleType: "disc",
+                          }}
+                        >
                           <AnimatePresence initial={false}>
                             {items.map((item, idx) => (
                               <motion.li
@@ -400,13 +504,13 @@ export default function CustomerModal({ open, onClose, onSubmit, initial = null 
                                 exit={{ opacity: 0, x: 8 }}
                                 transition={{ duration: 0.15 }}
                                 style={{
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  justifyContent: 'space-between',
+                                  display: "flex",
+                                  alignItems: "center",
+                                  justifyContent: "space-between",
                                   fontSize: 14,
                                   fontWeight: 500,
-                                  color: 'var(--text-primary)',
-                                  padding: '3px 0',
+                                  color: "var(--text-primary)",
+                                  padding: "3px 0",
                                   lineHeight: 1.5,
                                 }}
                               >
@@ -415,19 +519,24 @@ export default function CustomerModal({ open, onClose, onSubmit, initial = null 
                                   type="button"
                                   onClick={() => removeItem(idx)}
                                   style={{
-                                    background: 'none',
-                                    border: 'none',
-                                    color: 'var(--text-muted)',
-                                    cursor: 'pointer',
-                                    padding: '2px 4px',
+                                    background: "none",
+                                    border: "none",
+                                    color: "var(--text-muted)",
+                                    cursor: "pointer",
+                                    padding: "2px 4px",
                                     borderRadius: 6,
-                                    display: 'flex',
-                                    alignItems: 'center',
+                                    display: "flex",
+                                    alignItems: "center",
                                     flexShrink: 0,
-                                    transition: 'color 0.15s',
+                                    transition: "color 0.15s",
                                   }}
-                                  onMouseEnter={e => e.currentTarget.style.color = '#ef4444'}
-                                  onMouseLeave={e => e.currentTarget.style.color = 'var(--text-muted)'}
+                                  onMouseEnter={(e) =>
+                                    (e.currentTarget.style.color = "#ef4444")
+                                  }
+                                  onMouseLeave={(e) =>
+                                    (e.currentTarget.style.color =
+                                      "var(--text-muted)")
+                                  }
                                   title="Remove item"
                                 >
                                   <Trash2 size={13} />
@@ -443,7 +552,7 @@ export default function CustomerModal({ open, onClose, onSubmit, initial = null 
               </div>
 
               {}
-              <div style={{ display: 'flex', gap: 10, marginTop: 24 }}>
+              <div style={{ display: "flex", gap: 10, marginTop: 24 }}>
                 <button
                   type="button"
                   className="btn btn-outline"
@@ -458,7 +567,11 @@ export default function CustomerModal({ open, onClose, onSubmit, initial = null 
                   style={{ flex: 2 }}
                   disabled={loading}
                 >
-                  {loading ? 'Saving...' : initial ? 'Save Changes' : 'Add Customer'}
+                  {loading
+                    ? "Saving..."
+                    : initial
+                      ? "Save Changes"
+                      : "Add Customer"}
                 </button>
               </div>
             </form>

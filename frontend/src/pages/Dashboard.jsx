@@ -1,25 +1,48 @@
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, UserX, Search, Download, Bell, Calendar as CalendarIcon, ArrowUpDown, Check, CheckSquare, FileText, FileSpreadsheet, X, LogOut, Timer, Archive, Settings, ChevronDown, Eye, EyeOff, Lock } from 'lucide-react';
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  Plus,
+  UserX,
+  Search,
+  Download,
+  Bell,
+  Calendar as CalendarIcon,
+  ArrowUpDown,
+  Check,
+  CheckSquare,
+  FileText,
+  FileSpreadsheet,
+  X,
+  LogOut,
+  Timer,
+  Archive,
+  Settings,
+  ChevronDown,
+  Eye,
+  Lock,
+} from "lucide-react";
 
-import SearchOverlay from '../components/SearchOverlay';
-import toast from 'react-hot-toast';
-import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
-import { useCustomers } from '../hooks/useCustomers';
-import SummaryStats from '../components/SummaryStats';
-import CustomerCard from '../components/CustomerCard';
-import CustomerModal from '../components/CustomerModal';
-import PayModal from '../components/PayModal';
-import ConfirmModal from '../components/ConfirmModal';
-import ThemeToggle from '../components/ThemeToggle';
-import SessionSettingsModal from '../components/SessionSettingsModal';
-import RevealAuthModal from '../components/RevealAuthModal';
-import { parseNaturalDate } from '../utils/dateUtils';
-import { useAuth } from '../contexts/AuthContext';
-import { useSession } from '../App';
-import api from '../lib/api';
+import SearchOverlay from "../components/SearchOverlay";
+import toast from "react-hot-toast";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
+import { logoBase64 } from "../assets/logoBase64";
+import logoUrl from "../assets/logo.png";
+import { useCustomers } from "../hooks/useCustomers";
+import SummaryStats from "../components/SummaryStats";
+import CustomerCard from "../components/CustomerCard";
+import CustomerModal from "../components/CustomerModal";
+import PayModal from "../components/PayModal";
+import ConfirmModal from "../components/ConfirmModal";
+import ThemeToggle from "../components/ThemeToggle";
+import SessionSettingsModal from "../components/SessionSettingsModal";
+import RevealAuthModal from "../components/RevealAuthModal";
+import { parseNaturalDate } from "../utils/dateUtils";
+import { useAuth } from "../contexts/AuthContext";
+import { useSession } from "../App";
+import api from "../lib/api";
+import Loader from "../components/Loader";
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -27,8 +50,17 @@ export default function Dashboard() {
   const { updateTimeout } = useSession();
   const [sessionSettingsOpen, setSessionSettingsOpen] = useState(false);
   const {
-    customers, loading, error, search, setSearch,
-    createCustomer, bulkCreateCustomers, updateCustomer, deleteCustomer, recordPayment, totals
+    customers,
+    loading,
+    error,
+    search,
+    setSearch,
+    createCustomer,
+    bulkCreateCustomers,
+    updateCustomer,
+    deleteCustomer,
+    recordPayment,
+    totals,
   } = useCustomers();
 
   const [dataMenuOpen, setDataMenuOpen] = useState(false);
@@ -38,19 +70,19 @@ export default function Dashboard() {
   const [addOpen, setAddOpen] = useState(false);
   const [editCustomer, setEditCustomer] = useState(null);
   const [payCustomer, setPayCustomer] = useState(null);
-  const [filterStatus, setFilterStatus] = useState('All');
+  const [filterStatus, setFilterStatus] = useState("All");
   const [confirmData, setConfirmData] = useState(null);
   const [deleteData, setDeleteData] = useState(null);
   const [searchOpen, setSearchOpen] = useState(false);
   const [selectedIds, setSelectedIds] = useState([]);
   const [isSelectionMode, setIsSelectionMode] = useState(false);
-  const [sortOrder, setSortOrder] = useState('recently-added');
+  const [sortOrder, setSortOrder] = useState("recently-added");
   const [bulkConfirm, setBulkConfirm] = useState(null);
   const [exportFilterOpen, setExportFilterOpen] = useState(false);
   const [exportFilterType, setExportFilterType] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageInputVal, setPageInputVal] = useState('1');
-  const [searchMode, setSearchMode] = useState('all');
+  const [pageInputVal, setPageInputVal] = useState("1");
+  const [searchMode, setSearchMode] = useState("all");
   const [matchCase, setMatchCase] = useState(false);
   const [wholeWord, setWholeWord] = useState(false);
   const [showStats, setShowStats] = useState(false);
@@ -58,71 +90,79 @@ export default function Dashboard() {
   const [isRevealAuthOpen, setIsRevealAuthOpen] = useState(false);
   const itemsPerPage = 10;
 
-  const SEARCH_PLACEHOLDER = 'Search by name or date (e.g. May, May 4, 2026, May 2026).';
+  const SEARCH_PLACEHOLDER =
+    "Search by name or date (e.g. May, May 4, 2026, May 2026).";
 
   useEffect(() => {
     const handleSearchTrigger = () => setSearchOpen(true);
-    window.addEventListener('trigger-search-focus', handleSearchTrigger);
-    return () => window.removeEventListener('trigger-search-focus', handleSearchTrigger);
+    window.addEventListener("trigger-search-focus", handleSearchTrigger);
+    return () =>
+      window.removeEventListener("trigger-search-focus", handleSearchTrigger);
   }, []);
 
   const toggleSelect = (id) => {
-    setSelectedIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
+    setSelectedIds((prev) =>
+      prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id],
+    );
   };
-
 
   const addAuditLog = async (newLogs) => {
     try {
       let existing = [];
       try {
-        const res = await api.get('/api/settings/arc_deleted_logs');
+        const res = await api.get("/api/settings/arc_deleted_logs");
         if (Array.isArray(res.data.value)) existing = res.data.value;
       } catch (e) {
         if (e.response?.status !== 404) throw e;
       }
-      const updated = [...existing, ...(Array.isArray(newLogs) ? newLogs : [newLogs])];
-      await api.put('/api/settings/arc_deleted_logs', { value: updated });
+      const updated = [
+        ...existing,
+        ...(Array.isArray(newLogs) ? newLogs : [newLogs]),
+      ];
+      await api.put("/api/settings/arc_deleted_logs", { value: updated });
     } catch (err) {
-      console.error('Failed to save audit logs', err);
+      console.error("Failed to save audit logs", err);
     }
   };
 
   const handleBulkDelete = async () => {
     try {
       const newLogs = [];
-      selectedIds.forEach(id => {
-        const customer = customers.find(d => d.id === id);
+      selectedIds.forEach((id) => {
+        const customer = customers.find((d) => d.id === id);
         if (customer) {
           newLogs.push({
             id: `deleted-${id}-${Date.now()}`,
             date: new Date().toISOString(),
             customerName: customer.name,
-            type: 'deleted',
-            amount: customer.balance
+            type: "deleted",
+            amount: customer.balance,
           });
         }
       });
       await addAuditLog(newLogs);
-      await Promise.all(selectedIds.map(id => deleteCustomer(id)));
+      await Promise.all(selectedIds.map((id) => deleteCustomer(id)));
       setSelectedIds([]);
       setIsSelectionMode(false);
       toast.success(`Deleted ${selectedIds.length} records`);
     } catch (err) {
-      toast.error(err.response?.data?.error || 'Bulk delete failed');
+      toast.error(err.response?.data?.error || "Bulk delete failed");
     }
   };
 
   const handleBulkPaid = async () => {
     try {
-      await Promise.all(selectedIds.map(id => {
-        const d = customers.find(x => x.id === id);
-        return recordPayment(id, d.balance);
-      }));
+      await Promise.all(
+        selectedIds.map((id) => {
+          const d = customers.find((x) => x.id === id);
+          return recordPayment(id, d.balance);
+        }),
+      );
       setSelectedIds([]);
       setIsSelectionMode(false);
-      toast.success('Selected customers marked as paid');
+      toast.success("Selected customers marked as paid");
     } catch (err) {
-      toast.error(err.response?.data?.error || 'Bulk update failed');
+      toast.error(err.response?.data?.error || "Bulk update failed");
     }
   };
 
@@ -130,15 +170,13 @@ export default function Dashboard() {
     setSortOrder(newOrder);
     setSortMenuOpen(false);
     const labels = {
-      'recently-added': 'Recent Activity',
-      'a-z': 'A-Z',
-      'date-desc': 'Recent Dates',
-      'date-asc': 'Oldest Dates'
+      "recently-added": "Recent Activity",
+      "a-z": "A-Z",
+      "date-desc": "Recent Dates",
+      "date-asc": "Oldest Dates",
     };
     toast.success(`Sorted by ${labels[newOrder]}`);
   };
-
-
 
   const exportToPDF = (exportData = customers) => {
     const data = [...exportData].sort((a, b) => a.name.localeCompare(b.name));
@@ -148,106 +186,150 @@ export default function Dashboard() {
     const margin = 14;
 
     const C = {
-      header: [214, 150, 114],
-      headerDark: [180, 110, 80],
-      peachLight: [252, 235, 225],
-      peachMid: [240, 200, 178],
-      border: [210, 170, 150],
-      textDark: [80, 45, 20],
-      textBody: [100, 65, 40],
-      textMuted: [160, 120, 100],
+      header: [26, 26, 26],
+      headerDark: [10, 10, 10],
+      peachLight: [240, 248, 255],
+      peachMid: [200, 230, 255],
+      border: [150, 200, 230],
+      textDark: [20, 50, 80],
+      textBody: [40, 60, 80],
+      textMuted: [100, 120, 140],
       white: [255, 255, 255],
     };
 
-    const generatedDate = new Date().toLocaleDateString('en-US', {
-      day: '2-digit', month: 'short', year: 'numeric'
-    }).toUpperCase();
+    const generatedDate = new Date()
+      .toLocaleDateString("en-US", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      })
+      .toUpperCase();
 
-    const totalPaidCount = data.filter(d => d.status === 'paid').length;
+    const totalPaidCount = data.filter((d) => d.status === "paid").length;
 
     const overallPayTotal = data.reduce((acc, d) => {
       const paid = (d.payment_history || [])
-        .filter(p => p.type !== 'edit' && p.type !== 'manual_adjustment' && p.amount > 0)
+        .filter(
+          (p) =>
+            p.type !== "edit" && p.type !== "manual_adjustment" && p.amount > 0,
+        )
         .reduce((s, p) => s + parseFloat(p.amount || 0), 0);
       return acc + paid;
     }, 0);
 
-    doc.setFillColor(...C.header);
-    doc.rect(0, 0, pageW, 40, 'F');
+    // Header Background edge-to-edge
+    const headerH = 45;
+    doc.setFillColor(34, 34, 34);
+    doc.rect(0, 0, pageW, headerH, "F");
 
-    doc.setTextColor(...C.white);
-    doc.setFontSize(20);
-    doc.setFont('helvetica', 'bold');
-    doc.text('ARC BUSINESS REPORT', margin, 16);
+    // Title
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(14);
+    doc.setFont("helvetica", "bold");
+    doc.text("BUSINESS REPORT", pageW / 2, 16, { align: "center" });
 
-    doc.setFontSize(8);
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(255, 235, 220);
-    doc.text(`DATE GENERATED: ${generatedDate}`, margin, 24);
-    doc.text(`TOTAL CUSTOMERS: ${data.length}`, margin, 30);
+    // Logo & Info
+    doc.addImage(logoBase64, "PNG", margin, 8, 36, 14);
+    doc.setFontSize(7);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(220, 220, 220);
+    doc.text(`Date Generated: ${generatedDate}`, margin, 31);
+    doc.text(`Total Customer: ${data.length}`, margin, 37);
 
-
-    const boxW = 44;
-    const boxH = 28;
-    const box1X = pageW - margin - boxW * 2 - 4;
+    // Right Boxes
+    const boxW = 40;
+    const boxH = 16;
     const box2X = pageW - margin - boxW;
+    const box1X = box2X - boxW - 5;
+    const boxY = 24;
 
+    doc.setFillColor(15, 15, 15);
+    doc.roundedRect(box1X, boxY, boxW, boxH, 2, 2, "F");
+    doc.setFontSize(6);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(255, 255, 255);
+    doc.text("OVERALL PAY TOTAL", box1X + 3, boxY + 6);
+    doc.setFontSize(8);
+    doc.text(
+      "P " +
+        overallPayTotal.toLocaleString("en-PH", {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        }),
+      box1X + 3,
+      boxY + 13,
+    );
 
-    doc.setFillColor(...C.headerDark);
-    doc.roundedRect(box1X, 6, boxW, boxH, 2, 2, 'F');
-    doc.setFontSize(6.5);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(255, 210, 190);
-    doc.text('OVERALL PAY TOTAL', box1X + 3, 13);
-    doc.setFontSize(11);
-    doc.setTextColor(...C.white);
-    doc.text('P' + overallPayTotal.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 }), box1X + 3, 22);
+    doc.setFillColor(15, 15, 15);
+    doc.roundedRect(box2X, boxY, boxW, boxH, 2, 2, "F");
+    doc.setFontSize(6);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(255, 255, 255);
+    doc.text("COSTUMERS SETTLED", box2X + 3, boxY + 6);
+    doc.setFontSize(8);
+    doc.text(`${totalPaidCount}/${data.length}`, box2X + 3, boxY + 13);
 
-
-    doc.setFillColor(...C.headerDark);
-    doc.roundedRect(box2X, 6, boxW, boxH, 2, 2, 'F');
-    doc.setFontSize(6.5);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(255, 210, 190);
-    doc.text('CUSTOMERS SETTLED', box2X + 3, 13);
-    doc.setFontSize(11);
-    doc.setTextColor(...C.white);
-    doc.text(`${totalPaidCount} / ${data.length}`, box2X + 3, 22);
-
-    const tableBarY = 46;
-    doc.setFillColor(...C.header);
-    doc.rect(margin, tableBarY, pageW - margin * 2, 8, 'F');
-    doc.setTextColor(...C.white);
+    const tableBarY = headerH + 5;
+    doc.setFillColor(15, 15, 15);
+    doc.rect(margin, tableBarY, pageW - margin * 2, 8, "F");
+    doc.setTextColor(255, 255, 255);
     doc.setFontSize(9);
-    doc.setFont('helvetica', 'bold');
-    doc.text('CUSTOMER RECORDS', margin + 3, tableBarY + 5.5);
+    doc.setFont("helvetica", "bold");
+    doc.text("CUSTOMER RECORDS", margin + 3, tableBarY + 5.5);
 
-    const isCompletedExport = data.length > 0 && data.every(d => d.status === 'paid');
+    const isCompletedExport =
+      data.length > 0 && data.every((d) => d.status === "paid");
 
     const tableHeaders = isCompletedExport
-      ? ['#', 'CUSTOMER NAME', 'PURCHASE DATE', 'TOTAL PAID', 'DATE SETTLED', 'STATUS']
-      : ['#', 'CUSTOMER NAME', 'PURCHASE DATE', 'ADVANCE', 'BALANCE', 'STATUS'];
+      ? [
+          "#",
+          "CUSTOMER NAME",
+          "PURCHASE DATE",
+          "TOTAL PAID",
+          "DATE SETTLED",
+          "STATUS",
+        ]
+      : ["#", "CUSTOMER NAME", "PURCHASE DATE", "ADVANCE", "BALANCE", "STATUS"];
 
     const tableData = data.map((d, idx) => {
-      const displayStatus = d.status === 'active' ? 'OUTSTANDING' : d.status.toUpperCase();
+      const displayStatus =
+        d.status === "active" ? "OUTSTANDING" : d.status.toUpperCase();
       const rowNum = String(idx + 1);
       if (isCompletedExport) {
         return [
           rowNum,
           d.name,
-          d.date_borrowed ? new Date(d.date_borrowed).toLocaleDateString('en-PH') : '—',
-          'P' + parseFloat(d.original_debt || 0).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
-          d.updated_at ? new Date(d.updated_at).toLocaleDateString('en-PH') : '—',
-          displayStatus
+          d.date_borrowed
+            ? new Date(d.date_borrowed).toLocaleDateString("en-PH")
+            : "—",
+          "P" +
+            parseFloat(d.original_debt || 0).toLocaleString("en-PH", {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2,
+            }),
+          d.updated_at
+            ? new Date(d.updated_at).toLocaleDateString("en-PH")
+            : "—",
+          displayStatus,
         ];
       } else {
         return [
           rowNum,
           d.name,
-          d.date_borrowed ? new Date(d.date_borrowed).toLocaleDateString('en-PH') : '—',
-          'P' + parseFloat(d.advance_payment || 0).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
-          'P' + parseFloat(d.balance || 0).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
-          displayStatus
+          d.date_borrowed
+            ? new Date(d.date_borrowed).toLocaleDateString("en-PH")
+            : "—",
+          "P" +
+            parseFloat(d.advance_payment || 0).toLocaleString("en-PH", {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2,
+            }),
+          "P" +
+            parseFloat(d.balance || 0).toLocaleString("en-PH", {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2,
+            }),
+          displayStatus,
         ];
       }
     });
@@ -256,30 +338,30 @@ export default function Dashboard() {
       startY: tableBarY + 8,
       head: [tableHeaders],
       body: tableData,
-      theme: 'plain',
+      theme: "plain",
       headStyles: {
-        fillColor: C.peachMid,
-        textColor: C.textDark,
-        fontStyle: 'bold',
+        fillColor: [200, 230, 255],
+        textColor: [40, 40, 40],
+        fontStyle: "bold",
         fontSize: 8,
         cellPadding: { top: 3, bottom: 3, left: 3, right: 3 },
       },
       bodyStyles: {
         fontSize: 8,
-        textColor: C.textBody,
+        textColor: [40, 40, 40],
         cellPadding: { top: 3, bottom: 3, left: 3, right: 3 },
-        lineColor: C.border,
+        lineColor: [200, 230, 255],
         lineWidth: 0.25,
       },
-      alternateRowStyles: { fillColor: C.peachLight },
+      alternateRowStyles: { fillColor: [250, 250, 250] },
       margin: { left: margin, right: margin },
       columnStyles: {
-        0: { cellWidth: 13, halign: 'center', textColor: C.textMuted },
+        0: { cellWidth: 13, halign: "center", textColor: C.textMuted },
         1: { cellWidth: 47 },
         2: { cellWidth: 32 },
-        3: { cellWidth: 28, halign: 'right' },
-        4: { cellWidth: 30, halign: 'right', fontStyle: 'bold' },
-        5: { cellWidth: 32, halign: 'center' },
+        3: { cellWidth: 28, halign: "right" },
+        4: { cellWidth: 30, halign: "right", fontStyle: "bold" },
+        5: { cellWidth: 32, halign: "center" },
       },
 
       didDrawPage: (hookData) => {
@@ -287,65 +369,104 @@ export default function Dashboard() {
         const currentPage = hookData.pageNumber;
         doc.setFontSize(8);
         doc.setTextColor(...C.textMuted);
-        doc.setFont('helvetica', 'normal');
+        doc.setFont("helvetica", "normal");
         doc.text(
           `Page ${currentPage} of ${pageCount}  |  This document is system-generated and is valid without a signature.`,
-          pageW / 2, pageH - 8, { align: 'center' }
+          pageW / 2,
+          pageH - 8,
+          { align: "center" },
         );
         doc.setDrawColor(...C.border);
         doc.line(margin, pageH - 12, pageW - margin, pageH - 12);
-      }
+      },
     });
 
-    doc.save(`Arc_Business_Report_${new Date().toISOString().split('T')[0]}.pdf`);
-    toast.success('PDF Report Generated');
+    doc.save(
+      `Basic_Ventures_Report_${new Date().toISOString().split("T")[0]}.pdf`,
+    );
+    toast.success("PDF Report Generated");
   };
 
   const exportToCSV = (exportData = customers) => {
-    const headers = ['Receipt No.', 'Name', 'Total Amount Purchased', 'Date of Purchase', 'Advance Payment', 'Balance', 'Status'];
-    const sortedData = [...exportData].sort((a, b) => a.name.localeCompare(b.name));
-    const rows = sortedData.map(d => [
-      d.receipt_numbers && d.receipt_numbers.length > 0 ? d.receipt_numbers[0] : '',
+    const headers = [
+      "Receipt No.",
+      "Name",
+      "Total Amount Purchased",
+      "Date of Purchase",
+      "Advance Payment",
+      "Balance",
+      "Status",
+    ];
+    const sortedData = [...exportData].sort((a, b) =>
+      a.name.localeCompare(b.name),
+    );
+    const rows = sortedData.map((d) => [
+      d.receipt_numbers && d.receipt_numbers.length > 0
+        ? d.receipt_numbers[0]
+        : "",
       `"${d.name.replace(/"/g, '""')}"`,
       d.original_debt || 0,
       d.date_borrowed,
       d.advance_payment,
       d.balance,
-      d.status
+      d.status,
     ]);
 
-    const csvContent = headers.join(",") + "\n" + rows.map(e => e.join(",")).join("\n");
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const csvContent =
+      headers.join(",") + "\n" + rows.map((e) => e.join(",")).join("\n");
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
 
     const link = document.createElement("a");
     link.setAttribute("href", url);
-    link.setAttribute("download", `Arc_Full_Data_${new Date().toISOString().split('T')[0]}.csv`);
+    link.setAttribute(
+      "download",
+      `Basic_Ventures_Data_${new Date().toISOString().split("T")[0]}.csv`,
+    );
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
-    toast.success('Database Exported for Excel');
+    toast.success("Database Exported for Excel");
     setDataMenuOpen(false);
   };
 
   const downloadTemplate = () => {
-    const headers = ['Receipt No.', 'Name', 'Total Amount Purchased', 'Advance Payment', 'Date of Purchase'];
-    const sampleData = [
-      ['R-12345', 'Juan Dela Cruz', '1000', '200', new Date().toISOString().split('T')[0]],
-      ['R-12346', 'Maria Clara', '500', '0', new Date().toISOString().split('T')[0]]
+    const headers = [
+      "Receipt No.",
+      "Name",
+      "Total Amount Purchased",
+      "Advance Payment",
+      "Date of Purchase",
     ];
-    const csvContent = headers.join(",") + "\n" + sampleData.map(e => e.join(",")).join("\n");
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const sampleData = [
+      [
+        "R-12345",
+        "Juan Dela Cruz",
+        "1000",
+        "200",
+        new Date().toISOString().split("T")[0],
+      ],
+      [
+        "R-12346",
+        "Maria Clara",
+        "500",
+        "0",
+        new Date().toISOString().split("T")[0],
+      ],
+    ];
+    const csvContent =
+      headers.join(",") + "\n" + sampleData.map((e) => e.join(",")).join("\n");
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.setAttribute("href", url);
-    link.setAttribute("download", "Arc_Import_Template.csv");
+    link.setAttribute("download", "Basic_Ventures_Import_Template.csv");
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
-    toast.success('Import Template Downloaded');
+    toast.success("Import Template Downloaded");
     setDataMenuOpen(false);
   };
 
@@ -357,33 +478,46 @@ export default function Dashboard() {
     reader.onload = async (event) => {
       try {
         const text = event.target.result;
-        const lines = text.split('\n').filter(line => line.trim());
-        const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+        const lines = text.split("\n").filter((line) => line.trim());
+        const headers = lines[0].split(",").map((h) => h.trim().toLowerCase());
 
-        const data = lines.slice(1).map(line => {
-          const values = line.split(',').map(v => v.trim().replace(/^"|"$/g, ''));
-          const obj = {};
-          headers.forEach((header, index) => {
-            // Map common headers to our schema
-            if (header.includes('receipt') || header.includes('id')) obj.receipt_numbers = values[index] ? [values[index]] : [];
-            if (header.includes('name')) obj.name = values[index];
-            if (header.includes('balance') || header.includes('total') || header.includes('amount')) obj.balance = values[index];
-            if (header.includes('advance') && !header.includes('date')) obj.advance_payment = values[index];
-            if (header.includes('date') && !header.includes('advance')) obj.date_borrowed = values[index];
-          });
-          return obj;
-        }).filter(c => c.name);
+        const data = lines
+          .slice(1)
+          .map((line) => {
+            const values = line
+              .split(",")
+              .map((v) => v.trim().replace(/^"|"$/g, ""));
+            const obj = {};
+            headers.forEach((header, index) => {
+              if (header.includes("receipt") || header.includes("id"))
+                obj.receipt_numbers = values[index] ? [values[index]] : [];
+              if (header.includes("name")) obj.name = values[index];
+              if (
+                header.includes("balance") ||
+                header.includes("total") ||
+                header.includes("amount")
+              )
+                obj.balance = values[index];
+              if (header.includes("advance") && !header.includes("date"))
+                obj.advance_payment = values[index];
+              if (header.includes("date") && !header.includes("advance"))
+                obj.date_borrowed = values[index];
+            });
+            return obj;
+          })
+          .filter((c) => c.name);
 
-        if (data.length === 0) throw new Error('No valid customer data found in CSV');
+        if (data.length === 0)
+          throw new Error("No valid customer data found in CSV");
 
         await toast.promise(bulkCreateCustomers(data), {
           loading: `Importing ${data.length} customers...`,
           success: `Successfully imported ${data.length} customers!`,
-          error: 'Failed to import CSV'
+          error: "Failed to import CSV",
         });
 
         setDataMenuOpen(false);
-        e.target.value = ''; // Reset input
+        e.target.value = ""; // Reset input
       } catch (err) {
         toast.error(err.message);
       }
@@ -402,45 +536,62 @@ export default function Dashboard() {
       current_balance: undefined,
     };
     await toast.promise(createCustomer(payload), {
-      loading: 'Adding customer...',
-      success: 'Customer added!',
-      error: (e) => e?.response?.data?.error || 'Failed to add customer',
+      loading: "Adding customer...",
+      success: "Customer added!",
+      error: (e) => e?.response?.data?.error || "Failed to add customer",
     });
   };
 
   const handleEdit = async (form) => {
     const rawBalance = parseFloat(form.balance || 0);
 
-
-    if (rawBalance === 0 && editCustomer && editCustomer.status !== 'paid' && editCustomer.balance > 0) {
-      await toast.promise(recordPayment(editCustomer.id, editCustomer.balance), {
-        loading: 'Settling account…',
-        success: `${editCustomer.name} has been fully settled!`,
-        error: 'Failed to settle',
-      });
+    if (
+      rawBalance === 0 &&
+      editCustomer &&
+      editCustomer.status !== "paid" &&
+      editCustomer.balance > 0
+    ) {
+      await toast.promise(
+        recordPayment(editCustomer.id, editCustomer.balance),
+        {
+          loading: "Settling account…",
+          success: `${editCustomer.name} has been fully settled!`,
+          error: "Failed to settle",
+        },
+      );
       return;
     }
 
-
     const old = editCustomer;
     const changes = [];
-    const fmtD = (d) => d ? new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'N/A';
+    const fmtD = (d) =>
+      d
+        ? new Date(d).toLocaleDateString("en-US", {
+            month: "short",
+            day: "numeric",
+            year: "numeric",
+          })
+        : "N/A";
 
     if (old.date_borrowed !== form.date_borrowed) {
-      changes.push(`Purchase Date: ${fmtD(old.date_borrowed)} → ${fmtD(form.date_borrowed)}`);
+      changes.push(
+        `Purchase Date: ${fmtD(old.date_borrowed)} → ${fmtD(form.date_borrowed)}`,
+      );
     }
     if (parseFloat(old.original_debt || old.balance) !== rawBalance) {
-      changes.push(`Total Amount of Purchased: ₱${parseFloat(old.original_debt || old.balance).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} → ₱${rawBalance.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`);
+      changes.push(
+        `Total Amount of Purchased: ₱${parseFloat(old.original_debt || old.balance).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} → ₱${rawBalance.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+      );
     }
 
     let updatedHistory = [...(old.payment_history || [])];
     if (changes.length > 0) {
       updatedHistory.push({
         id: Date.now().toString(),
-        type: 'edit',
+        type: "edit",
         date: new Date().toISOString(),
-        changes: changes.join(' | '),
-        note: 'Profile Updated'
+        changes: changes.join(" | "),
+        note: "Profile Updated",
       });
     }
 
@@ -455,47 +606,58 @@ export default function Dashboard() {
       current_balance: undefined,
     };
     await toast.promise(updateCustomer(editCustomer.id, payload), {
-      loading: 'Saving changes...',
-      success: 'Changes saved!',
-      error: (e) => e?.response?.data?.error || 'Failed to save',
+      loading: "Saving changes...",
+      success: "Changes saved!",
+      error: (e) => e?.response?.data?.error || "Failed to save",
     });
   };
 
   const handleDelete = async (id) => {
-    const customer = customers.find(d => d.id === id) || deleteData;
+    const customer = customers.find((d) => d.id === id) || deleteData;
     await toast.promise(deleteCustomer(id), {
-      loading: 'Deleting...',
-      success: 'Customer removed.',
-      error: (err) => err.response?.data?.error || 'Failed to delete',
+      loading: "Deleting...",
+      success: "Customer removed.",
+      error: (err) => err.response?.data?.error || "Failed to delete",
     });
     if (customer) {
       await addAuditLog({
         id: `deleted-${id}-${Date.now()}`,
         date: new Date().toISOString(),
         customerName: customer.name,
-        type: 'deleted',
-        amount: customer.balance
+        type: "deleted",
+        amount: customer.balance,
       });
     }
   };
 
   const handlePay = async (id, amount, date) => {
     await toast.promise(recordPayment(id, amount, date), {
-      loading: 'Recording payment...',
-      success: 'Payment recorded!',
-      error: (err) => err.response?.data?.error || 'Failed to record payment',
+      loading: "Recording payment...",
+      success: "Payment recorded!",
+      error: (err) => err.response?.data?.error || "Failed to record payment",
     });
   };
-
-
 
   const matchesDate = (dateBorrowed, rawInput) => {
     if (!dateBorrowed || !rawInput) return false;
     const storedDate = dateBorrowed.substring(0, 10);
-    const [syear, smonth, sday] = storedDate.split('-').map(Number);
+    const [syear, smonth, sday] = storedDate.split("-").map(Number);
 
-    const MONTH_NAMES = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
-    const clean = rawInput.toLowerCase().replace(/,/g, '').trim();
+    const MONTH_NAMES = [
+      "jan",
+      "feb",
+      "mar",
+      "apr",
+      "may",
+      "jun",
+      "jul",
+      "aug",
+      "sep",
+      "oct",
+      "nov",
+      "dec",
+    ];
+    const clean = rawInput.toLowerCase().replace(/,/g, "").trim();
     const parts = clean.split(/\s+/);
 
     if (parts.length === 1 && /^\d{4}$/.test(parts[0])) {
@@ -503,33 +665,31 @@ export default function Dashboard() {
       if (yearNum > 1900 && yearNum < 3000) return syear === yearNum;
     }
 
-    const monthIdx = MONTH_NAMES.findIndex(mn => parts[0].startsWith(mn) && parts[0].length >= 3);
+    const monthIdx = MONTH_NAMES.findIndex(
+      (mn) => parts[0].startsWith(mn) && parts[0].length >= 3,
+    );
 
     if (monthIdx !== -1) {
       const monthNum = monthIdx + 1;
       if (parts.length === 1) {
-        // 'may' → match any record with month = May, any year/day
         return smonth === monthNum;
       }
       const secondNum = parseInt(parts[1]);
       if (!isNaN(secondNum)) {
-
         if (secondNum > 1900 && secondNum < 3000 && parts.length === 2) {
-
           return smonth === monthNum && syear === secondNum;
         }
         if (parts.length === 2) {
-
           return smonth === monthNum && sday === secondNum;
         }
         const thirdNum = parseInt(parts[2]);
         if (parts.length >= 3 && !isNaN(thirdNum) && thirdNum > 1900) {
-
-          return smonth === monthNum && sday === secondNum && syear === thirdNum;
+          return (
+            smonth === monthNum && sday === secondNum && syear === thirdNum
+          );
         }
       }
     }
-
 
     const parsed = parseNaturalDate(rawInput);
     if (parsed) return storedDate === parsed;
@@ -538,26 +698,22 @@ export default function Dashboard() {
   };
 
   const filteredCustomers = customers
-    .filter(d => {
-
-      if (filterStatus === 'Paid' && d.status !== 'paid') return false;
-      if (filterStatus === 'Active' && d.status !== 'active') return false;
-      if (filterStatus === 'Partial' && d.status !== 'partial') return false;
+    .filter((d) => {
+      if (filterStatus === "Paid" && d.status !== "paid") return false;
+      if (filterStatus === "Active" && d.status !== "active") return false;
+      if (filterStatus === "Partial" && d.status !== "partial") return false;
 
       const rawS = search.trim();
       if (!rawS) return true;
 
-
       const term = matchCase ? rawS : rawS.toLowerCase();
-      const s = term.startsWith('#') ? term.substring(1) : term;
+      const s = term.startsWith("#") ? term.substring(1) : term;
 
       let nameMatch;
       if (wholeWord) {
-
         const nameToCompare = matchCase ? d.name : d.name.toLowerCase();
-        nameMatch = (nameToCompare === s);
+        nameMatch = nameToCompare === s;
       } else {
-
         const nameToCompare = matchCase ? d.name : d.name.toLowerCase();
         nameMatch = nameToCompare.includes(s);
       }
@@ -568,16 +724,17 @@ export default function Dashboard() {
         ? d.id.toString() === s
         : d.id.toString().includes(s);
 
-      const receiptMatch = d.receipt_numbers &&
-        d.receipt_numbers.some(r => {
+      const receiptMatch =
+        d.receipt_numbers &&
+        d.receipt_numbers.some((r) => {
           const rComp = matchCase ? r : r.toLowerCase();
           return wholeWord ? rComp === s : rComp.includes(s);
         });
 
       let matchesSearch;
-      if (searchMode === 'name') {
+      if (searchMode === "name") {
         matchesSearch = nameMatch;
-      } else if (searchMode === 'date') {
+      } else if (searchMode === "date") {
         matchesSearch = dateMatch;
       } else {
         matchesSearch = nameMatch || dateMatch || idMatch || receiptMatch;
@@ -586,9 +743,11 @@ export default function Dashboard() {
       return matchesSearch;
     })
     .sort((a, b) => {
-      if (sortOrder === 'a-z') return a.name.localeCompare(b.name);
-      if (sortOrder === 'date-asc') return new Date(a.date_borrowed) - new Date(b.date_borrowed);
-      if (sortOrder === 'date-desc') return new Date(b.date_borrowed) - new Date(a.date_borrowed);
+      if (sortOrder === "a-z") return a.name.localeCompare(b.name);
+      if (sortOrder === "date-asc")
+        return new Date(a.date_borrowed) - new Date(b.date_borrowed);
+      if (sortOrder === "date-desc")
+        return new Date(b.date_borrowed) - new Date(a.date_borrowed);
 
       const aTime = new Date(a.updated_at || a.created_at || 0).getTime();
       const bTime = new Date(b.updated_at || b.created_at || 0).getTime();
@@ -597,26 +756,28 @@ export default function Dashboard() {
 
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-  const currentCustomers = filteredCustomers.slice(indexOfFirstItem, indexOfLastItem);
+  const currentCustomers = filteredCustomers.slice(
+    indexOfFirstItem,
+    indexOfLastItem,
+  );
   const totalPages = Math.ceil(filteredCustomers.length / itemsPerPage);
 
   const toggleAll = () => {
-    const pageIds = currentCustomers.map(d => d.id);
-    const allPageSelected = pageIds.length > 0 && pageIds.every(id => selectedIds.includes(id));
+    const pageIds = currentCustomers.map((d) => d.id);
+    const allPageSelected =
+      pageIds.length > 0 && pageIds.every((id) => selectedIds.includes(id));
     if (allPageSelected) {
-      setSelectedIds(prev => prev.filter(id => !pageIds.includes(id)));
+      setSelectedIds((prev) => prev.filter((id) => !pageIds.includes(id)));
     } else {
-      setSelectedIds(prev => [...new Set([...prev, ...pageIds])]);
+      setSelectedIds((prev) => [...new Set([...prev, ...pageIds])]);
     }
   };
 
-
   useEffect(() => {
     setCurrentPage(1);
-    setPageInputVal('1');
+    setPageInputVal("1");
     setSelectedIds([]);
   }, [search, filterStatus, sortOrder, searchMode, matchCase, wholeWord]);
-
 
   useEffect(() => {
     setSelectedIds([]);
@@ -624,44 +785,102 @@ export default function Dashboard() {
 
   return (
     <>
-      { }
-      <div className="hide-desktop" style={{ padding: '24px 24px 0' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+      {}
+      <div className="hide-desktop" style={{ padding: "24px 24px 0" }}>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            marginBottom: 20,
+          }}
+        >
           <div>
-            <div style={{ fontSize: 13, color: 'var(--text-muted)', fontWeight: 600 }}>Hi, Admin</div>
-            <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.5px' }}>Customer Records</div>
+            <div
+              style={{
+                fontSize: 13,
+                color: "var(--text-muted)",
+                fontWeight: 600,
+              }}
+            >
+              Hi, Admin
+            </div>
+            <div
+              style={{
+                fontSize: 22,
+                fontWeight: 800,
+                color: "var(--text-primary)",
+                letterSpacing: "-0.5px",
+              }}
+            >
+              Customer Records
+            </div>
           </div>
-          <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-            <button className="btn-icon-sm" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12 }}>
+          <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
+            <button
+              className="btn-icon-sm"
+              style={{
+                background: "var(--bg-card)",
+                border: "1px solid var(--border)",
+                borderRadius: 12,
+              }}
+            >
               <Bell size={20} />
             </button>
-            <div className="row-avatar" style={{ width: 40, height: 40, borderRadius: 12 }}>AD</div>
+            <div
+              className="row-avatar"
+              style={{ width: 40, height: 40, borderRadius: 12 }}
+            >
+              AD
+            </div>
           </div>
         </div>
       </div>
 
-      { }
-      <div className="top-bar hide-mobile" style={{ flexWrap: 'nowrap' }}>
-        <div className="logo-brand" onClick={() => navigate('/')} style={{ cursor: 'pointer' }}>
-          <span className="logo-text">Arc</span>
+      {}
+      <div className="top-bar hide-mobile" style={{ flexWrap: "nowrap" }}>
+        <div
+          className="logo-brand"
+          onClick={() => navigate("/")}
+          style={{ cursor: "pointer", display: "flex", alignItems: "center" }}
+        >
+          <img
+            src={logoUrl}
+            alt="Basic Ventures"
+            style={{ height: "36px", width: "auto", objectFit: "contain" }}
+          />
         </div>
 
         <div className="top-main-actions">
-          <div className="search-wrap search-wrap-enhanced" style={{ position: 'relative' }}>
-            { }
+          <div
+            className="search-wrap search-wrap-enhanced"
+            style={{ position: "relative" }}
+          >
+            {}
             <div className="search-mode-tabs">
-              {[['all', 'All'], ['name', 'Name'], ['date', 'Date']].map(([mode, label]) => (
+              {[
+                ["all", "All"],
+                ["name", "Name"],
+                ["date", "Date"],
+              ].map(([mode, label]) => (
                 <button
                   key={mode}
-                  className={`search-mode-tab ${searchMode === mode ? 'active' : ''}`}
-                  onClick={() => { setSearchMode(mode); setSearch(''); }}
+                  className={`search-mode-tab ${searchMode === mode ? "active" : ""}`}
+                  onClick={() => {
+                    setSearchMode(mode);
+                    setSearch("");
+                  }}
                   type="button"
                 >
                   {label}
                 </button>
               ))}
             </div>
-            <Search className="search-icon search-icon-shifted" size={16} color="var(--text-muted)" />
+            <Search
+              className="search-icon search-icon-shifted"
+              size={16}
+              color="var(--text-muted)"
+            />
             <input
               id="main-search-input"
               type="text"
@@ -673,8 +892,8 @@ export default function Dashboard() {
             {/* Search Controls: Aa | ab | X */}
             <div className="search-controls">
               <button
-                className={`search-toggle-btn ${matchCase ? 'active' : ''}`}
-                onClick={() => setMatchCase(v => !v)}
+                className={`search-toggle-btn ${matchCase ? "active" : ""}`}
+                onClick={() => setMatchCase((v) => !v)}
                 type="button"
                 title="Match Case (Aa)"
                 aria-pressed={matchCase}
@@ -682,18 +901,18 @@ export default function Dashboard() {
                 Aa
               </button>
               <button
-                className={`search-toggle-btn ${wholeWord ? 'active' : ''}`}
-                onClick={() => setWholeWord(v => !v)}
+                className={`search-toggle-btn ${wholeWord ? "active" : ""}`}
+                onClick={() => setWholeWord((v) => !v)}
                 type="button"
                 title="Match Whole Word (ab)"
                 aria-pressed={wholeWord}
               >
-                <span style={{ textDecoration: 'underline' }}>ab</span>
+                <span style={{ textDecoration: "underline" }}>ab</span>
               </button>
               {search && (
                 <button
                   className="search-clear-btn search-clear-inline"
-                  onClick={() => setSearch('')}
+                  onClick={() => setSearch("")}
                   type="button"
                   aria-label="Clear search"
                 >
@@ -703,26 +922,42 @@ export default function Dashboard() {
             </div>
           </div>
 
-
           <div className="action-buttons-group">
             <ThemeToggle />
 
-            {/* Settings dropdown */}
-            <div style={{ position: 'relative' }}>
+            <div style={{ position: "relative" }}>
               <button
                 className="btn btn-outline"
-                onClick={() => setSettingsMenuOpen(o => !o)}
+                onClick={() => setSettingsMenuOpen((o) => !o)}
                 title="Settings"
-                style={{ height: 44, padding: '0 14px', borderRadius: 12, display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, fontWeight: 700 }}
+                style={{
+                  height: 44,
+                  padding: "0 14px",
+                  borderRadius: 12,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 6,
+                  fontSize: 13,
+                  fontWeight: 700,
+                }}
               >
                 <Settings size={16} />
-                <ChevronDown size={13} style={{ opacity: 0.6, transition: 'transform 0.2s', transform: settingsMenuOpen ? 'rotate(180deg)' : 'rotate(0deg)' }} />
+                <ChevronDown
+                  size={13}
+                  style={{
+                    opacity: 0.6,
+                    transition: "transform 0.2s",
+                    transform: settingsMenuOpen
+                      ? "rotate(180deg)"
+                      : "rotate(0deg)",
+                  }}
+                />
               </button>
               <AnimatePresence>
                 {settingsMenuOpen && (
                   <>
                     <div
-                      style={{ position: 'fixed', inset: 0, zIndex: 998 }}
+                      style={{ position: "fixed", inset: 0, zIndex: 998 }}
                       onClick={() => setSettingsMenuOpen(false)}
                     />
                     <motion.div
@@ -731,16 +966,16 @@ export default function Dashboard() {
                       exit={{ opacity: 0, y: -8, scale: 0.96 }}
                       transition={{ duration: 0.15 }}
                       style={{
-                        position: 'absolute',
-                        top: 'calc(100% + 8px)',
+                        position: "absolute",
+                        top: "calc(100% + 8px)",
                         right: 0,
                         width: 200,
-                        background: 'var(--glass-bg)',
-                        border: '1px solid var(--border)',
+                        background: "var(--glass-bg)",
+                        border: "1px solid var(--border)",
                         borderRadius: 14,
                         padding: 6,
                         zIndex: 999,
-                        boxShadow: 'var(--shadow-lg)',
+                        boxShadow: "var(--shadow-lg)",
                       }}
                     >
                       <button
@@ -753,92 +988,233 @@ export default function Dashboard() {
                           }
                         }}
                         style={{
-                          width: '100%', display: 'flex', alignItems: 'center', gap: 12,
-                          padding: '10px 14px', borderRadius: 10, border: 'none',
-                          background: 'transparent', color: 'var(--text-primary)',
-                          fontFamily: 'inherit', fontSize: 13, fontWeight: 600,
-                          cursor: 'pointer', transition: 'background 0.15s',
+                          width: "100%",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 12,
+                          padding: "10px 14px",
+                          borderRadius: 10,
+                          border: "none",
+                          background: "transparent",
+                          color: "var(--text-primary)",
+                          fontFamily: "inherit",
+                          fontSize: 13,
+                          fontWeight: 600,
+                          cursor: "pointer",
+                          transition: "background 0.15s",
                         }}
-                        onMouseEnter={e => e.currentTarget.style.background = 'var(--accent-light)'}
-                        onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                        onMouseEnter={(e) =>
+                          (e.currentTarget.style.background =
+                            "var(--accent-light)")
+                        }
+                        onMouseLeave={(e) =>
+                          (e.currentTarget.style.background = "transparent")
+                        }
                       >
-                        {showStats ? <Eye size={15} style={{ color: 'var(--accent)', flexShrink: 0 }} /> : <Lock size={15} style={{ color: 'var(--accent)', flexShrink: 0 }} />}
-                        <span>{showStats ? 'Financial Overview' : 'Unlock & View'}</span>
+                        {showStats ? (
+                          <Eye
+                            size={15}
+                            style={{ color: "var(--accent)", flexShrink: 0 }}
+                          />
+                        ) : (
+                          <Lock
+                            size={15}
+                            style={{ color: "var(--accent)", flexShrink: 0 }}
+                          />
+                        )}
+                        <span>
+                          {showStats ? "Financial Overview" : "Unlock & View"}
+                        </span>
                       </button>
-                      <div style={{ height: 1, background: 'var(--border)', margin: '4px 8px' }} />
-                      <button
-                        onClick={() => { setDataMenuOpen(true); setSettingsMenuOpen(false); }}
+                      <div
                         style={{
-                          width: '100%', display: 'flex', alignItems: 'center', gap: 12,
-                          padding: '10px 14px', borderRadius: 10, border: 'none',
-                          background: 'transparent', color: 'var(--text-primary)',
-                          fontFamily: 'inherit', fontSize: 13, fontWeight: 600,
-                          cursor: 'pointer', transition: 'background 0.15s',
+                          height: 1,
+                          background: "var(--border)",
+                          margin: "4px 8px",
                         }}
-                        onMouseEnter={e => e.currentTarget.style.background = 'var(--accent-light)'}
-                        onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                      />
+                      <button
+                        onClick={() => {
+                          setDataMenuOpen(true);
+                          setSettingsMenuOpen(false);
+                        }}
+                        style={{
+                          width: "100%",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 12,
+                          padding: "10px 14px",
+                          borderRadius: 10,
+                          border: "none",
+                          background: "transparent",
+                          color: "var(--text-primary)",
+                          fontFamily: "inherit",
+                          fontSize: 13,
+                          fontWeight: 600,
+                          cursor: "pointer",
+                          transition: "background 0.15s",
+                        }}
+                        onMouseEnter={(e) =>
+                          (e.currentTarget.style.background =
+                            "var(--accent-light)")
+                        }
+                        onMouseLeave={(e) =>
+                          (e.currentTarget.style.background = "transparent")
+                        }
                       >
-                        <Download size={15} style={{ color: 'var(--accent)', flexShrink: 0 }} />
+                        <Download
+                          size={15}
+                          style={{ color: "var(--accent)", flexShrink: 0 }}
+                        />
                         Data Actions
                       </button>
                       <button
-                        onClick={() => { navigate('/calendar'); setSettingsMenuOpen(false); }}
-                        style={{
-                          width: '100%', display: 'flex', alignItems: 'center', gap: 12,
-                          padding: '10px 14px', borderRadius: 10, border: 'none',
-                          background: 'transparent', color: 'var(--text-primary)',
-                          fontFamily: 'inherit', fontSize: 13, fontWeight: 600,
-                          cursor: 'pointer', transition: 'background 0.15s',
+                        onClick={() => {
+                          navigate("/calendar");
+                          setSettingsMenuOpen(false);
                         }}
-                        onMouseEnter={e => e.currentTarget.style.background = 'var(--accent-light)'}
-                        onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                        style={{
+                          width: "100%",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 12,
+                          padding: "10px 14px",
+                          borderRadius: 10,
+                          border: "none",
+                          background: "transparent",
+                          color: "var(--text-primary)",
+                          fontFamily: "inherit",
+                          fontSize: 13,
+                          fontWeight: 600,
+                          cursor: "pointer",
+                          transition: "background 0.15s",
+                        }}
+                        onMouseEnter={(e) =>
+                          (e.currentTarget.style.background =
+                            "var(--accent-light)")
+                        }
+                        onMouseLeave={(e) =>
+                          (e.currentTarget.style.background = "transparent")
+                        }
                       >
-                        <CalendarIcon size={15} style={{ color: 'var(--accent)', flexShrink: 0 }} />
+                        <CalendarIcon
+                          size={15}
+                          style={{ color: "var(--accent)", flexShrink: 0 }}
+                        />
                         Calendar
                       </button>
-                      <div style={{ height: 1, background: 'var(--border)', margin: '4px 8px' }} />
-                      <button
-                        onClick={() => { navigate('/archive'); setSettingsMenuOpen(false); }}
+                      <div
                         style={{
-                          width: '100%', display: 'flex', alignItems: 'center', gap: 12,
-                          padding: '10px 14px', borderRadius: 10, border: 'none',
-                          background: 'transparent', color: 'var(--text-primary)',
-                          fontFamily: 'inherit', fontSize: 13, fontWeight: 600,
-                          cursor: 'pointer', transition: 'background 0.15s',
+                          height: 1,
+                          background: "var(--border)",
+                          margin: "4px 8px",
                         }}
-                        onMouseEnter={e => e.currentTarget.style.background = 'var(--accent-light)'}
-                        onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                      />
+                      <button
+                        onClick={() => {
+                          navigate("/archive");
+                          setSettingsMenuOpen(false);
+                        }}
+                        style={{
+                          width: "100%",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 12,
+                          padding: "10px 14px",
+                          borderRadius: 10,
+                          border: "none",
+                          background: "transparent",
+                          color: "var(--text-primary)",
+                          fontFamily: "inherit",
+                          fontSize: 13,
+                          fontWeight: 600,
+                          cursor: "pointer",
+                          transition: "background 0.15s",
+                        }}
+                        onMouseEnter={(e) =>
+                          (e.currentTarget.style.background =
+                            "var(--accent-light)")
+                        }
+                        onMouseLeave={(e) =>
+                          (e.currentTarget.style.background = "transparent")
+                        }
                       >
-                        <Archive size={15} style={{ color: 'var(--accent)', flexShrink: 0 }} />
+                        <Archive
+                          size={15}
+                          style={{ color: "var(--accent)", flexShrink: 0 }}
+                        />
                         Archive
                       </button>
                       <button
-                        onClick={() => { setSessionSettingsOpen(true); setSettingsMenuOpen(false); }}
-                        style={{
-                          width: '100%', display: 'flex', alignItems: 'center', gap: 12,
-                          padding: '10px 14px', borderRadius: 10, border: 'none',
-                          background: 'transparent', color: 'var(--text-primary)',
-                          fontFamily: 'inherit', fontSize: 13, fontWeight: 600,
-                          cursor: 'pointer', transition: 'background 0.15s',
+                        onClick={() => {
+                          setSessionSettingsOpen(true);
+                          setSettingsMenuOpen(false);
                         }}
-                        onMouseEnter={e => e.currentTarget.style.background = 'var(--accent-light)'}
-                        onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                        style={{
+                          width: "100%",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 12,
+                          padding: "10px 14px",
+                          borderRadius: 10,
+                          border: "none",
+                          background: "transparent",
+                          color: "var(--text-primary)",
+                          fontFamily: "inherit",
+                          fontSize: 13,
+                          fontWeight: 600,
+                          cursor: "pointer",
+                          transition: "background 0.15s",
+                        }}
+                        onMouseEnter={(e) =>
+                          (e.currentTarget.style.background =
+                            "var(--accent-light)")
+                        }
+                        onMouseLeave={(e) =>
+                          (e.currentTarget.style.background = "transparent")
+                        }
                       >
-                        <Timer size={15} style={{ color: 'var(--accent)', flexShrink: 0 }} />
+                        <Timer
+                          size={15}
+                          style={{ color: "var(--accent)", flexShrink: 0 }}
+                        />
                         Session Timeout
                       </button>
-                      <div style={{ height: 1, background: 'var(--border)', margin: '4px 8px' }} />
-                      <button
-                        onClick={() => { signOut(); setSettingsMenuOpen(false); }}
+                      <div
                         style={{
-                          width: '100%', display: 'flex', alignItems: 'center', gap: 12,
-                          padding: '10px 14px', borderRadius: 10, border: 'none',
-                          background: 'transparent', color: '#EF4444',
-                          fontFamily: 'inherit', fontSize: 13, fontWeight: 600,
-                          cursor: 'pointer', transition: 'background 0.15s',
+                          height: 1,
+                          background: "var(--border)",
+                          margin: "4px 8px",
                         }}
-                        onMouseEnter={e => e.currentTarget.style.background = 'rgba(239,68,68,0.08)'}
-                        onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                      />
+                      <button
+                        onClick={() => {
+                          signOut();
+                          setSettingsMenuOpen(false);
+                        }}
+                        style={{
+                          width: "100%",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 12,
+                          padding: "10px 14px",
+                          borderRadius: 10,
+                          border: "none",
+                          background: "transparent",
+                          color: "#EF4444",
+                          fontFamily: "inherit",
+                          fontSize: 13,
+                          fontWeight: 600,
+                          cursor: "pointer",
+                          transition: "background 0.15s",
+                        }}
+                        onMouseEnter={(e) =>
+                          (e.currentTarget.style.background =
+                            "rgba(239,68,68,0.08)")
+                        }
+                        onMouseLeave={(e) =>
+                          (e.currentTarget.style.background = "transparent")
+                        }
                       >
                         <LogOut size={15} style={{ flexShrink: 0 }} />
                         Sign Out
@@ -850,7 +1226,10 @@ export default function Dashboard() {
               <AnimatePresence>
                 {dataMenuOpen && (
                   <>
-                    <div style={{ position: 'fixed', inset: 0, zIndex: 998 }} onClick={() => setDataMenuOpen(false)} />
+                    <div
+                      style={{ position: "fixed", inset: 0, zIndex: 998 }}
+                      onClick={() => setDataMenuOpen(false)}
+                    />
                     <motion.div
                       className="dropdown-menu"
                       initial={{ opacity: 0, y: 10, scale: 0.95 }}
@@ -858,19 +1237,45 @@ export default function Dashboard() {
                       exit={{ opacity: 0, y: 10, scale: 0.95 }}
                       style={{ zIndex: 999 }}
                     >
-                      <div className="dropdown-item" onClick={() => { setExportFilterType('pdf'); setExportFilterOpen(true); setDataMenuOpen(false); }}>
-                        <FileText size={16} /><span>Export Elite PDF</span>
+                      <div
+                        className="dropdown-item"
+                        onClick={() => {
+                          setExportFilterType("pdf");
+                          setExportFilterOpen(true);
+                          setDataMenuOpen(false);
+                        }}
+                      >
+                        <FileText size={16} />
+                        <span>Export Elite PDF</span>
                       </div>
-                      <div className="dropdown-item" onClick={() => { setExportFilterType('csv'); setExportFilterOpen(true); setDataMenuOpen(false); }}>
-                        <FileSpreadsheet size={16} /><span>Export Excel (CSV)</span>
+                      <div
+                        className="dropdown-item"
+                        onClick={() => {
+                          setExportFilterType("csv");
+                          setExportFilterOpen(true);
+                          setDataMenuOpen(false);
+                        }}
+                      >
+                        <FileSpreadsheet size={16} />
+                        <span>Export Excel (CSV)</span>
                       </div>
                       <div className="dropdown-item" onClick={downloadTemplate}>
-                        <Download size={16} /><span>Download CSV Template</span>
+                        <Download size={16} />
+                        <span>Download CSV Template</span>
                       </div>
                       <div className="dropdown-divider" />
-                      <label className="dropdown-item" style={{ cursor: 'pointer' }}>
-                        <Plus size={16} /><span>Import from CSV</span>
-                        <input type="file" accept=".csv" onChange={handleImportCSV} style={{ display: 'none' }} />
+                      <label
+                        className="dropdown-item"
+                        style={{ cursor: "pointer" }}
+                      >
+                        <Plus size={16} />
+                        <span>Import from CSV</span>
+                        <input
+                          type="file"
+                          accept=".csv"
+                          onChange={handleImportCSV}
+                          style={{ display: "none" }}
+                        />
                       </label>
                     </motion.div>
                   </>
@@ -878,7 +1283,10 @@ export default function Dashboard() {
               </AnimatePresence>
             </div>
 
-            <button className="btn btn-primary" onClick={() => setAddOpen(true)}>
+            <button
+              className="btn btn-primary"
+              onClick={() => setAddOpen(true)}
+            >
               <Plus size={18} />
               <span>Add New Customer</span>
             </button>
@@ -886,16 +1294,23 @@ export default function Dashboard() {
         </div>
       </div>
 
-      { }
-      <div className="hide-desktop" style={{ padding: '0 24px 24px' }}>
+      {}
+      <div className="hide-desktop" style={{ padding: "0 24px 24px" }}>
         <div className="search-wrap search-wrap-enhanced">
-          { }
+          {}
           <div className="search-mode-tabs">
-            {[['all', 'All'], ['name', 'Name'], ['date', 'Date']].map(([mode, label]) => (
+            {[
+              ["all", "All"],
+              ["name", "Name"],
+              ["date", "Date"],
+            ].map(([mode, label]) => (
               <button
                 key={mode}
-                className={`search-mode-tab ${searchMode === mode ? 'active' : ''}`}
-                onClick={() => { setSearchMode(mode); setSearch(''); }}
+                className={`search-mode-tab ${searchMode === mode ? "active" : ""}`}
+                onClick={() => {
+                  setSearchMode(mode);
+                  setSearch("");
+                }}
                 type="button"
               >
                 {label}
@@ -914,8 +1329,8 @@ export default function Dashboard() {
           {/* Search Controls: Aa | ab | X */}
           <div className="search-controls">
             <button
-              className={`search-toggle-btn ${matchCase ? 'active' : ''}`}
-              onClick={() => setMatchCase(v => !v)}
+              className={`search-toggle-btn ${matchCase ? "active" : ""}`}
+              onClick={() => setMatchCase((v) => !v)}
               type="button"
               title="Match Case"
               aria-pressed={matchCase}
@@ -923,18 +1338,18 @@ export default function Dashboard() {
               Aa
             </button>
             <button
-              className={`search-toggle-btn ${wholeWord ? 'active' : ''}`}
-              onClick={() => setWholeWord(v => !v)}
+              className={`search-toggle-btn ${wholeWord ? "active" : ""}`}
+              onClick={() => setWholeWord((v) => !v)}
               type="button"
               title="Whole Word"
               aria-pressed={wholeWord}
             >
-              <span style={{ textDecoration: 'underline' }}>ab</span>
+              <span style={{ textDecoration: "underline" }}>ab</span>
             </button>
             {search && (
               <button
                 className="search-clear-btn search-clear-inline"
-                onClick={() => setSearch('')}
+                onClick={() => setSearch("")}
                 type="button"
                 aria-label="Clear search"
               >
@@ -945,23 +1360,31 @@ export default function Dashboard() {
         </div>
       </div>
 
-
-
       {/* Stats Popup Modal */}
       {showStats && isStatsModalOpen && (
         <SummaryStats
           totals={totals}
-          filteredTotals={search.trim() ? filteredCustomers.reduce(
-            (acc, d) => {
-              acc.totalBalance += parseFloat(d.balance) || 0;
-              acc.totalAdvance += parseFloat(d.advance_payment) || 0;
-              if (d.status === 'active') acc.activeCount++;
-              if (d.status === 'partial') acc.partialCount++;
-              if (d.status === 'paid') acc.paidCount++;
-              return acc;
-            },
-            { totalBalance: 0, totalAdvance: 0, activeCount: 0, partialCount: 0, paidCount: 0 }
-          ) : null}
+          filteredTotals={
+            search.trim()
+              ? filteredCustomers.reduce(
+                  (acc, d) => {
+                    acc.totalBalance += parseFloat(d.balance) || 0;
+                    acc.totalAdvance += parseFloat(d.advance_payment) || 0;
+                    if (d.status === "active") acc.activeCount++;
+                    if (d.status === "partial") acc.partialCount++;
+                    if (d.status === "paid") acc.paidCount++;
+                    return acc;
+                  },
+                  {
+                    totalBalance: 0,
+                    totalAdvance: 0,
+                    activeCount: 0,
+                    partialCount: 0,
+                    paidCount: 0,
+                  },
+                )
+              : null
+          }
           searchLabel={search.trim() || null}
           onClose={() => setIsStatsModalOpen(false)}
           onLockClick={() => {
@@ -971,54 +1394,69 @@ export default function Dashboard() {
         />
       )}
 
-      { }
+      {}
       <div className="table-section">
         <div className="table-header-row">
           <div className="table-header-left">
             <h2 className="table-title">Customer Records</h2>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginTop: 8 }}>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 16,
+                marginTop: 8,
+              }}
+            >
               <div className="table-stats hide-mobile">
                 Total Customers: {filteredCustomers.length}
               </div>
               <button
-                className={`filter-chip ${isSelectionMode ? 'active' : ''}`}
+                className={`filter-chip ${isSelectionMode ? "active" : ""}`}
                 onClick={() => {
                   setIsSelectionMode(!isSelectionMode);
                   if (!isSelectionMode) setSelectedIds([]);
                 }}
                 style={{
-                  background: isSelectionMode ? 'var(--accent)' : 'var(--bg-card)',
-                  color: isSelectionMode ? '#000' : 'var(--text-primary)',
-                  borderColor: isSelectionMode ? 'var(--accent)' : 'var(--border)',
+                  background: isSelectionMode
+                    ? "var(--accent)"
+                    : "var(--bg-card)",
+                  color: isSelectionMode ? "#000" : "var(--text-primary)",
+                  borderColor: isSelectionMode
+                    ? "var(--accent)"
+                    : "var(--border)",
                   fontWeight: 700,
-                  padding: '0 12px',
+                  padding: "0 12px",
                   height: 32,
                   fontSize: 12,
                   borderRadius: 10,
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 6
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 6,
                 }}
               >
                 <CheckSquare size={14} />
-                <span>{isSelectionMode ? 'Done Selecting' : 'Select Mode'}</span>
+                <span>
+                  {isSelectionMode ? "Done Selecting" : "Select Mode"}
+                </span>
               </button>
             </div>
           </div>
           <div className="table-filters">
             <div className="filter-chips hide-mobile">
-              {['All', 'Outstanding', 'Partial', 'Paid'].map(status => (
+              {["All", "Outstanding", "Partial", "Paid"].map((status) => (
                 <button
                   key={status}
-                  className={`filter-chip ${filterStatus === (status === 'Outstanding' ? 'Active' : status) ? 'active' : ''}`}
+                  className={`filter-chip ${filterStatus === (status === "Outstanding" ? "Active" : status) ? "active" : ""}`}
                   onClick={() => {
-                    setFilterStatus(status === 'Outstanding' ? 'Active' : status);
-                    setSearch(''); // Clear search when switching modes
+                    setFilterStatus(
+                      status === "Outstanding" ? "Active" : status,
+                    );
+                    setSearch(""); // Clear search when switching modes
                   }}
                   style={{
-                    padding: filterStatus === status ? '8px 24px' : '8px 18px',
-                    fontSize: filterStatus === status ? '14px' : '13px',
-                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
+                    padding: filterStatus === status ? "8px 24px" : "8px 18px",
+                    fontSize: filterStatus === status ? "14px" : "13px",
+                    transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
                   }}
                 >
                   {status}
@@ -1037,16 +1475,16 @@ export default function Dashboard() {
               <option value="Paid">Paid</option>
             </select>
 
-            <div style={{ position: 'relative' }}>
+            <div style={{ position: "relative" }}>
               <button
                 className="calendar-pill-btn"
                 onClick={() => setSortMenuOpen(!sortMenuOpen)}
                 style={{
-                  background: sortMenuOpen ? 'var(--accent)' : 'var(--bg-card)',
-                  color: sortMenuOpen ? '#000' : 'var(--text-primary)',
-                  borderColor: sortMenuOpen ? 'var(--accent)' : 'var(--border)',
-                  padding: '0 14px',
-                  height: 34
+                  background: sortMenuOpen ? "var(--accent)" : "var(--bg-card)",
+                  color: sortMenuOpen ? "#000" : "var(--text-primary)",
+                  borderColor: sortMenuOpen ? "var(--accent)" : "var(--border)",
+                  padding: "0 14px",
+                  height: 34,
                 }}
               >
                 <ArrowUpDown size={16} />
@@ -1057,31 +1495,51 @@ export default function Dashboard() {
                 {sortMenuOpen && (
                   <>
                     <div
-                      style={{ position: 'fixed', inset: 0, zIndex: 99 }}
+                      style={{ position: "fixed", inset: 0, zIndex: 99 }}
                       onClick={() => setSortMenuOpen(false)}
                     />
                     <motion.div
                       className="dropdown-menu"
-                      style={{ right: 0, left: 'auto', width: 200 }}
+                      style={{ right: 0, left: "auto", width: 200 }}
                       initial={{ opacity: 0, y: 10, scale: 0.95 }}
                       animate={{ opacity: 1, y: 0, scale: 1 }}
                       exit={{ opacity: 0, y: 10, scale: 0.95 }}
                     >
-                      <div className="dropdown-item" onClick={() => handleSortChange('recently-added')}>
+                      <div
+                        className="dropdown-item"
+                        onClick={() => handleSortChange("recently-added")}
+                      >
                         <span style={{ flex: 1 }}>Recent Activity</span>
-                        {sortOrder === 'recently-added' && <Check size={14} color="var(--accent)" />}
+                        {sortOrder === "recently-added" && (
+                          <Check size={14} color="var(--accent)" />
+                        )}
                       </div>
-                      <div className="dropdown-item" onClick={() => handleSortChange('a-z')}>
+                      <div
+                        className="dropdown-item"
+                        onClick={() => handleSortChange("a-z")}
+                      >
                         <span style={{ flex: 1 }}>A-Z Names</span>
-                        {sortOrder === 'a-z' && <Check size={14} color="var(--accent)" />}
+                        {sortOrder === "a-z" && (
+                          <Check size={14} color="var(--accent)" />
+                        )}
                       </div>
-                      <div className="dropdown-item" onClick={() => handleSortChange('date-desc')}>
+                      <div
+                        className="dropdown-item"
+                        onClick={() => handleSortChange("date-desc")}
+                      >
                         <span style={{ flex: 1 }}>Recent to Oldest Date</span>
-                        {sortOrder === 'date-desc' && <Check size={14} color="var(--accent)" />}
+                        {sortOrder === "date-desc" && (
+                          <Check size={14} color="var(--accent)" />
+                        )}
                       </div>
-                      <div className="dropdown-item" onClick={() => handleSortChange('date-asc')}>
+                      <div
+                        className="dropdown-item"
+                        onClick={() => handleSortChange("date-asc")}
+                      >
                         <span style={{ flex: 1 }}>Oldest to Recent Date</span>
-                        {sortOrder === 'date-asc' && <Check size={14} color="var(--accent)" />}
+                        {sortOrder === "date-asc" && (
+                          <Check size={14} color="var(--accent)" />
+                        )}
                       </div>
                     </motion.div>
                   </>
@@ -1091,155 +1549,209 @@ export default function Dashboard() {
           </div>
         </div>
 
-
-              {loading ? (
-                <div style={{ textAlign: 'center', padding: '60px 0', color: 'var(--text-muted)' }}>Loading records...</div>
-              ) : error ? (
-                <div style={{ textAlign: 'center', padding: '60px 0', color: 'var(--danger)' }}>{error}</div>
-              ) : filteredCustomers.length === 0 ? (
-                <div className="empty-state">
-                  <UserX size={32} className="empty-state-icon" style={{ margin: '0 auto 16px' }} />
-                  <div className="empty-state-title">{search ? 'No results found' : 'No customers yet'}</div>
-                  <div className="empty-state-sub">Click "Add new customer" to get started</div>
-                </div>
-              ) : (
-                <div style={{ overflowX: 'auto' }}>
-                  <table className="data-table">
-                    <thead>
-                      <tr>
-                        {isSelectionMode && (
-                          <th className="col-selection">
-                            <div
-                              className={`checkbox-custom ${currentCustomers.length > 0 && currentCustomers.every(d => selectedIds.includes(d.id)) ? 'checked' : ''}`}
-                              onClick={toggleAll}
-                            >
-                              {currentCustomers.length > 0 && currentCustomers.every(d => selectedIds.includes(d.id)) && <Check size={14} />}
-                            </div>
-                          </th>
-                        )}
-                        <th className="col-receipt hide-mobile">Receipt No.</th>
-                        <th className="col-name">Full Name</th>
-                        <th className="col-date">Date of Purchase</th>
-                        <th className="col-init-balance hide-mobile">Total Amount Purchased</th>
-                        <th className="col-balance">Balance</th>
-                        <th className="col-status hide-tablet">Status</th>
-                        <th className="col-actions"></th>
-                      </tr>
-                    </thead>
-                    <motion.tbody initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-                      {currentCustomers.map((customer, i) => (
-                        <CustomerCard
-                          key={customer.id}
-                          customer={customer}
-                          index={i}
-                          selected={selectedIds.includes(customer.id)}
-                          onToggleSelect={() => toggleSelect(customer.id)}
-                          onEdit={() => setEditCustomer(customer)}
-                          onDelete={() => setDeleteData(customer)}
-                          onPay={() => setPayCustomer(customer)}
-                          onSettle={() => setConfirmData(customer)}
-                          isSelectionMode={isSelectionMode}
-                        />
-                      ))}
-                    </motion.tbody>
-                  </table>
-
-                  { }
-                  {totalPages > 1 && (
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 24, padding: '0 8px', flexWrap: 'wrap', gap: 12 }}>
-                      <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>
-                        Showing {indexOfFirstItem + 1}–{Math.min(indexOfLastItem, filteredCustomers.length)} of {filteredCustomers.length} customers
+        {loading ? (
+          <Loader text="Loading records..." />
+        ) : error ? (
+          <div
+            style={{
+              textAlign: "center",
+              padding: "60px 0",
+              color: "var(--danger)",
+            }}
+          >
+            {error}
+          </div>
+        ) : filteredCustomers.length === 0 ? (
+          <div className="empty-state">
+            <UserX
+              size={32}
+              className="empty-state-icon"
+              style={{ margin: "0 auto 16px" }}
+            />
+            <div className="empty-state-title">
+              {search ? "No results found" : "No customers yet"}
+            </div>
+            <div className="empty-state-sub">
+              Click "Add new customer" to get started
+            </div>
+          </div>
+        ) : (
+          <div style={{ overflowX: "auto" }}>
+            <table className="data-table">
+              <thead>
+                <tr>
+                  {isSelectionMode && (
+                    <th className="col-selection">
+                      <div
+                        className={`checkbox-custom ${currentCustomers.length > 0 && currentCustomers.every((d) => selectedIds.includes(d.id)) ? "checked" : ""}`}
+                        onClick={toggleAll}
+                      >
+                        {currentCustomers.length > 0 &&
+                          currentCustomers.every((d) =>
+                            selectedIds.includes(d.id),
+                          ) && <Check size={14} />}
                       </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                        { }
-                        <button
-                          className="btn btn-outline btn-sm"
-                          disabled={currentPage === 1}
-                          onClick={() => {
-                            const next = Math.max(1, currentPage - 1);
-                            setCurrentPage(next);
-                            setPageInputVal(String(next));
-                          }}
-                          style={{ borderRadius: 10, padding: '6px 14px', minWidth: 'unset' }}
-                        >
-                          ‹ Prev
-                        </button>
-
-                        { }
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                          <input
-                            id="pagination-page-input"
-                            type="number"
-                            min={1}
-                            max={totalPages}
-                            value={pageInputVal}
-                            onChange={(e) => setPageInputVal(e.target.value)}
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter') {
-                                const parsed = parseInt(pageInputVal, 10);
-                                if (!isNaN(parsed)) {
-                                  const clamped = Math.min(totalPages, Math.max(1, parsed));
-                                  setCurrentPage(clamped);
-                                  setPageInputVal(String(clamped));
-                                } else {
-                                  setPageInputVal(String(currentPage));
-                                }
-                                e.target.blur();
-                              }
-                            }}
-                            onBlur={() => {
-                              const parsed = parseInt(pageInputVal, 10);
-                              if (!isNaN(parsed)) {
-                                const clamped = Math.min(totalPages, Math.max(1, parsed));
-                                setCurrentPage(clamped);
-                                setPageInputVal(String(clamped));
-                              } else {
-                                setPageInputVal(String(currentPage));
-                              }
-                            }}
-                            style={{
-                              width: 52,
-                              height: 34,
-                              textAlign: 'center',
-                              fontSize: 13,
-                              fontWeight: 700,
-                              fontFamily: 'inherit',
-                              background: 'var(--glass-bg)',
-                              color: 'var(--text-primary)',
-                              border: '1px solid var(--accent)',
-                              borderRadius: 10,
-                              outline: 'none',
-                              boxShadow: '0 0 0 3px var(--accent-light)',
-                              MozAppearance: 'textfield',
-                            }}
-                          />
-                          <span style={{ fontSize: 13, color: 'var(--text-muted)', fontWeight: 600, whiteSpace: 'nowrap' }}>
-                            / {totalPages}
-                          </span>
-                        </div>
-
-                        { }
-                        <button
-                          className="btn btn-outline btn-sm"
-                          disabled={currentPage === totalPages}
-                          onClick={() => {
-                            const next = Math.min(totalPages, currentPage + 1);
-                            setCurrentPage(next);
-                            setPageInputVal(String(next));
-                          }}
-                          style={{ borderRadius: 10, padding: '6px 14px', minWidth: 'unset' }}
-                        >
-                          Next ›
-                        </button>
-                      </div>
-                    </div>
+                    </th>
                   )}
-                </div>
-              )}
+                  <th className="col-receipt hide-mobile">Receipt No.</th>
+                  <th className="col-name">Full Name</th>
+                  <th className="col-date">Date of Purchase</th>
+                  <th className="col-init-balance hide-mobile">
+                    Total Amount Purchased
+                  </th>
+                  <th className="col-balance">Balance</th>
+                  <th className="col-status hide-tablet">Status</th>
+                  <th className="col-actions"></th>
+                </tr>
+              </thead>
+              <motion.tbody initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                {currentCustomers.map((customer, i) => (
+                  <CustomerCard
+                    key={customer.id}
+                    customer={customer}
+                    index={i}
+                    selected={selectedIds.includes(customer.id)}
+                    onToggleSelect={() => toggleSelect(customer.id)}
+                    onEdit={() => setEditCustomer(customer)}
+                    onDelete={() => setDeleteData(customer)}
+                    onPay={() => setPayCustomer(customer)}
+                    onSettle={() => setConfirmData(customer)}
+                    isSelectionMode={isSelectionMode}
+                  />
+                ))}
+              </motion.tbody>
+            </table>
 
+            {}
+            {totalPages > 1 && (
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  marginTop: 24,
+                  padding: "0 8px",
+                  flexWrap: "wrap",
+                  gap: 12,
+                }}
+              >
+                <div style={{ fontSize: 13, color: "var(--text-muted)" }}>
+                  Showing {indexOfFirstItem + 1}–
+                  {Math.min(indexOfLastItem, filteredCustomers.length)} of{" "}
+                  {filteredCustomers.length} customers
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  {}
+                  <button
+                    className="btn btn-outline btn-sm"
+                    disabled={currentPage === 1}
+                    onClick={() => {
+                      const next = Math.max(1, currentPage - 1);
+                      setCurrentPage(next);
+                      setPageInputVal(String(next));
+                    }}
+                    style={{
+                      borderRadius: 10,
+                      padding: "6px 14px",
+                      minWidth: "unset",
+                    }}
+                  >
+                    ‹ Prev
+                  </button>
+
+                  {}
+                  <div
+                    style={{ display: "flex", alignItems: "center", gap: 6 }}
+                  >
+                    <input
+                      id="pagination-page-input"
+                      type="number"
+                      min={1}
+                      max={totalPages}
+                      value={pageInputVal}
+                      onChange={(e) => setPageInputVal(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          const parsed = parseInt(pageInputVal, 10);
+                          if (!isNaN(parsed)) {
+                            const clamped = Math.min(
+                              totalPages,
+                              Math.max(1, parsed),
+                            );
+                            setCurrentPage(clamped);
+                            setPageInputVal(String(clamped));
+                          } else {
+                            setPageInputVal(String(currentPage));
+                          }
+                          e.target.blur();
+                        }
+                      }}
+                      onBlur={() => {
+                        const parsed = parseInt(pageInputVal, 10);
+                        if (!isNaN(parsed)) {
+                          const clamped = Math.min(
+                            totalPages,
+                            Math.max(1, parsed),
+                          );
+                          setCurrentPage(clamped);
+                          setPageInputVal(String(clamped));
+                        } else {
+                          setPageInputVal(String(currentPage));
+                        }
+                      }}
+                      style={{
+                        width: 52,
+                        height: 34,
+                        textAlign: "center",
+                        fontSize: 13,
+                        fontWeight: 700,
+                        fontFamily: "inherit",
+                        background: "var(--glass-bg)",
+                        color: "var(--text-primary)",
+                        border: "1px solid var(--accent)",
+                        borderRadius: 10,
+                        outline: "none",
+                        boxShadow: "0 0 0 3px var(--accent-light)",
+                        MozAppearance: "textfield",
+                      }}
+                    />
+                    <span
+                      style={{
+                        fontSize: 13,
+                        color: "var(--text-muted)",
+                        fontWeight: 600,
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      / {totalPages}
+                    </span>
+                  </div>
+
+                  {}
+                  <button
+                    className="btn btn-outline btn-sm"
+                    disabled={currentPage === totalPages}
+                    onClick={() => {
+                      const next = Math.min(totalPages, currentPage + 1);
+                      setCurrentPage(next);
+                      setPageInputVal(String(next));
+                    }}
+                    style={{
+                      borderRadius: 10,
+                      padding: "6px 14px",
+                      minWidth: "unset",
+                    }}
+                  >
+                    Next ›
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
-      { }
+      {}
       <RevealAuthModal
         open={isRevealAuthOpen}
         onClose={() => setIsRevealAuthOpen(false)}
@@ -1248,7 +1760,11 @@ export default function Dashboard() {
           setIsStatsModalOpen(true);
         }}
       />
-      <CustomerModal open={addOpen} onClose={() => setAddOpen(false)} onSubmit={handleAdd} />
+      <CustomerModal
+        open={addOpen}
+        onClose={() => setAddOpen(false)}
+        onSubmit={handleAdd}
+      />
       <SessionSettingsModal
         open={sessionSettingsOpen}
         onClose={() => setSessionSettingsOpen(false)}
@@ -1272,7 +1788,7 @@ export default function Dashboard() {
         onClose={() => setConfirmData(null)}
         onConfirm={() => handlePay(confirmData.id, confirmData.balance)}
         title="Settle Full Debt?"
-        message={`This will pay the full balance of ₱${(confirmData?.balance || 0).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} and mark ${confirmData?.name} as fully settled in the records. Continue?`}
+        message={`This will pay the full balance of ₱${(confirmData?.balance || 0).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} and mark ${confirmData?.name} as fully settled in the records. Continue?`}
       />
 
       <ConfirmModal
@@ -1282,9 +1798,6 @@ export default function Dashboard() {
         title="Delete Record?"
         message={`Are you sure you want to permanently delete the record for ${deleteData?.name}? This cannot be undone.`}
       />
-
-
-
 
       <SearchOverlay
         open={searchOpen}
@@ -1296,17 +1809,46 @@ export default function Dashboard() {
         {selectedIds.length > 0 && (
           <motion.div
             className="bulk-actions-bar"
-            initial={{ y: 100, x: '-50%', opacity: 0 }}
-            animate={{ y: 0, x: '-50%', opacity: 1 }}
-            exit={{ y: 100, x: '-50%', opacity: 0 }}
+            initial={{ y: 100, x: "-50%", opacity: 0 }}
+            animate={{ y: 0, x: "-50%", opacity: 1 }}
+            exit={{ y: 100, x: "-50%", opacity: 0 }}
           >
             <div className="bulk-count">{selectedIds.length} Selected</div>
             <div className="bulk-btns">
-              {selectedIds.some(id => customers.find(d => d.id === id)?.status !== 'paid') && (
-                <button className="btn btn-primary btn-sm" onClick={() => setBulkConfirm({ type: 'paid' })}>Mark as Paid</button>
+              {selectedIds.some(
+                (id) => customers.find((d) => d.id === id)?.status !== "paid",
+              ) && (
+                <button
+                  className="btn btn-primary btn-sm"
+                  onClick={() => setBulkConfirm({ type: "paid" })}
+                >
+                  Mark as Paid
+                </button>
               )}
-              <button className="btn btn-outline btn-sm" style={{ borderColor: '#FF4D4D', color: '#FF4D4D' }} onClick={() => setBulkConfirm({ type: 'delete' })}>Delete All</button>
-              <button className="btn" style={{ background: 'var(--accent)', color: '#FFFFFF', width: 42, height: 42, borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 }} onClick={() => setSelectedIds([])}><X size={20} /></button>
+              <button
+                className="btn btn-outline btn-sm"
+                style={{ borderColor: "#FF4D4D", color: "#FF4D4D" }}
+                onClick={() => setBulkConfirm({ type: "delete" })}
+              >
+                Delete All
+              </button>
+              <button
+                className="btn"
+                style={{
+                  background: "var(--accent)",
+                  color: "#FFFFFF",
+                  width: 42,
+                  height: 42,
+                  borderRadius: 12,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  padding: 0,
+                }}
+                onClick={() => setSelectedIds([])}
+              >
+                <X size={20} />
+              </button>
             </div>
           </motion.div>
         )}
@@ -1315,16 +1857,22 @@ export default function Dashboard() {
       <ConfirmModal
         open={!!bulkConfirm}
         onClose={() => setBulkConfirm(null)}
-        onConfirm={bulkConfirm?.type === 'paid' ? handleBulkPaid : handleBulkDelete}
-        title={bulkConfirm?.type === 'paid' ? 'Mark All as Paid?' : 'Delete Selected?'}
+        onConfirm={
+          bulkConfirm?.type === "paid" ? handleBulkPaid : handleBulkDelete
+        }
+        title={
+          bulkConfirm?.type === "paid"
+            ? "Mark All as Paid?"
+            : "Delete Selected?"
+        }
         message={
-          bulkConfirm?.type === 'paid'
+          bulkConfirm?.type === "paid"
             ? `You are about to mark ${selectedIds.length} customers as fully paid. This will settle all their remaining balances.`
             : `Are you sure you want to permanently delete ${selectedIds.length} records? This action cannot be undone.`
         }
       />
 
-      { }
+      {}
       <AnimatePresence>
         {exportFilterOpen && (
           <motion.div
@@ -1343,39 +1891,95 @@ export default function Dashboard() {
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
               onClick={(e) => e.stopPropagation()}
             >
-              <div style={{ textAlign: 'center', marginBottom: 24 }}>
-                <div style={{ width: 56, height: 56, borderRadius: 16, background: 'var(--accent-light)', color: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
-                  {exportFilterType === 'pdf' ? <FileText size={26} /> : <FileSpreadsheet size={26} />}
+              <div style={{ textAlign: "center", marginBottom: 24 }}>
+                <div
+                  style={{
+                    width: 56,
+                    height: 56,
+                    borderRadius: 16,
+                    background: "var(--accent-light)",
+                    color: "var(--accent)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    margin: "0 auto 16px",
+                  }}
+                >
+                  {exportFilterType === "pdf" ? (
+                    <FileText size={26} />
+                  ) : (
+                    <FileSpreadsheet size={26} />
+                  )}
                 </div>
                 <h2 style={{ fontSize: 22, fontWeight: 800, marginBottom: 6 }}>
-                  {exportFilterType === 'pdf' ? 'Export PDF' : 'Export CSV'}
+                  {exportFilterType === "pdf" ? "Export PDF" : "Export CSV"}
                 </h2>
-                <p style={{ color: 'var(--text-muted)', fontSize: 14 }}>Choose which records to include</p>
+                <p style={{ color: "var(--text-muted)", fontSize: 14 }}>
+                  Choose which records to include
+                </p>
               </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 24 }}>
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 10,
+                  marginBottom: 24,
+                }}
+              >
                 {[
-                  { label: 'All Records', value: 'all', desc: `${customers.length} records` },
-                  { label: 'Outstanding Only', value: 'active', desc: `${customers.filter(d => d.status === 'active').length} records` },
-                  { label: 'Partial Only', value: 'partial', desc: `${customers.filter(d => d.status === 'partial').length} records` },
-                  { label: 'Paid', value: 'paid', desc: `${customers.filter(d => d.status === 'paid').length} records` },
-                ].map(opt => (
+                  {
+                    label: "All Records",
+                    value: "all",
+                    desc: `${customers.length} records`,
+                  },
+                  {
+                    label: "Outstanding Only",
+                    value: "active",
+                    desc: `${customers.filter((d) => d.status === "active").length} records`,
+                  },
+                  {
+                    label: "Partial Only",
+                    value: "partial",
+                    desc: `${customers.filter((d) => d.status === "partial").length} records`,
+                  },
+                  {
+                    label: "Paid",
+                    value: "paid",
+                    desc: `${customers.filter((d) => d.status === "paid").length} records`,
+                  },
+                ].map((opt) => (
                   <button
                     key={opt.value}
                     className="btn btn-outline"
-                    style={{ justifyContent: 'space-between', padding: '14px 18px', textAlign: 'left' }}
+                    style={{
+                      justifyContent: "space-between",
+                      padding: "14px 18px",
+                      textAlign: "left",
+                    }}
                     onClick={() => {
-                      const filtered = opt.value === 'all' ? customers : customers.filter(d => d.status === opt.value);
-                      if (exportFilterType === 'pdf') exportToPDF(filtered);
+                      const filtered =
+                        opt.value === "all"
+                          ? customers
+                          : customers.filter((d) => d.status === opt.value);
+                      if (exportFilterType === "pdf") exportToPDF(filtered);
                       else exportToCSV(filtered);
                       setExportFilterOpen(false);
                     }}
                   >
                     <span style={{ fontWeight: 700 }}>{opt.label}</span>
-                    <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>{opt.desc}</span>
+                    <span style={{ fontSize: 12, color: "var(--text-muted)" }}>
+                      {opt.desc}
+                    </span>
                   </button>
                 ))}
               </div>
-              <button className="btn btn-outline" style={{ width: '100%' }} onClick={() => setExportFilterOpen(false)}>Cancel</button>
+              <button
+                className="btn btn-outline"
+                style={{ width: "100%" }}
+                onClick={() => setExportFilterOpen(false)}
+              >
+                Cancel
+              </button>
             </motion.div>
           </motion.div>
         )}

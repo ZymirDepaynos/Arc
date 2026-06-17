@@ -1,12 +1,19 @@
-import { useEffect, useRef, useCallback } from 'react';
-import { useAuth } from '../contexts/AuthContext';
-import api from '../lib/api';
-import toast from 'react-hot-toast';
+import { useEffect, useRef, useCallback } from "react";
+import { useAuth } from "../contexts/AuthContext";
+import api from "../lib/api";
+import toast from "react-hot-toast";
 
-const ACTIVITY_KEY = 'arc_last_activity';
-const TIMEOUT_KEY = 'arc_session_timeout';
+const ACTIVITY_KEY = "arc_last_activity";
+const TIMEOUT_KEY = "arc_session_timeout";
 const DEFAULT_TIMEOUT_MS = 30 * 60 * 1000;
-const ACTIVITY_EVENTS = ['mousemove', 'mousedown', 'keydown', 'scroll', 'touchstart', 'click'];
+const ACTIVITY_EVENTS = [
+  "mousemove",
+  "mousedown",
+  "keydown",
+  "scroll",
+  "touchstart",
+  "click",
+];
 
 export function useInactivityTimer() {
   const { user, signOut } = useAuth();
@@ -21,17 +28,20 @@ export function useInactivityTimer() {
     if (timerRef.current) clearInterval(timerRef.current);
 
     timerRef.current = setInterval(() => {
-      if (document.visibilityState !== 'visible') return;
+      if (document.visibilityState !== "visible") return;
 
       const timeoutMs = timeoutMsRef.current;
       if (!timeoutMs) return;
 
-      const lastActivity = parseInt(localStorage.getItem(ACTIVITY_KEY) || '0', 10);
+      const lastActivity = parseInt(
+        localStorage.getItem(ACTIVITY_KEY) || "0",
+        10,
+      );
       const elapsed = Date.now() - lastActivity;
 
       if (elapsed >= timeoutMs) {
         clearInterval(timerRef.current);
-        toast('Session expired. Signing you out...', { icon: '🔒' });
+        toast("Session expired. Signing you out...", { icon: "🔒" });
         signOut();
       }
     }, 30000);
@@ -47,7 +57,7 @@ export function useInactivityTimer() {
           timeoutMsRef.current = parseInt(cached, 10);
         }
 
-        const res = await api.get('/api/settings/session_timeout');
+        const res = await api.get("/api/settings/session_timeout");
         const saved = parseInt(res.data?.value, 10);
         if (!isNaN(saved)) {
           timeoutMsRef.current = saved;
@@ -55,7 +65,7 @@ export function useInactivityTimer() {
         }
       } catch (e) {
         if (e.response?.status !== 404) {
-          console.error('Failed to load session timeout setting', e);
+          console.error("Failed to load session timeout setting", e);
         }
       }
     };
@@ -64,7 +74,7 @@ export function useInactivityTimer() {
     recordActivity();
 
     const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible') {
+      if (document.visibilityState === "visible") {
         recordActivity();
       }
     };
@@ -73,27 +83,34 @@ export function useInactivityTimer() {
       recordActivity();
     };
 
-    ACTIVITY_EVENTS.forEach(evt => window.addEventListener(evt, recordActivity, { passive: true }));
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    window.addEventListener('focus', handleFocus);
+    ACTIVITY_EVENTS.forEach((evt) =>
+      window.addEventListener(evt, recordActivity, { passive: true }),
+    );
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    window.addEventListener("focus", handleFocus);
 
     startTimer();
 
     return () => {
-      ACTIVITY_EVENTS.forEach(evt => window.removeEventListener(evt, recordActivity));
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-      window.removeEventListener('focus', handleFocus);
+      ACTIVITY_EVENTS.forEach((evt) =>
+        window.removeEventListener(evt, recordActivity),
+      );
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      window.removeEventListener("focus", handleFocus);
       if (timerRef.current) clearInterval(timerRef.current);
     };
   }, [user, recordActivity, signOut, startTimer]);
 
-  const updateTimeout = useCallback(async (ms) => {
-    timeoutMsRef.current = ms;
-    localStorage.setItem(TIMEOUT_KEY, String(ms));
-    localStorage.setItem(ACTIVITY_KEY, String(Date.now()));
-    await api.put('/api/settings/session_timeout', { value: String(ms) });
-    startTimer();
-  }, [startTimer]);
+  const updateTimeout = useCallback(
+    async (ms) => {
+      timeoutMsRef.current = ms;
+      localStorage.setItem(TIMEOUT_KEY, String(ms));
+      localStorage.setItem(ACTIVITY_KEY, String(Date.now()));
+      await api.put("/api/settings/session_timeout", { value: String(ms) });
+      startTimer();
+    },
+    [startTimer],
+  );
 
   return { updateTimeout, timeoutMsRef };
 }

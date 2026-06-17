@@ -1,5 +1,5 @@
 {
-  "name": "arc",
+  "name": "basic-ventures-frontend",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -13,7 +13,6 @@
   },
   "dependencies": {
     "@iconify/react": "^6.0.2",
-    "@supabase/supabase-js": "^2.104.0",
     "axios": "^1.15.2",
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
@@ -21,7 +20,6 @@
     "framer-motion": "^12.38.0",
     "jspdf": "^4.2.1",
     "jspdf-autotable": "^5.0.7",
-    "lenis": "^1.3.23",
     "lucide-react": "^1.8.0",
     "react": "^19.2.5",
     "react-dom": "^19.2.5",

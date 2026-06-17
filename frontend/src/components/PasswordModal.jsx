@@ -1,35 +1,42 @@
-import { useState, useEffect, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { X, Lock, Eye, EyeOff, ShieldAlert } from 'lucide-react';
-import { verifyPassword } from '../utils/auth';
+import { useState, useEffect, useRef } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { X, Lock, Eye, EyeOff, ShieldAlert } from "lucide-react";
+import { verifyPassword } from "../utils/auth";
 
-export default function PasswordModal({ open, onClose, onSuccess, action = 'continue' }) {
-  const [password, setPassword]         = useState('');
-  const [showPw, setShowPw]             = useState(false);
-  const [error, setError]               = useState('');
-  const [loading, setLoading]           = useState(false);
-  const [shakeKey, setShakeKey]         = useState(0);   // increment to re-trigger shake
+export default function PasswordModal({
+  open,
+  onClose,
+  onSuccess,
+  action = "continue",
+}) {
+  const [password, setPassword] = useState("");
+  const [showPw, setShowPw] = useState(false);
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [shakeKey, setShakeKey] = useState(0); // increment to re-trigger shake
   const [lockRemaining, setLockRemaining] = useState(0);
   const inputRef = useRef(null);
 
-  // Reset state every time modal opens
   useEffect(() => {
     if (open) {
-      setPassword('');
+      setPassword("");
       setShowPw(false);
-      setError('');
+      setError("");
       setLoading(false);
       setLockRemaining(0);
       setTimeout(() => inputRef.current?.focus(), 120);
     }
   }, [open]);
 
-  // Live countdown during lockout
   useEffect(() => {
     if (lockRemaining <= 0) return;
     const t = setInterval(() => {
-      setLockRemaining(prev => {
-        if (prev <= 1) { clearInterval(t); setError(''); return 0; }
+      setLockRemaining((prev) => {
+        if (prev <= 1) {
+          clearInterval(t);
+          setError("");
+          return 0;
+        }
         const next = prev - 1;
         setError(`Too many attempts. Try again in ${next}s.`);
         return next;
@@ -50,14 +57,14 @@ export default function PasswordModal({ open, onClose, onSuccess, action = 'cont
       onSuccess();
       onClose();
     } else {
-      setShakeKey(k => k + 1);
-      setPassword('');
+      setShakeKey((k) => k + 1);
+      setPassword("");
       if (result.locked) {
         setLockRemaining(result.remaining);
         setError(`Too many attempts. Try again in ${result.remaining}s.`);
       } else {
         setError(
-          `Incorrect password. ${result.attemptsLeft} attempt${result.attemptsLeft !== 1 ? 's' : ''} left.`
+          `Incorrect password. ${result.attemptsLeft} attempt${result.attemptsLeft !== 1 ? "s" : ""} left.`,
         );
       }
       setTimeout(() => inputRef.current?.focus(), 80);
@@ -80,45 +87,85 @@ export default function PasswordModal({ open, onClose, onSuccess, action = 'cont
           <motion.div
             key={`pw-modal-${shakeKey}`}
             className="modal"
-            initial={{ opacity: 0, scale: 0.95, y: 16, x: shakeKey > 0 ? [-8, 8, -8, 8, 0] : 0 }}
-            animate={{ opacity: 1, scale: 1, y: 0, x: shakeKey > 0 ? [0, -10, 10, -8, 8, -4, 4, 0] : 0 }}
+            initial={{
+              opacity: 0,
+              scale: 0.95,
+              y: 16,
+              x: shakeKey > 0 ? [-8, 8, -8, 8, 0] : 0,
+            }}
+            animate={{
+              opacity: 1,
+              scale: 1,
+              y: 0,
+              x: shakeKey > 0 ? [0, -10, 10, -8, 8, -4, 4, 0] : 0,
+            }}
             exit={{ opacity: 0, scale: 0.95, y: 16 }}
-            transition={{ duration: shakeKey > 0 ? 0.45 : 0.2, ease: 'easeInOut' }}
-            onClick={e => e.stopPropagation()}
-            style={{ maxWidth: 400, width: '100%' }}
+            transition={{
+              duration: shakeKey > 0 ? 0.45 : 0.2,
+              ease: "easeInOut",
+            }}
+            onClick={(e) => e.stopPropagation()}
+            style={{ maxWidth: 400, width: "100%" }}
           >
             {}
             <div className="modal-header">
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <div style={{
-                  width: 36, height: 36, borderRadius: 10,
-                  background: 'var(--accent-light)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  flexShrink: 0
-                }}>
-                  {isLocked
-                    ? <ShieldAlert size={18} color="#ef4444" />
-                    : <Lock size={18} color="var(--accent)" />}
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <div
+                  style={{
+                    width: 36,
+                    height: 36,
+                    borderRadius: 10,
+                    background: "var(--accent-light)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    flexShrink: 0,
+                  }}
+                >
+                  {isLocked ? (
+                    <ShieldAlert size={18} color="#ef4444" />
+                  ) : (
+                    <Lock size={18} color="var(--accent)" />
+                  )}
                 </div>
-                <h2 className="modal-title" style={{ whiteSpace: 'nowrap', fontSize: 18 }}>Password Required</h2>
+                <h2
+                  className="modal-title"
+                  style={{ whiteSpace: "nowrap", fontSize: 18 }}
+                >
+                  Password Required
+                </h2>
               </div>
-              <button className="btn-icon" onClick={onClose}><X size={18} /></button>
+              <button className="btn-icon" onClick={onClose}>
+                <X size={18} />
+              </button>
             </div>
 
-            <p style={{ fontSize: 14, color: 'var(--text-muted)', margin: '4px 0 20px' }}>
+            <p
+              style={{
+                fontSize: 14,
+                color: "var(--text-muted)",
+                margin: "4px 0 20px",
+              }}
+            >
               Enter your password.
             </p>
 
             <form onSubmit={handleSubmit}>
               {}
-              <div className="form-group floating-group" style={{ position: 'relative', marginBottom: 0 }}>
+              <div
+                className="form-group floating-group"
+                style={{ position: "relative", marginBottom: 0 }}
+              >
                 <input
                   ref={inputRef}
                   className="form-input"
-                  type={showPw ? 'text' : 'password'}
+                  type={showPw ? "text" : "password"}
                   placeholder=" "
                   value={password}
-                  onChange={e => { setPassword(e.target.value); if (!isLocked) setError(''); }}
+                  onChange={(e) => {
+                    setPassword(e.target.value);
+                    if (!isLocked) setError("");
+                  }}
                   disabled={isLocked}
                   autoComplete="current-password"
                   style={{ paddingRight: 44 }}
@@ -127,12 +174,17 @@ export default function PasswordModal({ open, onClose, onSuccess, action = 'cont
                 <button
                   type="button"
                   tabIndex={-1}
-                  onClick={() => setShowPw(v => !v)}
+                  onClick={() => setShowPw((v) => !v)}
                   style={{
-                    position: 'absolute', right: 12, top: '50%',
-                    transform: 'translateY(-50%)',
-                    background: 'none', border: 'none',
-                    cursor: 'pointer', color: 'var(--text-muted)', padding: 4
+                    position: "absolute",
+                    right: 12,
+                    top: "50%",
+                    transform: "translateY(-50%)",
+                    background: "none",
+                    border: "none",
+                    cursor: "pointer",
+                    color: "var(--text-muted)",
+                    padding: 4,
                   }}
                 >
                   {showPw ? <EyeOff size={16} /> : <Eye size={16} />}
@@ -147,9 +199,13 @@ export default function PasswordModal({ open, onClose, onSuccess, action = 'cont
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0 }}
                     style={{
-                      fontSize: 13, color: isLocked ? '#f97316' : '#ef4444',
-                      fontWeight: 600, marginTop: 10,
-                      display: 'flex', alignItems: 'center', gap: 6
+                      fontSize: 13,
+                      color: isLocked ? "#f97316" : "#ef4444",
+                      fontWeight: 600,
+                      marginTop: 10,
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 6,
                     }}
                   >
                     {isLocked && <ShieldAlert size={14} />}
@@ -159,8 +215,13 @@ export default function PasswordModal({ open, onClose, onSuccess, action = 'cont
               </AnimatePresence>
 
               {}
-              <div style={{ display: 'flex', gap: 10, marginTop: 24 }}>
-                <button type="button" className="btn btn-outline" style={{ flex: 1 }} onClick={onClose}>
+              <div style={{ display: "flex", gap: 10, marginTop: 24 }}>
+                <button
+                  type="button"
+                  className="btn btn-outline"
+                  style={{ flex: 1 }}
+                  onClick={onClose}
+                >
                   Cancel
                 </button>
                 <button
@@ -169,7 +230,11 @@ export default function PasswordModal({ open, onClose, onSuccess, action = 'cont
                   style={{ flex: 2 }}
                   disabled={loading || isLocked || !password.trim()}
                 >
-                  {loading ? 'Checking…' : isLocked ? `Locked (${lockRemaining}s)` : 'Confirm'}
+                  {loading
+                    ? "Checking…"
+                    : isLocked
+                      ? `Locked (${lockRemaining}s)`
+                      : "Confirm"}
                 </button>
               </div>
             </form>

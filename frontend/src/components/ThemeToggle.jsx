@@ -1,15 +1,16 @@
-import { useState, useEffect } from 'react';
-import { Sun, Moon } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from "framer-motion";
+import { useState, useEffect } from "react";
+import { Sun, Moon } from "lucide-react";
 
 export default function ThemeToggle() {
-  const [isLight, setIsLight] = useState(() => document.body.classList.contains('light-mode'));
+  const [isLight, setIsLight] = useState(() =>
+    document.body.classList.contains("light-mode"),
+  );
 
   useEffect(() => {
-    
-    const saved = localStorage.getItem('theme');
-    if (saved === 'light') {
-      document.body.classList.add('light-mode');
+    const saved = localStorage.getItem("theme");
+    if (saved === "light") {
+      document.body.classList.add("light-mode");
       setIsLight(true);
     }
   }, []);
@@ -18,11 +19,11 @@ export default function ThemeToggle() {
     const newLight = !isLight;
     setIsLight(newLight);
     if (newLight) {
-      document.body.classList.add('light-mode');
-      localStorage.setItem('theme', 'light');
+      document.body.classList.add("light-mode");
+      localStorage.setItem("theme", "light");
     } else {
-      document.body.classList.remove('light-mode');
-      localStorage.setItem('theme', 'dark');
+      document.body.classList.remove("light-mode");
+      localStorage.setItem("theme", "dark");
     }
   };
 

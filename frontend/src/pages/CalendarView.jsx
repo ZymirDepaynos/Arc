@@ -1,15 +1,13 @@
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from "framer-motion";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   ArrowLeft,
   ChevronLeft,
   ChevronRight,
-  Calendar as CalendarIcon
-} from 'lucide-react';
-import api from '../lib/api';
-
-
+  Calendar as CalendarIcon,
+} from "lucide-react";
+import api from "../lib/api";
 
 export default function CalendarView() {
   const navigate = useNavigate();
@@ -17,17 +15,22 @@ export default function CalendarView() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [dropdownOpen, setDropdownOpen] = useState(null); // 'month' or 'year' or null
 
-  const fmt = (n) => '₱' + parseFloat(n || 0).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  const [selectedDayEvents, setSelectedDayEvents] = useState(null); 
+  const fmt = (n) =>
+    "₱" +
+    parseFloat(n || 0).toLocaleString("en-PH", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
+  const [selectedDayEvents, setSelectedDayEvents] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchAll = async () => {
       try {
-        const res = await api.get('/api/customers');
+        const res = await api.get("/api/customers");
         setDebtors(res.data);
       } catch (err) {
-        console.error('Failed to fetch debtors for calendar', err);
+        console.error("Failed to fetch debtors for calendar", err);
       } finally {
         setLoading(false);
       }
@@ -43,78 +46,96 @@ export default function CalendarView() {
   const today = new Date();
 
   const allHistoryEvents = (Array.isArray(debtors) ? debtors : [])
-    .filter(d => Array.isArray(d.payment_history))
-    .flatMap(d => d.payment_history.map(p => ({ ...p, name: d.name, debtorId: d.id })))
-    .filter(ev => {
-      if (ev.type === 'edit' || ev.type === 'manual_adjustment') return false;
-      
+    .filter((d) => Array.isArray(d.payment_history))
+    .flatMap((d) =>
+      d.payment_history.map((p) => ({ ...p, name: d.name, debtorId: d.id })),
+    )
+    .filter((ev) => {
+      if (ev.type === "edit" || ev.type === "manual_adjustment") return false;
+
       const entryDate = new Date(ev.created_at || ev.date);
       const now = new Date();
-      
+
       entryDate.setHours(0, 0, 0, 0);
       now.setHours(0, 0, 0, 0);
       const daysAgo = (now - entryDate) / (1000 * 60 * 60 * 24);
       return daysAgo >= -1 && daysAgo <= 7;
     })
-    .sort((a, b) => new Date(b.created_at || b.date) - new Date(a.created_at || a.date));
+    .sort(
+      (a, b) =>
+        new Date(b.created_at || b.date) - new Date(a.created_at || a.date),
+    );
 
   const monthNames = [
-    "January", "February", "March", "April", "May", "June",
-    "July", "August", "September", "October", "November", "December"
+    "January",
+    "February",
+    "March",
+    "April",
+    "May",
+    "June",
+    "July",
+    "August",
+    "September",
+    "October",
+    "November",
+    "December",
   ];
 
   const calendarDays = [];
   const startDay = firstDayOfMonth(year, month);
   const totalDays = daysInMonth(year, month);
 
-  
   for (let i = 0; i < startDay; i++) {
-    calendarDays.push({ day: null, type: 'prev' });
+    calendarDays.push({ day: null, type: "prev" });
   }
-  
+
   for (let i = 1; i <= totalDays; i++) {
-    calendarDays.push({ day: i, type: 'current' });
+    calendarDays.push({ day: i, type: "current" });
   }
-  
+
   while (calendarDays.length % 7 !== 0) {
-    calendarDays.push({ day: null, type: 'next' });
+    calendarDays.push({ day: null, type: "next" });
   }
 
   const getEventsForDay = (day) => {
     if (!day) return [];
-    const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
     const events = [];
 
-    (Array.isArray(debtors) ? debtors : []).forEach(d => {
-      
+    (Array.isArray(debtors) ? debtors : []).forEach((d) => {
       if (d.date_borrowed) {
-        
-        const isMatch = d.date_borrowed.includes('T')
-          ? new Date(d.date_borrowed).getFullYear() === year && new Date(d.date_borrowed).getMonth() === month && new Date(d.date_borrowed).getDate() === day
+        const isMatch = d.date_borrowed.includes("T")
+          ? new Date(d.date_borrowed).getFullYear() === year &&
+            new Date(d.date_borrowed).getMonth() === month &&
+            new Date(d.date_borrowed).getDate() === day
           : d.date_borrowed.startsWith(dateStr);
 
         if (isMatch) {
           events.push({
-            type: 'borrowed',
+            type: "borrowed",
             debtor: d,
             name: d.name,
             amount: d.balance + (d.advance_payment || 0),
-            label: 'PURCHASED'
+            label: "PURCHASED",
           });
         }
       }
-      
+
       if (Array.isArray(d.payment_history)) {
-        d.payment_history.forEach(p => {
+        d.payment_history.forEach((p) => {
           if (p.date) {
             const pDate = new Date(p.date);
-            if (pDate.getFullYear() === year && pDate.getMonth() === month && pDate.getDate() === day) {
+            if (
+              pDate.getFullYear() === year &&
+              pDate.getMonth() === month &&
+              pDate.getDate() === day
+            ) {
               events.push({
-                type: 'paid',
+                type: "paid",
                 debtor: d,
                 name: d.name,
                 amount: p.amount,
-                balance_after: p.balance_after
+                balance_after: p.balance_after,
               });
             }
           }
@@ -128,13 +149,19 @@ export default function CalendarView() {
     <div className="calendar-container">
       {}
       <div className="calendar-sidebar">
-        <button className="btn-icon-sm" onClick={() => navigate('/')} style={{ marginBottom: 20 }}>
+        <button
+          className="btn-icon-sm"
+          onClick={() => navigate("/")}
+          style={{ marginBottom: 20 }}
+        >
           <ArrowLeft size={20} />
         </button>
 
         <div className="today-display">
           <div className="today-number">{today.getDate()}</div>
-          <div className="today-month">{monthNames[today.getMonth()]} {today.getFullYear()}</div>
+          <div className="today-month">
+            {monthNames[today.getMonth()]} {today.getFullYear()}
+          </div>
         </div>
 
         <button className="sidebar-calendar-btn">
@@ -149,10 +176,20 @@ export default function CalendarView() {
               <div className="history-empty">No payments yet.</div>
             )}
             {allHistoryEvents.map((ev, i) => (
-              <div key={i} className="history-item" onClick={() => navigate(`/customer/${ev.debtorId}`)}>
+              <div
+                key={i}
+                className="history-item"
+                onClick={() => navigate(`/customer/${ev.debtorId}`)}
+              >
                 <div className="history-item-header">
                   <span className="history-name">{ev.name}</span>
-                  <span className="history-date">{new Date(ev.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                  <span className="history-date">
+                    {new Date(ev.date).toLocaleDateString("en-US", {
+                      month: "short",
+                      day: "numeric",
+                      year: "numeric",
+                    })}
+                  </span>
                 </div>
                 <div className="history-amount">{fmt(ev.amount)}</div>
               </div>
@@ -166,7 +203,15 @@ export default function CalendarView() {
         {}
         <div className="calendar-header">
           <div className="calendar-title-area">
-            <h2 style={{ fontSize: 24, fontWeight: 800, color: 'var(--text-primary)' }}>Records</h2>
+            <h2
+              style={{
+                fontSize: 24,
+                fontWeight: 800,
+                color: "var(--text-primary)",
+              }}
+            >
+              Records
+            </h2>
           </div>
 
           <div className="view-filters">
@@ -176,11 +221,17 @@ export default function CalendarView() {
             <div className="custom-dropdown-container">
               <div
                 className="filter-select-ui"
-                onClick={() => setDropdownOpen(dropdownOpen === 'month' ? null : 'month')}
+                onClick={() =>
+                  setDropdownOpen(dropdownOpen === "month" ? null : "month")
+                }
               >
-                {monthNames[month]} <ChevronRight size={14} className={`arrow-icon ${dropdownOpen === 'month' ? 'open' : ''}`} />
+                {monthNames[month]}{" "}
+                <ChevronRight
+                  size={14}
+                  className={`arrow-icon ${dropdownOpen === "month" ? "open" : ""}`}
+                />
               </div>
-              {dropdownOpen === 'month' && (
+              {dropdownOpen === "month" && (
                 <motion.div
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -189,7 +240,7 @@ export default function CalendarView() {
                   {monthNames.map((m, i) => (
                     <div
                       key={m}
-                      className={`dropdown-item ${month === i ? 'active' : ''}`}
+                      className={`dropdown-item ${month === i ? "active" : ""}`}
                       onClick={() => {
                         setCurrentDate(new Date(year, i, 1));
                         setDropdownOpen(null);
@@ -206,20 +257,26 @@ export default function CalendarView() {
             <div className="custom-dropdown-container">
               <div
                 className="filter-select-ui"
-                onClick={() => setDropdownOpen(dropdownOpen === 'year' ? null : 'year')}
+                onClick={() =>
+                  setDropdownOpen(dropdownOpen === "year" ? null : "year")
+                }
               >
-                {year} <ChevronRight size={14} className={`arrow-icon ${dropdownOpen === 'year' ? 'open' : ''}`} />
+                {year}{" "}
+                <ChevronRight
+                  size={14}
+                  className={`arrow-icon ${dropdownOpen === "year" ? "open" : ""}`}
+                />
               </div>
-              {dropdownOpen === 'year' && (
+              {dropdownOpen === "year" && (
                 <motion.div
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   className="dropdown-list"
                 >
-                  {Array.from({ length: 11 }, (_, i) => 2020 + i).map(y => (
+                  {Array.from({ length: 11 }, (_, i) => 2020 + i).map((y) => (
                     <div
                       key={y}
-                      className={`dropdown-item ${year === y ? 'active' : ''}`}
+                      className={`dropdown-item ${year === y ? "active" : ""}`}
                       onClick={() => {
                         setCurrentDate(new Date(y, month, 1));
                         setDropdownOpen(null);
@@ -237,38 +294,45 @@ export default function CalendarView() {
         {}
         <div className="calendar-body">
           <div className="weekday-header">
-            {['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'].map(d => (
-              <div key={d} className="weekday-label">{d}</div>
+            {["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"].map((d) => (
+              <div key={d} className="weekday-label">
+                {d}
+              </div>
             ))}
           </div>
 
           <div className="days-grid">
             {calendarDays.map((item, idx) => {
               const events = getEventsForDay(item.day);
-              const isToday = item.day === today.getDate() && month === today.getMonth() && year === today.getFullYear();
+              const isToday =
+                item.day === today.getDate() &&
+                month === today.getMonth() &&
+                year === today.getFullYear();
               const hasEvents = events.length > 0;
 
               return (
                 <div
                   key={idx}
-                  className={`day-cell ${item.type} ${isToday ? 'active' : ''} ${hasEvents ? 'has-records' : ''}`}
-                  onClick={() => hasEvents && setSelectedDayEvents({
-                    date: `${monthNames[month]} ${item.day}, ${year}`,
-                    events
-                  })}
+                  className={`day-cell ${item.type} ${isToday ? "active" : ""} ${hasEvents ? "has-records" : ""}`}
+                  onClick={() =>
+                    hasEvents &&
+                    setSelectedDayEvents({
+                      date: `${monthNames[month]} ${item.day}, ${year}`,
+                      events,
+                    })
+                  }
                 >
-                  <span className="cell-number">{item.day || ''}</span>
+                  <span className="cell-number">{item.day || ""}</span>
                   <div className="cell-events">
                     {events.slice(0, 3).map((ev, i) => (
-                      <div
-                        key={i}
-                        className={`mini-event-tag ${ev.type}`}
-                      >
+                      <div key={i} className={`mini-event-tag ${ev.type}`}>
                         <span className="mini-event-name">{ev.name}</span>
                       </div>
                     ))}
                     {events.length > 3 && (
-                      <div className="more-indicator">+{events.length - 3} more</div>
+                      <div className="more-indicator">
+                        +{events.length - 3} more
+                      </div>
                     )}
                   </div>
                 </div>
@@ -280,7 +344,10 @@ export default function CalendarView() {
 
       {/* Day Detail Modal */}
       {selectedDayEvents && (
-        <div className="modal-overlay" onClick={() => setSelectedDayEvents(null)}>
+        <div
+          className="modal-overlay"
+          onClick={() => setSelectedDayEvents(null)}
+        >
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -289,7 +356,12 @@ export default function CalendarView() {
           >
             <div className="modal-header">
               <h3 className="modal-title">{selectedDayEvents.date}</h3>
-              <button className="btn-icon" onClick={() => setSelectedDayEvents(null)}><ArrowLeft size={20} /></button>
+              <button
+                className="btn-icon"
+                onClick={() => setSelectedDayEvents(null)}
+              >
+                <ArrowLeft size={20} />
+              </button>
             </div>
 
             <div className="modal-scroll">
@@ -302,15 +374,30 @@ export default function CalendarView() {
                   >
                     <div className="event-info">
                       <span className="event-name">{ev.name}</span>
-                      <span className="event-type-badge">{ev.label || ev.type}</span>
+                      <span className="event-type-badge">
+                        {ev.label || ev.type}
+                      </span>
                     </div>
                     <div className="event-money">
-                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 2 }}>
+                      <div
+                        style={{
+                          display: "flex",
+                          flexDirection: "column",
+                          alignItems: "flex-end",
+                          gap: 2,
+                        }}
+                      >
                         {ev.amount !== undefined && (
                           <span className="amount">{fmt(ev.amount)}</span>
                         )}
                         {ev.balance_after !== undefined && (
-                          <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-muted)' }}>
+                          <span
+                            style={{
+                              fontSize: 10,
+                              fontWeight: 700,
+                              color: "var(--text-muted)",
+                            }}
+                          >
                             Bal: {fmt(ev.balance_after)}
                           </span>
                         )}
@@ -325,8 +412,9 @@ export default function CalendarView() {
         </div>
       )}
 
-      <style dangerouslySetInnerHTML={{
-        __html: `
+      <style
+        dangerouslySetInnerHTML={{
+          __html: `
         .calendar-container {
           display: flex;
           height: calc(100vh - 48px);
@@ -853,8 +941,9 @@ export default function CalendarView() {
         }
         .detail-event-item.paid .amount { color: #30D158; }
         .detail-event-item.borrowed .amount { color: #FF9F0A; }
-      `}} />
-
+      `,
+        }}
+      />
     </div>
   );
 }

@@ -1,5 +1,4 @@
-import { createContext, useContext, useEffect, useState } from 'react';
-import { supabase } from '../lib/supabase';
+import { createContext, useContext, useEffect, useState } from "react";
 
 const AuthContext = createContext({});
 
@@ -9,26 +8,29 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
-    });
+    const token = localStorage.getItem("bv_session_token");
+    const storedUser = localStorage.getItem("bv_user");
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
+    if (token && storedUser) {
+      setSession({ access_token: token });
+      try {
+        setUser(JSON.parse(storedUser));
+      } catch {
+        setUser(null);
       }
-    );
-
-    return () => subscription.unsubscribe();
+    } else {
+      setSession(null);
+      setUser(null);
+    }
+    setLoading(false);
   }, []);
 
-  const signOut = async () => {
-    await supabase.auth.signOut();
+  const signOut = () => {
+    localStorage.removeItem("bv_session_token");
+    localStorage.removeItem("bv_user");
     setUser(null);
     setSession(null);
+    window.location.reload();
   };
 
   return (
